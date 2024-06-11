@@ -10,12 +10,12 @@ export type SignedInvitation = TaggedString<Invitation>;
 
 export type Invitation = {
   header: {
-    alg: "RS256";
+    alg: "ES256";
     jwk: JsonWebKey;
   };
   payload: {
     messageId: number;
-    threadJWK?: JsonWebKey;
+    threadJWK: JsonWebKey;
     note?: string;
     nickname?: string;
   };

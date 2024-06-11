@@ -25,17 +25,16 @@ z4AYZcxCAxriGRvKxB8TM7pjdO66XNTG3a5/n786Hw6/wXtfNmm6mySmWsMgGuEn
 };
 
 describe("Client", () => {
-  test("generateClient", () => {
+  test("generateClient", async () => {
     const storage = new TestStorage();
     const Alice = Client.generateClient(storage, "Alice");
 
     storage.setItem(`PEM:${bobKey.fingerprint}`, bobKey.pem);
     const Bob = new Client(storage, bobKey.fingerprint, "Bob");
 
-    const invitation = Alice.createInvitation({ note: "Hello Bob" });
+    const invitation = await Alice.createInvitation({ note: "Hello Bob" });
     console.log("invitation", invitation);
 
     const reply = Bob.replyToInvitation(invitation, "Hello Alice");
-    console.log("reply", reply);
   });
 });
