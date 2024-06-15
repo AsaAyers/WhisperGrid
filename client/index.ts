@@ -2,8 +2,8 @@ import {
   KEYUTIL,
   KJUR,
   ArrayBuffertohex,
-  JwkObject,
   hextoArrayBuffer,
+  hextoutf8,
 } from "jsrsasign";
 
 import { GridStorage } from "./GridStorage";
@@ -13,6 +13,8 @@ import {
   SignedInvitation,
   Invitation,
 } from "./types";
+import { JOSEAlgNotAllowed } from "jose/dist/types/util/errors";
+import { base64url } from "jose";
 
 function generatePrivateKeyPair() {
   const key = KEYUTIL.generateKeypair("EC", "secp384r1");
@@ -82,7 +84,7 @@ export class Client {
 
     const invitation: Invitation = {
       header: {
-        alg: "ES256",
+        alg: "ES384",
         jwk: this.jwk,
       },
       payload: {
@@ -101,8 +103,7 @@ export class Client {
     invariant(myPubKey instanceof KJUR.crypto.ECDSA, "Invalid key type");
 
     const signedInvite = KJUR.jws.JWS.sign(
-      "ES256",
-      JSON.stringify(invitation.header),
+      "ES384",
       JSON.stringify(invitation.payload),
       this.identityKey
     ) as SignedInvitation;
@@ -115,7 +116,7 @@ export class Client {
     return signedInvite;
   }
 
-  replyToInvitation(signedInvite: SignedInvitation, message: string) {
+  async replyToInvitation(signedInvite: SignedInvitation, message: string) {
     this.verifyJWT(signedInvite);
 
     const threadPair = generatePrivateKeyPair();
@@ -124,7 +125,7 @@ export class Client {
     });
     this.storage.setItem(`invitation:${threadPair.fingerprint}`, signedInvite);
 
-    this.replyToThread(threadPair.fingerprint, message);
+    return this.replyToThread(threadPair.fingerprint, message);
   }
 
   verifyJWT(jwt: string) {
@@ -161,9 +162,15 @@ export class Client {
     }
     this.storage.setItem(`messageId:${fingerprint}`, id);
 
+    const threadKey = KEYUTIL.getKey(payload.threadJWK!);
+    invariant(threadKey instanceof KJUR.crypto.ECDSA, "Invalid key type");
+    const jwk = KEYUTIL.getJWKFromKey(threadKey);
+
     const newMessage = {
       header: {
-        alg: "HS256",
+        alg: "HS384",
+        enc: "A256GCM",
+        jwk,
       },
       payload: {
         id,
@@ -171,29 +178,57 @@ export class Client {
       },
     };
 
-    const threadKey = KEYUTIL.getKey(payload.threadJWK!);
-    invariant(threadKey instanceof KJUR.crypto.ECDSA, "Invalid key type");
+    const myThreadKey = await generateECDHKeyPair();
 
-    console.log("before");
-    const keyA = await convertToCryptoKey(this.identityKey);
-    console.log({ keyA });
-    const keyB = await convertToCryptoKey(threadKey);
-    console.log({ keyB });
-    const secret = await deriveSharedSecret(keyA, keyB);
-    console.log({ secret });
-
-    const encryptedMessage = KJUR.jws.JWS.sign(
-      null,
-      newMessage.header,
-      newMessage.payload,
-      {
-        hex: ArrayBuffertohex(secret),
-      }
+    this.storage.setItem(
+      `thread-key:${threadFingerprint}`,
+      myThreadKey.privateKey
     );
 
-    this.storage.appendItem(`messages:${threadFingerprint}`, encryptedMessage);
-    return newMessage;
+    const secret = await deriveSharedSecret(myThreadKey.privateKey, jwk);
+    const encodedHeader = Buffer.from(
+      JSON.stringify(newMessage.header)
+    ).toString("base64");
+
+    const secretKey = await window.crypto.subtle.importKey(
+      "raw",
+      secret,
+      "AES-GCM",
+      false,
+      ["encrypt"]
+    );
+
+    // use window.crypto.subtle to make a JWE encrypted using the secret
+    const encryptedMessage = await window.crypto.subtle.encrypt(
+      {
+        name: "AES-GCM",
+        iv: new Uint8Array(12),
+        tagLength: 128,
+      },
+      secretKey,
+      new TextEncoder().encode(JSON.stringify(newMessage.payload))
+    );
+
+    const jwt = `${encodedHeader}..${base64url.encode(
+      String(encryptedMessage)
+    )}`;
+
+    this.storage.appendItem(`messages:${threadFingerprint}`, jwt);
+    return jwt;
   }
+}
+
+function hexStringToUint8Array(hexString: string): Uint8Array {
+  if (hexString.length % 2 !== 0) {
+    throw new Error("Invalid hexString");
+  }
+  const arrayLength = hexString.length / 2;
+  const uint8Array = new Uint8Array(arrayLength);
+  for (let i = 0; i < arrayLength; i++) {
+    const byteValue = parseInt(hexString.substring(i * 2, i * 2 + 2), 16);
+    uint8Array[i] = byteValue;
+  }
+  return uint8Array;
 }
 
 export function invariant<T>(condition: T, message: string): asserts condition {
@@ -202,18 +237,31 @@ export function invariant<T>(condition: T, message: string): asserts condition {
   }
 }
 
-async function deriveSharedSecret(privateKey: CryptoKey, publicKey: CryptoKey) {
+export async function deriveSharedSecret(
+  privateKey: CryptoKey,
+  jwk: jsrsasign.KJUR.jws.JWS.JsonWebKey
+) {
+  const publicKey: CryptoKey = await window.crypto.subtle.importKey(
+    "jwk",
+    jwk,
+    {
+      name: "ECDH",
+      namedCurve: "P-384",
+    },
+    true,
+    []
+  );
   return await window.crypto.subtle.deriveBits(
     {
       name: "ECDH",
       public: publicKey,
     },
     privateKey,
-    384
+    256
   );
 }
 
-async function generateECDHKeyPair() {
+export async function generateECDHKeyPair() {
   const keyPair = await window.crypto.subtle.generateKey(
     {
       name: "ECDH",
@@ -233,28 +281,4 @@ async function generateECDHKeyPair() {
     fingerprint,
     jwk,
   };
-}
-async function convertToCryptoKey(
-  ecdsaKey: KJUR.crypto.ECDSA
-): Promise<CryptoKey> {
-  // Convert the ECDSA key to JWK format
-  const jwk = KEYUTIL.getJWKFromKey(ecdsaKey);
-
-  const pairHex = ecdsaKey.generateKeyPairHex();
-
-  try {
-    // Convert the JWK to a CryptoKey
-    return await window.crypto.subtle.importKey(
-      "raw",
-      hextoArrayBuffer(pairHex.ecpubhex),
-      {
-        name: "ECDH",
-        namedCurve: "P-384",
-      },
-      false,
-      ["deriveBits"]
-    );
-  } catch (e: any) {
-    throw new Error(`Error converting key to JWK: ${e.message}`);
-  }
 }

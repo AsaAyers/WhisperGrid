@@ -32,6 +32,7 @@ type StoredDataTypes =
   | { type: "invitation"; data: SignedInvitation }
   | { type: "messages"; data: Array<string> }
   | { type: "public-key"; data: JsonWebKey }
+  | { type: "thread-key"; data: CryptoKey }
   | { type: "messageId"; data: number }
   | { type: "threads"; data: Array<{ fingerprint: string }> };
 

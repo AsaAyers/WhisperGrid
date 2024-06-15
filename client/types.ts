@@ -10,7 +10,7 @@ export type SignedInvitation = TaggedString<Invitation>;
 
 export type Invitation = {
   header: {
-    alg: "ES256";
+    alg: "ES384";
     jwk: JsonWebKey;
   };
   payload: {
