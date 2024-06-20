@@ -1,8 +1,6 @@
 import { KJUR } from "jsrsasign";
 import { SignedInvitation, TaggedString } from "./types";
 
-type JsonWebKey = KJUR.jws.JWS.JsonWebKey;
-
 export type GridStorage = {
   removeItem: (key: `${StoredDataTypes["type"]}:${string}`) => null;
   getItem: <Type extends StoredDataTypes["type"]>(
@@ -22,22 +20,38 @@ export type GridStorage = {
 };
 type StoredDataTypes =
   | {
-      type: "private-key";
+      type: "identity";
       data: {
-        privateKey: KJUR.crypto.ECDSA;
-        jwk: JsonWebKey;
+        id: {
+          jwk: JsonWebKey;
+          private: string;
+        };
+        storage: {
+          jwk: JsonWebKey;
+          private: string;
+        };
       };
     }
-  | { type: "PEM"; data: TaggedString<"PEM"> }
+  | {
+      type: "thread-info";
+      data: {
+        thumbprint: string;
+        threadThumbprint: string;
+        threadJWK: JsonWebKey;
+      };
+    }
   | { type: "invitation"; data: SignedInvitation }
   | { type: "messages"; data: Array<string> }
-  | { type: "public-key"; data: JsonWebKey }
-  | { type: "thread-key"; data: CryptoKey }
-  | { type: "messageId"; data: number }
-  | { type: "threads"; data: Array<{ fingerprint: string }> };
+  | { type: "encrypted-thread-key"; data: string }
+  | { type: "message-id"; data: number }
+  | { type: "threads"; data: Array<string> };
 
 export class TestStorage implements GridStorage {
   private data: Record<string, any> = {};
+
+  getData() {
+    return this.data;
+  }
 
   removeItem(key: `${StoredDataTypes["type"]}:${string}`) {
     delete this.data[key];

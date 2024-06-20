@@ -1,6 +1,5 @@
 import { KJUR } from "jsrsasign";
 
-export type JsonWebKey = KJUR.jws.JWS.JsonWebKey;
 const objectType = Symbol("objectType");
 export type TaggedString<T extends string | object> = string & {
   [objectType]: T;
@@ -18,5 +17,17 @@ export type Invitation = {
     threadJWK: JsonWebKey;
     note?: string;
     nickname?: string;
+  };
+};
+
+export type SelfEncrypted = {
+  header: {
+    alg: "ES384";
+    jwk: JsonWebKey;
+  };
+  payload: {
+    message: string;
+    iv: string;
+    epk: JsonWebKey;
   };
 };
