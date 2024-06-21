@@ -13,8 +13,8 @@ export type Invitation = {
     jwk: JsonWebKey;
   };
   payload: {
-    messageId: number;
-    threadJWK: JsonWebKey;
+    messageId: string;
+    epk: JsonWebKey;
     note?: string;
     nickname?: string;
   };
@@ -29,5 +29,16 @@ export type SelfEncrypted = {
     message: string;
     iv: string;
     epk: JsonWebKey;
+  };
+};
+
+export type ReplyMessage = {
+  header: { alg: "ES384"; jwk?: JsonWebKey };
+  payload: {
+    re: string;
+    messageId: string;
+    epk?: JsonWebKey;
+    message: string;
+    iv: string;
   };
 };

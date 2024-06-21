@@ -7,6 +7,7 @@ import {
   b64utohex,
   rstrtohex,
 } from "jsrsasign";
+import { getNickname, setNickname } from ".";
 
 export const ecdhAlg = {
   name: "ECDH",
@@ -27,6 +28,10 @@ export async function generateECDSAKeyPair() {
     true,
     ecdsaKeyUseages
   );
+  const thumbprint = await getJWKthumbprint(
+    await window.crypto.subtle.exportKey("jwk", keyPair.publicKey)
+  );
+  setNickname(thumbprint, `${thumbprint}/ECDSA`);
 
   return keyPair;
 }
@@ -35,6 +40,10 @@ export async function generateECDHKeyPair() {
     "deriveKey",
     "deriveBits",
   ]);
+  const thumbprint = await getJWKthumbprint(
+    await window.crypto.subtle.exportKey("jwk", keyPair.publicKey)
+  );
+  setNickname(thumbprint, `${thumbprint}/ECDH`);
 
   return keyPair;
 }
@@ -111,7 +120,7 @@ export async function verifyJWS(
       );
       return verifyJWS(jws, pubKey);
     }
-    throw new Error("No jwk header provided, pass a key to verify with");
+    return false;
   }
 
   const isValid = await window.crypto.subtle.verify(
@@ -135,7 +144,9 @@ export async function getJWKthumbprint(jwk: JsonWebKey) {
     "SHA-256",
     hextoArrayBuffer(hex)
   );
-  return "whisper-grid://" + hextob64u(ArrayBuffertohex(sha256));
+  let alg = jwk.alg ? `${jwk.alg}/` : "";
+
+  return `whisper-grid://${alg}${hextob64u(ArrayBuffertohex(sha256))}`;
 }
 
 export async function exportKeyPair(keyPair: CryptoKeyPair) {
@@ -239,9 +250,14 @@ export async function decryptPrivateKey(
 }
 export async function parseJWS<T extends { header: unknown; payload: unknown }>(
   jws: string,
-  pubKey?: CryptoKey
+  pubKey?: CryptoKey | null
 ): Promise<T> {
-  invariant(await verifyJWS(jws, pubKey), "JWS verification failed");
+  if (pubKey !== null) {
+    const isValid = await verifyJWS(jws, pubKey);
+    if (!isValid) {
+      throw new Error(`JWS verification failed`);
+    }
+  }
 
   const [encodedHeader, encodedPayload] = jws.split(".");
   const header = JSON.parse(b64utoutf8(encodedHeader));

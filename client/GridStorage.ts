@@ -2,6 +2,7 @@ import { KJUR } from "jsrsasign";
 import { SignedInvitation, TaggedString } from "./types";
 
 export type GridStorage = {
+  hasItem(key: string): boolean;
   removeItem: (key: `${StoredDataTypes["type"]}:${string}`) => null;
   getItem: <Type extends StoredDataTypes["type"]>(
     key: `${Type}:${string}`
@@ -35,41 +36,49 @@ type StoredDataTypes =
   | {
       type: "thread-info";
       data: {
-        thumbprint: string;
-        threadThumbprint: string;
-        threadJWK: JsonWebKey;
+        signedInvite: SignedInvitation;
+        myThumbprint: string;
+        theirEPK: JsonWebKey;
+        theirSignature: JsonWebKey;
       };
     }
   | { type: "invitation"; data: SignedInvitation }
   | { type: "messages"; data: Array<string> }
   | { type: "encrypted-thread-key"; data: string }
-  | { type: "message-id"; data: number }
+  | { type: "public-key"; data: JsonWebKey }
+  | { type: "message-id"; data: string }
   | { type: "threads"; data: Array<string> };
 
 export class TestStorage implements GridStorage {
-  private data: Record<string, any> = {};
+  private data = new Map<string, any>();
 
   getData() {
-    return this.data;
+    return Object.fromEntries(this.data.entries());
+  }
+
+  hasItem(key: string): boolean {
+    return this.data.has(key);
   }
 
   removeItem(key: `${StoredDataTypes["type"]}:${string}`) {
-    delete this.data[key];
+    this.data.delete(key);
     return null;
   }
 
   getItem: GridStorage["getItem"] = (key) => {
-    return this.data[key] ?? null;
+    return this.data.get(key);
   };
 
   setItem: GridStorage["setItem"] = (key, value) => {
-    this.data[key] = value;
+    this.data.set(key, value);
   };
 
   appendItem: GridStorage["appendItem"] = (key, value) => {
-    if (!Array.isArray(this.data[key])) {
-      this.data[key] = [];
+    let arr = this.data.get(key);
+    if (!Array.isArray(arr)) {
+      arr = [];
     }
-    this.data[key].push(value);
+    arr.push(value);
+    this.data.set(key, arr);
   };
 }

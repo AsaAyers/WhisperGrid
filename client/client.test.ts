@@ -14,59 +14,111 @@ global.window ??= {} as any;
 window.crypto = crypto;
 
 const aliceIdentity = {
-  "identity:cKVBkkGc4Y9AgUdH_A9bUR1pSfqcBw7JhTZaNOLdFWg": {
-    id: {
-      jwk: {
-        key_ops: ["verify"],
-        ext: true,
-        kty: "EC",
-        x: "LCEKGvPG0U21IUkFRmYa8NBiFfI_29W56zLTCkNZIZGTEUSDUhINKgsEbcm9qDMk",
-        y: "pKBJ3BDUXFEaH8mUFvpY9fAN37R9Fp69NP0-H4m-Qk5jEa4plTa5FyZ8YDt4t-2o",
-        crv: "P-384",
-      },
-      private:
-        "FPEj18DW+kjgKdhRCtbSOmh7XCWRWNTiCFp8YGb2kg2J6A0bSEeLItZvaA3rwub7abhkSoSGcyFYDCbkfpPXO6vdQxLBhCZHNTsTcEhMaSvS/4LFWy/m5EXsX8tS/7IwxQ2AutdD4zBfpDssoRdkOzMcQQXZoufpeNsbyv+n8UePuJtnGR3fd0JObnStRAm4oSLh95QnrfNtAVg51NUZJ84AmhpMYtjVEnuq7stXgZcL6kuuRUk1/RU1g4PHqXfk8GF9Jy5MrpfAKudAXgWN859LdiJr5DQgb9JTOs+AJ8kz/1scFpQo7xrT2pGDGW6qDs2wp19sAbURNqe1tR3i3GET9PeXkp4e6pZWdPgtcz/1ynHTq9sezzyv13VH.BPM6GJXNBN2yCDPj.TRgas3CkhaXUXrF613IR4Q==",
+  id: {
+    jwk: {
+      key_ops: ["verify"],
+      ext: true,
+      kty: "EC",
+      x: "zPRCzbz45S0Ss-Tor1KSgjouxRkpQcrmh3_7V6qHSv7bmH_s9cgDRYIT9NpHHYm6",
+      y: "oWDGHCVEVwGAhHYVxHh83qzeS4o6PGcy6SViepmurDBhyH-BxmOno2uRRR3wDP4p",
+      crv: "P-384",
     },
-    storage: {
-      jwk: {
-        key_ops: [],
-        ext: true,
-        kty: "EC",
-        x: "NaTHz7sJ2ZOS0oli-kM5GUKoLdUxP7cj-OCq4Pj5VEniFpsug1a7krG7vi-AdY8P",
-        y: "oxG5h_ABmQtgINPPXM17SQDEmYm6_fArdanue2N-8_ELDyeITqk7_iyDAmNhNgr2",
-        crv: "P-384",
-      },
-      private:
-        "ICwdt8LSIi86BcCEf2liXftQuOmdo+k5KdBAfmWHmP/r/2KkT5WbauRxisnv7M2qSBUCUc2ih6/h1g+5zshcpMDoGMetMhyUgvfC5QpIYRfV6Ptu0f+IiHjZv2A6e3mU5oBnAC4oMYqxUKQy2w5qSjc82EhV/n7GoOEnE4gchGB0SF46OtsbRwQs/bbmemr9o+GBeNhf9Hoo7hTO7Bg8+XS51xul68juhDhMuyPcWcD4sKxohc0wD6q1CkufzfKUzkpos2mQn7WdQTNvfvoidhxdKN233YpXURR7Xc6q+HqAQPNvVJz2d2RSzSYQj0JNh59g7YXLY5iQmTQdN+53Ovpq0AfQq3F0yU87JHgmy7ApoREna3OCOSvNaM5DDcAcSkTTGEIYFe7AwRFtVc9M.CXNYqsoWgGQQ1BR8.ndboiKy4VC7Rs2YqwZXtJQ==",
+    private:
+      "QL23nDpJUq+9+HR4Gd5i4o998rxpa7agXwJGh3U/2Bv/UmLnLE/8pchj3FjbjVSNj+ehiOWrhGJ44qwIgPNRh10TcpOXi3eCdaujZfkqDhS7aGVl3vnP5eoa83bx6jqF67FJfQQMjDJnX+Nh3ABnIgGWSGT5s/rCRO45i3txLu7p6uZmhGwinkd6qPVGEyL6fAsj4WiRdg4Il/i8f88uQxKzzsUEQ6xMhf3SU5T+S1Vuvb/uliLsym+iEobZee+Q7RIrEWqErsyBaC786tgcaLrw3xBxF4T93e/3bgEYyEXCWlLClkjprIQU/LVFpu1VSDRFvBtm7d2HZ3S+Cjhs5KK9CIaNsVDv/tIT9eDgy9cC0FSXWE1ej5VsgSm+.xNjIT21Xvxfa2ZoS.xQ9JMNYXm3LJUTvV1VabUw==",
+  },
+  storage: {
+    jwk: {
+      key_ops: [],
+      ext: true,
+      kty: "EC",
+      x: "Budxp0C-gpccv8c4FtYA4H6Ir46-8sh1zBP_FUciqP0bV8LmJe5Keb3iLYxC8w-W",
+      y: "dwrTD0KSV3pHUVWjGEb8M-GOBn54eKR3wJflKjpgjptSZiCuhVRz0umk9TBvdJI2",
+      crv: "P-384",
     },
+    private:
+      "edfoyVlSgteEvufG6SSlyNqnYKY5pQpF0uwMv/LcHEVSE9jzMAxG4nPSEv5NjW30c0ImgSJfZ4uCERQbQrpHt7SR5VrM+XI8nlV84L7X2r40Z9LtLgtQbq7nYHAF5B+oIfTurGkQKFHGhbTpkH8YBl/jgRsG3m9zIVlMovyE9TOft/+n3p5QAZPgAv3J0tkHPv6VffgatRHm2A1qXySA3U9RUcGV9pJ+dPRUhS5jkJdejBrq/hq2iWbtVx33Oa289Hq7Bydh5xGB9Ff+yxdJJ7RC1LDYWgs4x+E+DVaobTdbi1Du6Kal5DcICe7UVIvuoag3YK5GKOuj4a+BonmXuU0mibglnhuHDrywe72GnW6DRxJu9B164rTRJ8puDop8tpN6OGKIHyleJgj8H7IW.yYXD4pj1WrJGf1UM.MTySWCk90QC5joIZNRpoYA==",
   },
 };
+const aliceThumbprint =
+  "whisper-grid://pMj2HmW01bub4-s0XUuIyB-REcAaI7s7oIhpBlDz6hA";
 
 describe("Client", () => {
   test("createInvitation", async () => {
     const storage = new TestStorage();
-    const Alice = await Client.generateClient(storage, "Al1c3P@ssw0rd");
-    // expect(JSON.stringify(storage.getData(), null, 2)).toMatchInlineSnapshot();
+    storage.setItem(`identity:${aliceThumbprint}`, aliceIdentity);
+    // const Alice = await Client.generateClient(storage, "Al1c3P@ssw0rd");
+    const Alice = await Client.loadClient(
+      storage,
+      aliceThumbprint,
+      "Al1c3P@ssw0rd"
+    );
+    Alice.setClientNickname("Alice");
 
     const invitation = await Alice.createInvitation({
       nickname: "Alice",
       note: "Hello Bob, this first message is public.",
     });
     log("invitation", invitation);
+
+    const { [`identity:${aliceThumbprint}`]: identity } = storage.getData();
+
+    expect(JSON.stringify(identity)).toMatchInlineSnapshot(
+      `"{"id":{"jwk":{"key_ops":["verify"],"ext":true,"kty":"EC","x":"zPRCzbz45S0Ss-Tor1KSgjouxRkpQcrmh3_7V6qHSv7bmH_s9cgDRYIT9NpHHYm6","y":"oWDGHCVEVwGAhHYVxHh83qzeS4o6PGcy6SViepmurDBhyH-BxmOno2uRRR3wDP4p","crv":"P-384"},"private":"QL23nDpJUq+9+HR4Gd5i4o998rxpa7agXwJGh3U/2Bv/UmLnLE/8pchj3FjbjVSNj+ehiOWrhGJ44qwIgPNRh10TcpOXi3eCdaujZfkqDhS7aGVl3vnP5eoa83bx6jqF67FJfQQMjDJnX+Nh3ABnIgGWSGT5s/rCRO45i3txLu7p6uZmhGwinkd6qPVGEyL6fAsj4WiRdg4Il/i8f88uQxKzzsUEQ6xMhf3SU5T+S1Vuvb/uliLsym+iEobZee+Q7RIrEWqErsyBaC786tgcaLrw3xBxF4T93e/3bgEYyEXCWlLClkjprIQU/LVFpu1VSDRFvBtm7d2HZ3S+Cjhs5KK9CIaNsVDv/tIT9eDgy9cC0FSXWE1ej5VsgSm+.xNjIT21Xvxfa2ZoS.xQ9JMNYXm3LJUTvV1VabUw=="},"storage":{"jwk":{"key_ops":[],"ext":true,"kty":"EC","x":"Budxp0C-gpccv8c4FtYA4H6Ir46-8sh1zBP_FUciqP0bV8LmJe5Keb3iLYxC8w-W","y":"dwrTD0KSV3pHUVWjGEb8M-GOBn54eKR3wJflKjpgjptSZiCuhVRz0umk9TBvdJI2","crv":"P-384"},"private":"edfoyVlSgteEvufG6SSlyNqnYKY5pQpF0uwMv/LcHEVSE9jzMAxG4nPSEv5NjW30c0ImgSJfZ4uCERQbQrpHt7SR5VrM+XI8nlV84L7X2r40Z9LtLgtQbq7nYHAF5B+oIfTurGkQKFHGhbTpkH8YBl/jgRsG3m9zIVlMovyE9TOft/+n3p5QAZPgAv3J0tkHPv6VffgatRHm2A1qXySA3U9RUcGV9pJ+dPRUhS5jkJdejBrq/hq2iWbtVx33Oa289Hq7Bydh5xGB9Ff+yxdJJ7RC1LDYWgs4x+E+DVaobTdbi1Du6Kal5DcICe7UVIvuoag3YK5GKOuj4a+BonmXuU0mibglnhuHDrywe72GnW6DRxJu9B164rTRJ8puDop8tpN6OGKIHyleJgj8H7IW.yYXD4pj1WrJGf1UM.MTySWCk90QC5joIZNRpoYA=="}}"`
+    );
   });
 
-  const invitation =
-    "eyJhbGciOiJFUzM4NCIsImp3ayI6eyJrZXlfb3BzIjpbInZlcmlmeSJdLCJleHQiOnRydWUsImt0eSI6IkVDIiwieCI6InRfSVF3MVRkYzRRMnJIU2MyUFJLVUVBTFk1RW5BdUVCbGhLcUIzTTJwTjlGbEQ3SHhSU01fN0NhX0x0VTU2VVQiLCJ5IjoidU9wQ1gzWkFfMG0zQS16LWluMmpXTlFhVGNYVnBfZHVfeTBzdjR0TXl4UW1lSkUxSkNtakN4ek1DR0pDel8xUSIsImNydiI6IlAtMzg0In19.eyJtZXNzYWdlSWQiOjc0MTcwOTEzNjgwNTg3NDcsInRocmVhZEpXSyI6eyJrZXlfb3BzIjpbXSwiZXh0Ijp0cnVlLCJrdHkiOiJFQyIsIngiOiIxWWFlS1RuQk9DdjRQQ3Y5NDlrTzlDTG1ZS0FCa1JmeU41em1oQkVwc1RkTW5zVzRuT2hrTXZzZFFINEtYSGw0IiwieSI6Ik4zNzhVaHkyNUZZWEpFX2E1bWtaa2FFTXQwalBSVndUcTRVTllIZEJVcE1NTkZSU0lQQ2RINmlrcUVSOVZTaVMiLCJjcnYiOiJQLTM4NCJ9LCJub3RlIjoiSGVsbG8gQm9iLCB0aGlzIGZpcnN0IG1lc3NhZ2UgaXMgcHVibGljLiIsIm5pY2tuYW1lIjoiQWxpY2UifQ.3FOza-D7Qnri-hB9c3KjJY1qymt3tHPhH6dT4IR1xx8fT3_wIzcNyC2Z1b8RjVuOHzX0sL-rFZK89D7ekPAO06KZlXzgcKPQli5fQa2u_tLMjwMSCxwDZFPkCib5qz0W" as SignedInvitation;
-
-  test("replyToInvitation", async () => {
+  test("bad password", async () => {
     const storage = new TestStorage();
-    const Bob = await Client.generateClient(storage, "B0bP@ssw0rd");
-    const reply = await Bob.replyToInvitation(invitation, "Hello Alice");
-    console.log("reply", reply);
-  }, 20000);
+    storage.setItem(`identity:${aliceThumbprint}`, aliceIdentity);
 
-  // const reply =
-  //   "eyJhbGciOiJIUzM4NCIsImVuYyI6IkEyNTZHQ00iLCJqd2siOnsia3R5IjoiRUMiLCJjcnYiOiJQLTM4NCIsIngiOiJuc1VYV2diRVR1UmZzQUlWQTZ5UnUxek41dVhQSm5Sa2M4VXNfT0Z5VDVoMllwRkQwcVRKN1E4bkhsejVQRGFDIiwieSI6IndwNXJmOGU1eVJRUTZtQUw0NGV1c0lCSTJCTWdreHRTTWlIUFZPajUzb1JUOXJkNGdMc2V0NlBodktZX0xEeW4ifX0=..W29iamVjdCBBcnJheUJ1ZmZlcl0";
+    await expect(
+      Client.loadClient(storage, aliceThumbprint, "wrong-password")
+    ).rejects.toThrowErrorMatchingInlineSnapshot(
+      `"The operation failed for an operation-specific reason"`
+    );
+  });
+
+  test("Alice and Bob all new keys", async () => {
+    const Alice = await Client.generateClient(
+      new TestStorage(),
+      "AliceP@ssw0rd"
+    );
+    Alice.setClientNickname("Alice");
+    const Bob = await Client.generateClient(new TestStorage(), "B0bP@ssw0rd");
+    Bob.setClientNickname("Bob");
+
+    const invitation = await Alice.createInvitation({
+      nickname: "Alice",
+      note: "Hello Bob, this first message is not encrypted, but is signed",
+    });
+    const toAlice = await Bob.replyToInvitation(
+      invitation,
+      "Hello Alice, this is my first message to you"
+    );
+    const aliceView = await Alice.appendThread(toAlice);
+    expect(aliceView.message).toMatchInlineSnapshot(
+      `"Hello Alice, this is my first message to you"`
+    );
+
+    const toBob = await Alice.replyToThread(
+      aliceView.threadThumbprint,
+      "Hello Bob, this is my reply to you"
+    );
+
+    const bobView = await Bob.appendThread(toBob);
+    expect(bobView.message).toMatchInlineSnapshot(
+      `"Hello Bob, this is my reply to you"`
+    );
+
+    const toAlice2 = await Bob.replyToThread(
+      bobView.threadThumbprint,
+      "Hello Alice, this is my second message to you"
+    );
+    const aliceView2 = await Alice.appendThread(toAlice2);
+    expect(aliceView2.message).toMatchInlineSnapshot(
+      `"Hello Alice, this is my second message to you"`
+    );
+  });
 
   test("deriveSharedSecret", async () => {
     const [a, b] = await Promise.all([
