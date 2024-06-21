@@ -5,6 +5,7 @@
   "main": "dist/index.js",
   "module": "dist/index.js",
   "scripts": {
+    "start": "parcel index.html",
     "test": "jest"
   },
   "author": "",
@@ -21,6 +22,7 @@
   },
   "devDependencies": {
     "@types/jest": "^29.5.12",
-    "@types/jsrsasign": "^10.5.14"
+    "@types/jsrsasign": "^10.5.14",
+    "parcel-bundler": "^1.12.5"
   }
 }

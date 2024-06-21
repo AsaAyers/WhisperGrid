@@ -7,7 +7,7 @@ import {
   b64utohex,
   rstrtohex,
 } from "jsrsasign";
-import { setNickname } from ".";
+import { setNickname } from "./index";
 import { TaggedString } from "./types";
 
 export const ecdhAlg = {

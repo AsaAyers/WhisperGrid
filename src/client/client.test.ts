@@ -1,4 +1,4 @@
-import { Client } from ".";
+import { Client } from "./index";
 import { deriveSharedSecret, exportKeyPair, importKeyPair } from "./utils";
 import { generateECDHKeyPair } from "./utils";
 import { StoredIdentity, TestStorage } from "./GridStorage";

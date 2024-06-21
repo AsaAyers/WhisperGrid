@@ -30,6 +30,15 @@ import {
   importPublicKey,
   ECDSACryptoKey,
 } from "./utils";
+const bufferToB64u = (src: Uint8Array | ArrayBuffer) =>
+  Buffer.from(src)
+    .toString("base64")
+    .replace("+", "-")
+    .replace("/", "_")
+    .replace("=", "");
+
+const b64uToBuffer = (str: string) =>
+  Buffer.from(str.replace("-", "+").replace("_", "/"), "base64");
 
 const keyNicknames = new Map<string, string>();
 export function setNickname(key: string, nickname: string) {
@@ -166,10 +175,10 @@ export class Client {
     const decryptedBuffer = await window.crypto.subtle.decrypt(
       {
         name: "AES-GCM",
-        iv: Buffer.from(selfEncrypted.payload.iv, "base64url"),
+        iv: b64uToBuffer(selfEncrypted.payload.iv),
       },
       secret,
-      Buffer.from(selfEncrypted.payload.message, "base64url")
+      b64uToBuffer(selfEncrypted.payload.message)
     );
     return new TextDecoder().decode(decryptedBuffer);
   }
@@ -198,7 +207,7 @@ export class Client {
         jwk: (await exportKeyPair(this.identityKeyPair)).publicKeyJWK,
       },
       payload: {
-        message: Buffer.from(encrypted).toString("base64url"),
+        message: bufferToB64u(encrypted),
         iv: Buffer.from(iv).toString("base64"),
         epk: jwks.publicKeyJWK,
       },
@@ -383,7 +392,8 @@ export class Client {
       payload: {
         re,
         messageId: Number(nextId).toString(16),
-        message: Buffer.from(encrypted).toString("base64url"),
+        // message: Buffer.from(encrypted).toString("base64url"),
+        message: bufferToB64u(encrypted),
         iv: Buffer.from(iv).toString("base64"),
       },
     };
@@ -411,7 +421,7 @@ export class Client {
         iv: Uint8Array.from(iv),
       },
       secret,
-      Buffer.from(replyMessage.payload.message, "base64url")
+      b64uToBuffer(replyMessage.payload.message)
     );
     invariant(
       new TextDecoder().decode(decryptedBuffer) === message,
@@ -504,7 +514,7 @@ export class Client {
     }
 
     const { secret } = await this.readThreadSecret(threadThumbprint);
-    const iv = Buffer.from(jws.payload.iv, "base64url");
+    const iv = b64uToBuffer(jws.payload.iv);
 
     let decryptedBuffer;
     try {
@@ -514,7 +524,7 @@ export class Client {
           iv: Uint8Array.from(iv),
         },
         secret,
-        Buffer.from(jws.payload.message, "base64url")
+        b64uToBuffer(jws.payload.message)
       );
     } catch (e: any) {
       throw new Error(`Error appending thread ${e?.message ?? e}`);
