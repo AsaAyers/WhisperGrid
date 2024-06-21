@@ -20,6 +20,15 @@ import {
   signJWS,
   verifyJWS,
   ecdsaAlg,
+  JWK,
+  ECDHCryptoKeyPair,
+  ECDSACryptoKeyPair,
+  exportKey,
+  Thumbprint,
+  SymmetricKey,
+  importPrivateKey,
+  importPublicKey,
+  ECDSACryptoKey,
 } from "./utils";
 
 const keyNicknames = new Map<string, string>();
@@ -57,12 +66,7 @@ export class Client {
     if (nickname) {
       setNickname(this.thumbprint, this.clientNickname!);
       setNickname(
-        await getJWKthumbprint(
-          await window.crypto.subtle.exportKey(
-            "jwk",
-            this.storageKeyPair.publicKey
-          )
-        ),
+        await getJWKthumbprint(await exportKey(this.storageKeyPair.publicKey)),
         `storage[${this.clientNickname!}]`
       );
     }
@@ -74,8 +78,8 @@ export class Client {
   constructor(
     private storage: GridStorage,
     public readonly thumbprint: string,
-    private readonly identityKeyPair: CryptoKeyPair,
-    private readonly storageKeyPair: CryptoKeyPair
+    private readonly identityKeyPair: ECDSACryptoKeyPair,
+    private readonly storageKeyPair: ECDHCryptoKeyPair
   ) {}
 
   static async generateClient(
@@ -129,7 +133,7 @@ export class Client {
       "ecdsa"
     );
 
-    const storageKeys: CryptoKeyPair = await importKeyPair(
+    const storageKeys: ECDHCryptoKeyPair = await importKeyPair(
       {
         privateKeyJWK: await decryptPrivateKey(
           storedData.storage.private,
@@ -153,13 +157,7 @@ export class Client {
       this.identityKeyPair.publicKey
     );
 
-    const epk = await window.crypto.subtle.importKey(
-      "jwk",
-      selfEncrypted.payload.epk,
-      ecdhAlg,
-      true,
-      []
-    );
+    const epk = await importPublicKey("ECDH", selfEncrypted.payload.epk);
 
     const secret = await deriveSharedSecret(
       this.storageKeyPair.privateKey,
@@ -274,10 +272,10 @@ export class Client {
 
   private async startThread(
     signedInvite: SignedInvitation,
-    theirEPKJWK: JsonWebKey,
-    theirSignature: JsonWebKey,
+    theirEPKJWK: JWK<"ECDH", "public">,
+    theirSignature: JWK<"ECDSA", "public">,
     messageId: string,
-    myThumbprint?: string
+    myThumbprint?: Thumbprint<"ECDH">
   ): Promise<string> {
     if (!myThumbprint) {
       const { thumbprint } = await this.makeThreadKeys();
@@ -314,19 +312,15 @@ export class Client {
     return { thumbprint, jwks };
   }
 
-  async readThreadSecret(threadThumbprint: string) {
+  async readThreadSecret(threadThumbprint: string): Promise<{
+    secret: SymmetricKey;
+    epk: JWK<"ECDH", "public">;
+  }> {
     const threadInfo = this.storage.getItem(`thread-info:${threadThumbprint}`);
     invariant(threadInfo, "Thread not found");
 
     const publicJWK = threadInfo.theirEPK;
     invariant(publicJWK, `Public key not found ${threadInfo.theirEPK}`);
-    const publicKey = await window.crypto.subtle.importKey(
-      "jwk",
-      publicJWK,
-      ecdhAlg,
-      true,
-      []
-    );
 
     const encryptedBackup = this.storage.getItem(
       `encrypted-thread-key:${threadInfo.myThumbprint}`
@@ -336,20 +330,18 @@ export class Client {
       `Thread key not found ${threadInfo.myThumbprint}`
     );
 
-    const jwks: Awaited<ReturnType<typeof exportKeyPair>> = JSON.parse(
+    type JWKPair = {
+      privateKeyJWK: JWK<"ECDH", "private">;
+      publicKeyJWK: JWK<"ECDH", "public">;
+    };
+    const jwks: JWKPair = JSON.parse(
       await this.decryptFromSelf(encryptedBackup)
     );
-
-    const privateKey = await window.crypto.subtle.importKey(
-      "jwk",
-      jwks.privateKeyJWK,
-      ecdhAlg,
-      true,
-      ["deriveKey", "deriveBits"]
-    );
+    const pKey = await importPublicKey("ECDH", publicJWK);
+    const privateKey = await importPrivateKey("ECDH", jwks.privateKeyJWK);
 
     return {
-      secret: await deriveSharedSecret(privateKey, publicKey),
+      secret: await deriveSharedSecret(privateKey, pKey),
       epk: jwks.publicKeyJWK,
     };
   }
@@ -478,20 +470,14 @@ export class Client {
     invariant(threadInfo, "Thread not found");
 
     if (!(await verifyJWS(encryptedMessage))) {
-      let pubKey = null;
+      let pubKey: null | ECDSACryptoKey<"public"> = null;
       let expectedThumbprint = null;
       if (!jws.header.jwk && jws.payload.re) {
         if (jws.payload.re === threadInfo.myThumbprint) {
           expectedThumbprint = await getJWKthumbprint(
             threadInfo.theirSignature
           );
-          pubKey = await window.crypto.subtle.importKey(
-            "jwk",
-            threadInfo.theirSignature,
-            ecdsaAlg,
-            true,
-            ["verify"]
-          );
+          pubKey = await importPublicKey("ECDSA", threadInfo.theirSignature);
         }
         if (jws.payload.re === (await getJWKthumbprint(threadInfo.theirEPK))) {
           pubKey = this.identityKeyPair.publicKey;

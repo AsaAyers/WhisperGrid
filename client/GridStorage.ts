@@ -1,5 +1,6 @@
 import { KJUR } from "jsrsasign";
 import { SignedInvitation, TaggedString } from "./types";
+import { EncryptedPrivateKey, JWK, Thumbprint } from "./utils";
 
 export type GridStorage = {
   hasItem(key: string): boolean;
@@ -19,33 +20,35 @@ export type GridStorage = {
     value: V extends Array<any> ? V[number] : never
   ) => void;
 };
+export type StoredIdentity = {
+  id: {
+    jwk: JWK<"ECDSA", "public">;
+    private: EncryptedPrivateKey<"ECDSA">;
+  };
+  storage: {
+    jwk: JWK<"ECDH", "public">;
+    private: EncryptedPrivateKey<"ECDH">;
+  };
+};
+
 type StoredDataTypes =
   | {
       type: "identity";
-      data: {
-        id: {
-          jwk: JsonWebKey;
-          private: string;
-        };
-        storage: {
-          jwk: JsonWebKey;
-          private: string;
-        };
-      };
+      data: StoredIdentity;
     }
   | {
       type: "thread-info";
       data: {
         signedInvite: SignedInvitation;
-        myThumbprint: string;
-        theirEPK: JsonWebKey;
-        theirSignature: JsonWebKey;
+        myThumbprint: Thumbprint<"ECDH">;
+        theirEPK: JWK<"ECDH", "public">;
+        theirSignature: JWK<"ECDSA", "public">;
       };
     }
   | { type: "invitation"; data: SignedInvitation }
   | { type: "messages"; data: Array<string> }
   | { type: "encrypted-thread-key"; data: string }
-  | { type: "public-key"; data: JsonWebKey }
+  | { type: "public-key"; data: JWK<"ECDSA" | "ECDH", "public"> }
   | { type: "message-id"; data: string }
   | { type: "threads"; data: Array<string> };
 

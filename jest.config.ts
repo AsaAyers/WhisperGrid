@@ -11,6 +11,9 @@ const config: Config = {
 
   // Stop running tests after `n` failures
   // bail: 0,
+  transform: {
+    "^.+\\.tsx?$": ["ts-jest", { isolatedModules: true }],
+  },
 
   // The directory where Jest should store its cached dependency information
   // cacheDirectory: "/tmp/jest_rs",

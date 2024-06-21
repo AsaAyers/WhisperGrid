@@ -1,7 +1,7 @@
 import { Client } from ".";
 import { deriveSharedSecret, exportKeyPair, importKeyPair } from "./utils";
 import { generateECDHKeyPair } from "./utils";
-import { TestStorage } from "./GridStorage";
+import { StoredIdentity, TestStorage } from "./GridStorage";
 import crypto from "crypto";
 
 import { debuglog } from "util";
@@ -13,7 +13,7 @@ global.window ??= {} as any;
 // @ts-expect-error
 window.crypto = crypto;
 
-const aliceIdentity = {
+const aliceIdentity: StoredIdentity = {
   id: {
     jwk: {
       key_ops: ["verify"],
@@ -38,7 +38,7 @@ const aliceIdentity = {
     private:
       "edfoyVlSgteEvufG6SSlyNqnYKY5pQpF0uwMv/LcHEVSE9jzMAxG4nPSEv5NjW30c0ImgSJfZ4uCERQbQrpHt7SR5VrM+XI8nlV84L7X2r40Z9LtLgtQbq7nYHAF5B+oIfTurGkQKFHGhbTpkH8YBl/jgRsG3m9zIVlMovyE9TOft/+n3p5QAZPgAv3J0tkHPv6VffgatRHm2A1qXySA3U9RUcGV9pJ+dPRUhS5jkJdejBrq/hq2iWbtVx33Oa289Hq7Bydh5xGB9Ff+yxdJJ7RC1LDYWgs4x+E+DVaobTdbi1Du6Kal5DcICe7UVIvuoag3YK5GKOuj4a+BonmXuU0mibglnhuHDrywe72GnW6DRxJu9B164rTRJ8puDop8tpN6OGKIHyleJgj8H7IW.yYXD4pj1WrJGf1UM.MTySWCk90QC5joIZNRpoYA==",
   },
-};
+} as any;
 const aliceThumbprint =
   "whisper-grid://pMj2HmW01bub4-s0XUuIyB-REcAaI7s7oIhpBlDz6hA";
 

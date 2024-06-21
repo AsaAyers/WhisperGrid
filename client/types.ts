@@ -1,4 +1,4 @@
-import { KJUR } from "jsrsasign";
+import { JWK } from "./utils";
 
 const objectType = Symbol("objectType");
 export type TaggedString<T extends string | object> = string & {
@@ -10,11 +10,11 @@ export type SignedInvitation = TaggedString<Invitation>;
 export type Invitation = {
   header: {
     alg: "ES384";
-    jwk: JsonWebKey;
+    jwk: JWK<"ECDSA", "public">;
   };
   payload: {
     messageId: string;
-    epk: JsonWebKey;
+    epk: JWK<"ECDH", "public">;
     note?: string;
     nickname?: string;
   };
@@ -23,21 +23,21 @@ export type Invitation = {
 export type SelfEncrypted = {
   header: {
     alg: "ES384";
-    jwk: JsonWebKey;
+    jwk: JWK<"ECDSA", "public">;
   };
   payload: {
     message: string;
     iv: string;
-    epk: JsonWebKey;
+    epk: JWK<"ECDH", "public">;
   };
 };
 
 export type ReplyMessage = {
-  header: { alg: "ES384"; jwk?: JsonWebKey };
+  header: { alg: "ES384"; jwk?: JWK<"ECDSA", "public"> };
   payload: {
     re: string;
     messageId: string;
-    epk?: JsonWebKey;
+    epk?: JWK<"ECDH", "public">;
     message: string;
     iv: string;
   };
