@@ -52,7 +52,7 @@ type StoredDataTypes =
   | { type: "encrypted-thread-key"; data: string }
   | { type: "public-key"; data: JWK<"ECDSA" | "ECDH", "public"> }
   | { type: "message-id"; data: string }
-  | { type: "threads"; data: Array<string> };
+  | { type: "threads"; data: Array<Thumbprint<"ECDH"> };
 
 export class TestStorage implements GridStorage {
   private data = new Map<string, any>();

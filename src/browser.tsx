@@ -1,8 +1,8 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import React from "react";
 import ReactDOM from "react-dom/client";
-import { Client, GridStorage } from "./index";
+import { GridStorage } from "./index";
 import { TestStorage } from "./client/GridStorage";
-import { Card, Checkbox } from "antd";
 import { WhisperGridDemo } from "./WhisperGridDemo";
 
 export class LocalGridStorage extends TestStorage {
@@ -31,22 +31,6 @@ export class LocalGridStorage extends TestStorage {
   setItem: GridStorage["setItem"] = (key, value) => {
     localStorage.setItem(key, JSON.stringify(value))
   };
-}
-
-export const useLocalGridStorage = () => {
-  const [storage] = React.useState(() => {
-    return new LocalGridStorage()
-  })
-  const [client, setClient] = React.useState(null)
-  const [thumbprint, setThumbprint] = React.useState(
-    () => localStorage.getItem("thumbprint"))
-
-  // Client.generateClient(storage, password)
-  // Client.loadClient(storage, thumbprint, password)
-  const setup = (password: string, thumbprint?: string) => {
-
-  }
-
 }
 
 

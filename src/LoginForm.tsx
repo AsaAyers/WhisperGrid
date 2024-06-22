@@ -46,6 +46,20 @@ export function LoginForm({ initializedClient }: Props) {
     }
   }, [])
 
+  React.useEffect(() => {
+    const password = localStorage.getItem("unprotected-password-for-testing")
+    if (password) {
+      const thumbprint = localStorage.getItem("thumbprint")
+      if (thumbprint && password) {
+        onFinish({
+          mode: 'open',
+          thumbprint,
+          password
+        })
+      }
+    }
+  }, [])
+
 
   return (
     <Flex
@@ -67,7 +81,7 @@ export function LoginForm({ initializedClient }: Props) {
 
       <Form
         form={form}
-        name="basic"
+        name="login"
         labelCol={{ span: 8 }}
         wrapperCol={{ span: 16 }}
         style={{ maxWidth: 600 }}

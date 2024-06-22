@@ -1,4 +1,4 @@
-import { JWK } from "./utils";
+import { JWK, Thumbprint } from "./utils";
 
 const objectType = Symbol("objectType");
 export type TaggedString<T extends string | object> = string & {
@@ -16,7 +16,7 @@ export type Invitation = {
     messageId: string;
     epk: JWK<"ECDH", "public">;
     note?: string;
-    nickname?: string;
+    nickname: string;
   };
 };
 
@@ -35,7 +35,8 @@ export type SelfEncrypted = {
 export type ReplyMessage = {
   header: { alg: "ES384"; jwk?: JWK<"ECDSA", "public"> };
   payload: {
-    re: string;
+    re: Thumbprint;
+    nickname?: string;
     messageId: string;
     epk?: JWK<"ECDH", "public">;
     message: string;
