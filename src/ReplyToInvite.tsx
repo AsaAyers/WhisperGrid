@@ -100,7 +100,9 @@ export function ReplyToInvite({ client }: { client: Client; }): React.ReactNode 
       )}
 
       {invitation && invitationString && (
-        <DisplayInvite invitation={invitation} signedInvite={invitationString as SignedInvitation} />
+        <DisplayInvite
+          client={client}
+          invitation={invitation} signedInvite={invitationString as SignedInvitation} />
       )}
 
     </Flex>

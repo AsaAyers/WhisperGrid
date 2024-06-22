@@ -133,6 +133,7 @@ export function WhisperGridDemo() {
             )}
             {selectedInvite && (
               <DisplayInvite
+                client={client}
                 invitation={selectedInvite.invitation} signedInvite={selectedInvite.signedInvite} />
             )}
             {selectedThread && (

@@ -239,7 +239,7 @@ export class Client {
     nickname,
   }: {
     note?: string;
-    nickname?: string;
+    nickname: string;
   }): Promise<SignedInvitation> {
     const { thumbprint, jwks } = await this.makeThreadKeys();
 
@@ -445,11 +445,11 @@ export class Client {
     return encryptedJWS;
   }
 
-  private async appendThread(
+  public async appendThread(
     encryptedMessage: string,
     threadThumbprint?: Thumbprint
   ): Promise<{
-    threadThumbprint: string;
+    threadThumbprint: Thumbprint;
     message: {
       message: string;
       type: "invite" | "message";
