@@ -1,10 +1,11 @@
-import { KJUR } from "jsrsasign";
-import { SignedInvitation, TaggedString } from "./types";
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import { SignedInvitation } from "./types";
 import { EncryptedPrivateKey, JWK, Thumbprint } from "./utils";
 
+type Key = `${StoredDataTypes["type"]}:${string}`;
 export type GridStorage = {
-  hasItem(key: string): boolean;
-  removeItem: (key: `${StoredDataTypes["type"]}:${string}`) => null;
+  hasItem(key: Key): boolean;
+  removeItem: (key: Key) => null;
   getItem: <Type extends StoredDataTypes["type"]>(
     key: `${Type}:${string}`
   ) => Extract<StoredDataTypes, { type: Type }>["data"] | null;
@@ -46,6 +47,7 @@ type StoredDataTypes =
       };
     }
   | { type: "invitation"; data: SignedInvitation }
+  | { type: "invitations"; data: Thumbprint<"ECDH">[] }
   | { type: "messages"; data: Array<string> }
   | { type: "encrypted-thread-key"; data: string }
   | { type: "public-key"; data: JWK<"ECDSA" | "ECDH", "public"> }
@@ -59,11 +61,11 @@ export class TestStorage implements GridStorage {
     return Object.fromEntries(this.data.entries());
   }
 
-  hasItem(key: string): boolean {
+  hasItem(key: Key): boolean {
     return this.data.has(key);
   }
 
-  removeItem(key: `${StoredDataTypes["type"]}:${string}`) {
+  removeItem(key: Key) {
     this.data.delete(key);
     return null;
   }
@@ -77,11 +79,11 @@ export class TestStorage implements GridStorage {
   };
 
   appendItem: GridStorage["appendItem"] = (key, value) => {
-    let arr = this.data.get(key);
+    let arr: any = this.getItem(key);
     if (!Array.isArray(arr)) {
       arr = [];
     }
     arr.push(value);
-    this.data.set(key, arr);
+    this.setItem(key, arr);
   };
 }

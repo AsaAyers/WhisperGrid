@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { GridStorage } from "./GridStorage";
 import {
   SignedInvitation,
@@ -8,7 +9,6 @@ import {
 import {
   generateECDSAKeyPair,
   generateECDHKeyPair,
-  ecdhAlg,
   exportKeyPair,
   encryptPrivateKey,
   getJWKthumbprint,
@@ -19,7 +19,6 @@ import {
   deriveSharedSecret,
   signJWS,
   verifyJWS,
-  ecdsaAlg,
   JWK,
   ECDHCryptoKeyPair,
   ECDSACryptoKeyPair,
@@ -259,6 +258,7 @@ export class Client {
     )) as SignedInvitation;
 
     this.storage.setItem(`invitation:${thumbprint}`, signedInvitation);
+    this.storage.appendItem(`invitations:${this.thumbprint}`, thumbprint);
     return signedInvitation;
   }
 
@@ -309,6 +309,12 @@ export class Client {
 
     return myThumbprint;
   }
+
+  getThreads = () => this.storage.getItem(`threads:${this.thumbprint}`) ?? [];
+  getInvitations = () =>
+    (this.storage.getItem(`invitations:${this.thumbprint}`) ?? []).map(
+      (t) => this.storage.getItem(`invitation:${t}`)!
+    );
 
   private async makeThreadKeys() {
     const threadKey = await generateECDHKeyPair();
@@ -371,10 +377,10 @@ export class Client {
       new TextEncoder().encode(message)
     );
 
-    let messageId = this.storage.getItem(`message-id:${threadThumbprint}`);
+    const messageId = this.storage.getItem(`message-id:${threadThumbprint}`);
     invariant(typeof messageId === "string", `Invalid message id ${messageId}`);
 
-    let nextId = parseInt(messageId, 16) + 1;
+    const nextId = parseInt(messageId, 16) + 1;
     // if (nextId >= MAX_MESSAGE_ID) {
     //   nextId = 1;
     // }
@@ -481,22 +487,12 @@ export class Client {
 
     if (!(await verifyJWS(encryptedMessage))) {
       let pubKey: null | ECDSACryptoKey<"public"> = null;
-      let expectedThumbprint = null;
       if (!jws.header.jwk && jws.payload.re) {
         if (jws.payload.re === threadInfo.myThumbprint) {
-          expectedThumbprint = await getJWKthumbprint(
-            threadInfo.theirSignature
-          );
           pubKey = await importPublicKey("ECDSA", threadInfo.theirSignature);
         }
         if (jws.payload.re === (await getJWKthumbprint(threadInfo.theirEPK))) {
           pubKey = this.identityKeyPair.publicKey;
-          expectedThumbprint = await getJWKthumbprint(
-            (
-              await exportKeyPair(this.identityKeyPair)
-            ).publicKeyJWK
-          );
-        } else {
         }
       }
       invariant(pubKey != null, "Unable to determine public key");

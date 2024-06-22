@@ -167,7 +167,7 @@ export async function getJWKthumbprint<T = AlgorithmType>(
   );
   let alg = jwk.alg ? `${jwk.alg}/` : "";
 
-  return `whisper-grid://${alg}${hextob64u(ArrayBuffertohex(sha256))}` as any;
+  return `id-${alg}${hextob64u(ArrayBuffertohex(sha256))}` as any;
 }
 
 export function exportKey<T = AlgorithmType, V = Visibility>(
