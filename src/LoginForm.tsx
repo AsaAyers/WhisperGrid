@@ -2,6 +2,7 @@ import React from "react";
 import { Button, Flex, Form, FormProps, Input, Radio } from "antd";
 import { Client } from "./client";
 import { LocalGridStorage } from "./browser";
+import { useClientSetup } from "./ClientProvider";
 
 type FieldType = {
   mode: 'open'
@@ -21,15 +22,15 @@ export function LoginForm({ initializedClient }: Props) {
   const [form] = Form.useForm<FieldType>();
   const mode = Form.useWatch('mode', form);
 
-  const [storage] = React.useState(() => new LocalGridStorage())
+  const { generateClient, loadClient } = useClientSetup()
 
   const onFinish: FormProps<FieldType>['onFinish'] = async (values) => {
     let client
     if (values.mode === 'create') {
-      client = await Client.generateClient(storage, values.password)
+      client = await generateClient(values.password)
       localStorage.setItem("thumbprint", client.thumbprint)
     } else {
-      client = await Client.loadClient(storage, values.thumbprint, values.password)
+      client = await loadClient(values.thumbprint, values.password)
     }
     initializedClient(client)
   };

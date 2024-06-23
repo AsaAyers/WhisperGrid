@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { Client } from "./index";
 import { deriveSharedSecret, exportKeyPair, importKeyPair } from "./utils";
 import { generateECDHKeyPair } from "./utils";
@@ -5,12 +6,11 @@ import { StoredIdentity, TestStorage } from "./GridStorage";
 import crypto from "crypto";
 
 import { debuglog } from "util";
-import { SignedInvitation } from "./types";
 
 const log = debuglog("whisper-grid:test:client");
 
 global.window ??= {} as any;
-// @ts-expect-error
+// @ts-expect-error This is a hack to make this look more like the browser for testing
 window.crypto = crypto;
 
 const aliceIdentity: StoredIdentity = {

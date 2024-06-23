@@ -1,10 +1,13 @@
 import React from "react";
 import { Button, Card, Form, FormProps, Input } from "antd";
-import { Client } from "./client";
 import { getJWKthumbprint, parseJWS } from "./client/utils";
 import { Invitation } from "./client/types";
+import { useClient } from "./ClientProvider";
+import { useNavigate } from "react-router-dom";
 
-export function CreateInvitation({ client, newInvitationThumbprint }: CreateInvitationProps) {
+export function CreateInvitation() {
+  const client = useClient()
+  const navigate = useNavigate()
   type FieldType = {
     note?: string;
     nickname: string;
@@ -17,21 +20,18 @@ export function CreateInvitation({ client, newInvitationThumbprint }: CreateInvi
       nickname: values.nickname
     });
     const invite = await parseJWS<Invitation>(signedInvite);
-    newInvitationThumbprint(await getJWKthumbprint(invite.payload.epk));
+    const thumbprint = await getJWKthumbprint(invite.payload.epk)
+    navigate(`/invitation/${thumbprint}`)
   };
   return (
-    <Form form={form}
-
-      onFinish={onFinish}
-    >
+    <Form form={form} onFinish={onFinish} >
       <Card
         actions={[
-          <Button type="primary" htmlType="submit">
+          <Button key="create" type="primary" htmlType="submit">
             Create Invitation
           </Button>
         ]}
       >
-
         <Form.Item<FieldType>
           label="Nickname"
           name="nickname"
@@ -45,12 +45,7 @@ export function CreateInvitation({ client, newInvitationThumbprint }: CreateInvi
         >
           <Input />
         </Form.Item>
-
       </Card>
     </Form>
   );
 }
-type CreateInvitationProps = {
-  client: Client;
-  newInvitationThumbprint: (invitation: string) => void;
-};

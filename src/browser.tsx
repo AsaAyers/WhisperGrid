@@ -4,6 +4,13 @@ import ReactDOM from "react-dom/client";
 import { GridStorage } from "./index";
 import { TestStorage } from "./client/GridStorage";
 import { WhisperGridDemo } from "./WhisperGridDemo";
+import { RouterProvider, createBrowserRouter } from "react-router-dom";
+import { CreateInvitation } from "./CreateInvitation";
+import { ClientProvider, useClient, useClientSetup } from "./ClientProvider";
+import { DisplayInvite, InviteRoute } from "./DisplayInvite";
+import { Alert, Button, Flex } from "antd";
+import { ReplyToInvite } from "./ReplyToInvite";
+import { ThreadView } from "./ThreadView";
 
 export class LocalGridStorage extends TestStorage {
   /**
@@ -32,7 +39,69 @@ export class LocalGridStorage extends TestStorage {
     localStorage.setItem(key, JSON.stringify(value))
   };
 }
+const router = createBrowserRouter([
+  {
+    path: "/",
+    element: <WhisperGridDemo />,
+    errorElement: (
+      <Flex vertical align="center">
+        <Alert
+          message="Not Found"
+          description="404 Not Found"
+          type="error"
+          showIcon
+        />
+      </Flex>
+    ),
+    children: [
+      {
+        path: 'create',
+        element: <CreateInvitation />
+      },
+      {
+        path: 'invitation/:thumbprint',
+        element: <InviteRoute />
+      },
+      {
+        path: 'thread/:thumbprint',
+        element: <ThreadView />
+      },
+      {
+        path: 'reply',
+        element: <ReplyToInvite />
+      },
+      {
+        path: '/',
+        element: <HomePage />
+      },
+    ]
+  },
+]);
 
+
+function HomePage() {
+  const { client } = useClientSetup();
+
+  React.useEffect(() => {
+
+  }, [])
+
+  return (
+    <Flex vertical>
+      <h1>Whisper Grid</h1>
+      <Alert
+        message="Warning"
+        description="This is experimental and has not been evaluated for security. Do not use this for anything important."
+        type="warning"
+        showIcon
+      />
+      <p>
+        Whisper Grid is a decentralized messaging system that uses a key stored
+        in your browser to make sign and encrypt messages.
+      </p>
+    </Flex>
+  )
+}
 
 const root = ReactDOM.createRoot(
   document.getElementById("root")!
@@ -40,7 +109,9 @@ const root = ReactDOM.createRoot(
 
 root.render(
   <React.StrictMode>
-    <WhisperGridDemo />
+    <ClientProvider>
+      <RouterProvider router={router} />
+    </ClientProvider>
   </React.StrictMode>
 )
 

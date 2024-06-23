@@ -1,20 +1,16 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import React from "react";
-import { Avatar, Card, Flex, Layout, List, Menu, Typography } from "antd";
-import { Content } from "antd/es/layout/layout";
+import { Flex, Layout, Menu, Typography } from "antd";
 import { LoginForm } from "./LoginForm";
-import { Client, DecryptedMessageType } from "./client";
-import Sider from "antd/es/layout/Sider";
+import { Client } from "./client";
 import { ItemType, MenuItemType } from "antd/es/menu/interface";
 import { PlusOutlined, SendOutlined, UserAddOutlined, UserOutlined } from "@ant-design/icons";
-import { Thumbprint, getJWKthumbprint, parseJWS } from "./client/utils";
+import { getJWKthumbprint, parseJWS } from "./client/utils";
 import { Invitation, SignedInvitation } from "./client/types";
-import { CreateInvitation } from "./CreateInvitation";
-import { DisplayInvite } from "./DisplayInvite";
-import { ReplyToInvite } from "./ReplyToInvite";
+import { Outlet, useNavigate } from "react-router-dom";
 
 export function WhisperGridDemo() {
   const [client, setClient] = React.useState<null | Client>(null)
-  const [selectedAction, setSelectedAction] = React.useState<string | 'create' | 'reply' | null>('create')
   const [invitations, setInvitations] = React.useState<Array<{
     key: string,
     invitation: Invitation
@@ -41,12 +37,6 @@ export function WhisperGridDemo() {
       })
 
       Promise.all(promises).then((invites) => {
-        setSelectedAction((thread) => {
-          const threads = client.getThreads()
-          if (threads[0] && thread === 'create') return threads[0]
-          if (thread === 'create' && invites[0]?.key) return invites[0].key
-          return thread
-        })
         setInvitations(invites)
       })
     }
@@ -57,7 +47,7 @@ export function WhisperGridDemo() {
     if (client) {
       const options: ItemType<MenuItemType>[] = client.getThreads().map((key) => {
         return {
-          key,
+          key: `/thread/${key}`,
           icon: React.createElement(UserOutlined),
           label: key,
         }
@@ -65,20 +55,20 @@ export function WhisperGridDemo() {
 
       invitations.map(({ key, label }) => {
         options.push({
-          key,
+          key: `/invitation/${key}`,
           icon: React.createElement(UserAddOutlined),
           label,
 
         })
       })
       options.unshift({
-        key: 'reply',
+        key: '/reply',
         icon: React.createElement(SendOutlined),
         label: 'Reply to invite',
       })
 
       options.unshift({
-        key: 'create',
+        key: '/create',
         icon: React.createElement(PlusOutlined),
         label: 'Create Thread',
       })
@@ -87,20 +77,13 @@ export function WhisperGridDemo() {
     return []
   }, [client, invitations])
 
-  const selectedInvite = React.useMemo(
-    () => invitations.find(({ key }) => key === selectedAction),
-    [selectedAction, invitations]
-  )
 
-  const selectedThread = React.useMemo(
-    () => client?.getThreads().find((key) => key === selectedAction),
-    [selectedAction, client]
-  )
+  const navigate = useNavigate()
 
   return (
     <Layout hasSider={client != null}>
       {client && (
-        <Sider width={200} >
+        <Layout.Sider width={200} >
           <Flex>
             <Typography.Text style={{ color: 'white', }}>
               Whisper Grid
@@ -110,39 +93,22 @@ export function WhisperGridDemo() {
             theme="dark"
             mode="inline"
             onClick={(e) => {
-              setSelectedAction(e.key)
+              navigate(e.key)
             }}
             items={items} />
-        </Sider>
+        </Layout.Sider>
       )}
-      <Content style={{ overflow: 'auto' }}>
+      <Layout.Content style={{ overflow: 'auto' }}>
         {!client && (
           <LoginForm initializedClient={(c) => setClient(c)} />
         )}
         {client && (
           <Flex vertical align="center">
-            {selectedAction === 'create' && (
-              <CreateInvitation client={client}
-                newInvitationThumbprint={(invitation) => {
-                  setSelectedAction(invitation)
-                }}
-              />
-            )}
-            {selectedAction === 'reply' && (
-              <ReplyToInvite client={client} />
-            )}
-            {selectedInvite && (
-              <DisplayInvite
-                client={client}
-                invitation={selectedInvite.invitation} signedInvite={selectedInvite.signedInvite} />
-            )}
-            {selectedThread && (
-              <ThreadView client={client} thumbprint={selectedThread} />
-            )}
+            <Outlet />
           </Flex>
         )}
 
-      </Content>
+      </Layout.Content>
     </Layout>
   );
 }
@@ -150,71 +116,4 @@ export function WhisperGridDemo() {
 
 
 
-function ThreadView({ thumbprint, client }: { client: Client, thumbprint: Thumbprint }): React.ReactNode {
-  const thread = React.useMemo(() => {
-    return client.getEncryptedThread(thumbprint)
-  }, [thumbprint])
-
-  return (
-    <Flex vertical gap="small" style={{ maxWidth: 600 }} >
-      <List
-        size="small"
-        header={
-          <Typography.Title>
-            Thread {thumbprint}
-          </Typography.Title>
-        }
-        bordered
-        dataSource={thread ?? []}
-        renderItem={(message) => (
-          <MessageCard message={message}
-            client={client} thumbprint={thumbprint}
-          />
-        )} />
-    </Flex>
-  )
-}
-
-function MessageCard({ message, client, thumbprint }: {
-  message: string
-  client: Client
-  thumbprint: Thumbprint
-}): React.ReactNode {
-  const [decryptedMessage, setDecryptedMessage] = React.useState<DecryptedMessageType | null>(null)
-  const [showDecrypted, setShowDecrypted] = React.useState<boolean>(true)
-
-  React.useEffect(() => {
-    client.decryptMessage(thumbprint, message).then((decrypted) => {
-      setDecryptedMessage(decrypted)
-    })
-  }, [])
-
-
-  return (
-    <Card actions={[
-      <Typography.Link key="encrypted" onClick={() => setShowDecrypted((s) => !s)}>
-        {showDecrypted && decryptedMessage ? 'Show' : 'Hide'} Encrypted
-      </Typography.Link>
-
-    ]}>
-      <Avatar
-        icon={<UserOutlined />}
-        style={{ backgroundColor: '#87d068' }}
-        size="small" />
-      {decryptedMessage?.from}
-
-
-      {showDecrypted && decryptedMessage ? (
-        <Typography.Paragraph style={{ whiteSpace: 'pre-wrap' }} >
-          {decryptedMessage.message}
-        </Typography.Paragraph>
-      ) : (
-        <Typography.Paragraph code copyable ellipsis={{
-          expandable: true, rows: 3
-        }}>
-          {message}
-        </Typography.Paragraph>
-      )}
-    </Card>)
-}
 

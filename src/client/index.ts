@@ -323,6 +323,10 @@ export class Client {
       (t) => this.storage.getItem(`invitation:${t}`)!
     );
 
+  getInvitation(thumbprint: string) {
+    return this.storage.getItem(`invitation:${thumbprint}`);
+  }
+
   private async makeThreadKeys() {
     const threadKey = await generateECDHKeyPair();
     const jwks = await exportKeyPair(threadKey);

@@ -3,12 +3,40 @@ import { Anchor, Button, Card, Flex, Modal, Space, Typography } from "antd";
 import { Invitation, SignedInvitation } from "./client/types";
 import TextArea from "antd/es/input/TextArea";
 import { Client } from "./client";
+import { useClient } from "./ClientProvider";
+import { useParams } from "react-router";
+import { invariant, parseJWS } from "./client/utils";
+import { useNavigate } from "react-router-dom";
 
 type Props = {
   invitation: Invitation;
   signedInvite: SignedInvitation;
   client: Client
 };
+
+export function InviteRoute() {
+  const client = useClient()
+  const { thumbprint } = useParams()
+  invariant(thumbprint, "Thumbprint is required")
+
+  const [invitation, setInvitation] = React.useState<Invitation | null>(null)
+  const signedInvite = React.useMemo(() =>
+    client.getInvitation(thumbprint), []
+  )
+
+  React.useEffect(() => {
+    if (signedInvite) {
+      parseJWS(signedInvite).then((i) => setInvitation(i))
+    }
+  }, [signedInvite])
+
+
+  if (invitation && signedInvite) {
+    return <DisplayInvite invitation={invitation} signedInvite={signedInvite} client={client} />
+  }
+
+  return null
+}
 
 export function DisplayInvite({
   signedInvite, invitation, client,
@@ -61,6 +89,7 @@ export function DisplayInvite({
 
 function DecryptReply({ client }: { client: Client }) {
   const [showDecryptionModal, setShowDecryptionModal] = React.useState(false);
+  const navigate = useNavigate()
 
 
   return (
@@ -80,8 +109,7 @@ function DecryptReply({ client }: { client: Client }) {
           onChange={(e) => {
             client.appendThread(e.target.value)
               .then((result) => {
-                console.log(result)
-
+                navigate(`/thread/${result.threadThumbprint}`)
               }).catch(() => {
                 // ignore errors
               })

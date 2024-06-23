@@ -20,6 +20,7 @@
     "jsrsasign-util": "^1.0.5",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
+    "react-router-dom": "^6.23.1",
     "ts-jest": "^29.1.4",
     "ts-node": "^10.9.2",
     "typescript": "^5.4.5"
@@ -31,7 +32,7 @@
     "@types/jsrsasign": "^10.5.14",
     "@types/react": "^18.3.3",
     "@types/react-dom": "^18.3.0",
-    "eslint": "^9.5.0",
+    "eslint": "^8.57.0",
     "eslint-plugin-react": "^7.34.3",
     "globals": "^15.6.0",
     "parcel-bundler": "^1.12.5",

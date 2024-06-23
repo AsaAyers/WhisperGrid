@@ -1,12 +1,13 @@
 import React from "react";
 import { Button, Flex, Form, FormProps, Input, Typography } from "antd";
-import { Client } from "./client";
 import { parseJWS } from "./client/utils";
 import { Invitation, SignedInvitation } from "./client/types";
 import { DisplayInvite } from "./DisplayInvite";
 import TextArea from "antd/es/input/TextArea";
+import { useClient } from "./ClientProvider";
 
-export function ReplyToInvite({ client }: { client: Client; }): React.ReactNode {
+export function ReplyToInvite(): React.ReactNode {
+  const client = useClient();
   const [form] = Form.useForm<FieldType>();
   type FieldType = {
     invitationString?: SignedInvitation;
