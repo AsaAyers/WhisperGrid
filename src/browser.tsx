@@ -39,6 +39,11 @@ export class LocalGridStorage extends TestStorage {
     localStorage.setItem(key, JSON.stringify(value))
   };
 }
+
+const basename = location.pathname.startsWith("/WhisperGrid")
+  ? '/WhisperGrid'
+  : undefined;
+
 const router = createBrowserRouter([
   {
     path: "/",
@@ -76,7 +81,9 @@ const router = createBrowserRouter([
       },
     ]
   },
-]);
+], {
+  basename,
+});
 
 
 function HomePage() {
