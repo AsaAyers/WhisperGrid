@@ -6,6 +6,15 @@ import { LocalGridStorage } from "./browser";
 
 export function ClientProvider(props: React.PropsWithChildren) {
   const [client, setClient] = React.useState<undefined | Client>(undefined);
+  const [clientUpdateKey, setClientUpdateKey] = React.useState(0);
+
+  React.useEffect(() => {
+    if (client) {
+      client.subscribe(() => {
+        setClientUpdateKey((k) => k + 1 % 1000000);
+      });
+    }
+  }, [])
 
   const generateClient = React.useCallback((password: string) => {
     const storage = new LocalGridStorage();
@@ -27,14 +36,27 @@ export function ClientProvider(props: React.PropsWithChildren) {
   }, []);
 
   const value = React.useMemo(() => {
+    if (clientUpdateKey > -1) {
+      // This hook needs to run any time this changes.
+      console.log({ clientUpdateKey })
+    }
     return {
       generateClient,
       loadClient,
-      client,
+      // Construct a new object on each update to make sure React hooks call
+      // functions to get updates.
+      client: client ? {
+        createInvitation: client.createInvitation.bind(client),
+        getInvitation: client.getInvitation.bind(client),
+        appendThread: client.appendThread.bind(client),
+        replyToInvitation: client.replyToInvitation.bind(client),
+        replyToThread: client.replyToThread.bind(client),
+        getEncryptedThread: client.getEncryptedThread.bind(client),
+        decryptMessage: client.decryptMessage.bind(client),
+      } : undefined,
     };
-  }, [client, loadClient, generateClient]);
+  }, [client, loadClient, generateClient, clientUpdateKey]);
 
-  console.log('provideClient', Boolean(client))
   return (
     <clientContext.Provider value={value}>
       {props.children}
@@ -42,7 +64,14 @@ export function ClientProvider(props: React.PropsWithChildren) {
   );
 }
 const clientContext = React.createContext<null | {
-  client?: Client;
+  client?: Pick<Client,
+    | 'createInvitation'
+    | 'getInvitation'
+    | 'appendThread'
+    | 'decryptMessage'
+    | 'getEncryptedThread'
+    | 'replyToInvitation'
+    | 'replyToThread'>;
   generateClient: (password: string) => Promise<Client>
   loadClient: (thumbprint: string, password: string) => Promise<Client>
 }>(null);

@@ -5,6 +5,7 @@ import {
   Invitation,
   SelfEncrypted,
   ReplyMessage,
+  SignedReply,
 } from "./types";
 import {
   generateECDSAKeyPair,
@@ -45,7 +46,7 @@ export function setNickname(key: string, nickname: string) {
 }
 
 export function getNickname(key: string) {
-  return keyNicknames.get(key) + "(" + key.substring(key.length - 5) + ")";
+  return keyNicknames.get(key) + "(" + key + ")";
 }
 
 export async function serializeWithNicknames(data: any) {
@@ -265,10 +266,15 @@ export class Client {
 
     this.storage.setItem(`invitation:${thumbprint}`, signedInvitation);
     this.storage.appendItem(`invitations:${this.thumbprint}`, thumbprint);
+    this.notifySubscribers();
     return signedInvitation;
   }
 
-  async replyToInvitation(signedInvite: SignedInvitation, message: string) {
+  async replyToInvitation(
+    signedInvite: SignedInvitation,
+    message: string,
+    nickname: string
+  ) {
     invariant(await verifyJWS(signedInvite), "Invalid invitation signature");
     const invite = await parseJWS<Invitation>(signedInvite);
 
@@ -280,6 +286,7 @@ export class Client {
     );
     const reply = this.replyToThread(threadThumbprint, message, {
       selfSign: true,
+      nickname,
     });
 
     return reply;
@@ -312,6 +319,7 @@ export class Client {
     this.storage.appendItem(`threads:${this.thumbprint}`, myThumbprint);
     this.storage.appendItem(`messages:${myThumbprint}`, signedInvite);
     this.storage.setItem(`message-id:${myThumbprint}`, messageId);
+    this.notifySubscribers();
 
     return myThumbprint;
   }
@@ -375,11 +383,14 @@ export class Client {
   public async replyToThread(
     threadThumbprint: Thumbprint,
     message: string,
-    options?: { selfSign?: boolean }
+    options?: {
+      selfSign?: boolean;
+      nickname?: string;
+    }
   ) {
     const { secret, epk } = await this.readThreadSecret(threadThumbprint);
     const iv = window.crypto.getRandomValues(new Uint8Array(12));
-    const encrypted = await window.crypto.subtle.encrypt(
+    const encryptedMessage = await window.crypto.subtle.encrypt(
       {
         name: "AES-GCM",
         iv,
@@ -387,6 +398,16 @@ export class Client {
       secret,
       new TextEncoder().encode(message)
     );
+    const encryptedNickname = options?.nickname
+      ? await window.crypto.subtle.encrypt(
+          {
+            name: "AES-GCM",
+            iv,
+          },
+          secret,
+          new TextEncoder().encode(options.nickname)
+        )
+      : null;
 
     const messageId = this.storage.getItem(`message-id:${threadThumbprint}`);
     invariant(typeof messageId === "string", `Invalid message id ${messageId}`);
@@ -409,8 +430,10 @@ export class Client {
       payload: {
         re,
         messageId: Number(nextId).toString(16),
-        // message: Buffer.from(encrypted).toString("base64url"),
-        message: bufferToB64u(encrypted),
+        message: bufferToB64u(encryptedMessage),
+        nickname: encryptedNickname
+          ? bufferToB64u(encryptedNickname)
+          : undefined,
         iv: Buffer.from(iv).toString("base64"),
       },
     };
@@ -421,11 +444,11 @@ export class Client {
       replyMessage.payload.epk = epk;
     }
 
-    const encryptedJWS = await signJWS(
+    const encryptedJWS = (await signJWS(
       replyMessage.header,
       replyMessage.payload,
       this.identityKeyPair.privateKey
-    );
+    )) as SignedReply;
 
     invariant(
       verifyJWS(encryptedJWS, this.identityKeyPair.publicKey),
@@ -450,7 +473,7 @@ export class Client {
   }
 
   public async appendThread(
-    encryptedMessage: string,
+    encryptedMessage: SignedInvitation | SignedReply,
     threadThumbprint?: Thumbprint
   ): Promise<{
     threadThumbprint: Thumbprint;
@@ -499,10 +522,8 @@ export class Client {
       threadThumbprint,
       encryptedMessage
     );
-    await this.storage.appendItem(
-      `messages:${threadThumbprint}`,
-      encryptedMessage
-    );
+    this.storage.appendItem(`messages:${threadThumbprint}`, encryptedMessage);
+    this.notifySubscribers();
     return {
       threadThumbprint,
       message,
@@ -511,7 +532,7 @@ export class Client {
 
   public async decryptMessage(
     threadThumbprint: Thumbprint,
-    encryptedMessage: string
+    encryptedMessage: string | SignedInvitation | SignedReply
   ): Promise<DecryptedMessageType> {
     const threadInfo = this.storage.getItem(`thread-info:${threadThumbprint}`);
     const jws = await parseJWS<ReplyMessage | Invitation>(
@@ -521,8 +542,6 @@ export class Client {
     invariant(threadInfo, "Thread not found");
     if ("re" in jws.payload && jws.payload.re) {
       const jwsReply = jws as ReplyMessage;
-
-      console.log({ jws: jwsReply });
 
       let from = jwsReply.header.jwk
         ? await getJWKthumbprint(jwsReply.header.jwk)
@@ -553,19 +572,17 @@ export class Client {
             )} to be signed with ${expected}`
           );
         }
-        from = await getJWKthumbprint(pubKey);
+        from = await getJWKthumbprint(await exportKey(pubKey));
       }
       invariant(from, "Unable to determine sender");
-      if (jwsReply.payload.nickname) {
-        setNickname(from, jwsReply.payload.nickname);
-      }
 
       const { secret } = await this.readThreadSecret(threadThumbprint);
       const iv = b64uToBuffer(jwsReply.payload.iv);
 
-      let decryptedBuffer;
+      let messageBuffer;
+      let nicknameBuffer;
       try {
-        decryptedBuffer = await window.crypto.subtle.decrypt(
+        messageBuffer = await window.crypto.subtle.decrypt(
           {
             name: "AES-GCM",
             iv: Uint8Array.from(iv),
@@ -573,10 +590,24 @@ export class Client {
           secret,
           b64uToBuffer(jwsReply.payload.message)
         );
+        const nickname = jwsReply.payload.nickname;
+        nicknameBuffer = nickname
+          ? await window.crypto.subtle.decrypt(
+              {
+                name: "AES-GCM",
+                iv: Uint8Array.from(iv),
+              },
+              secret,
+              b64uToBuffer(nickname)
+            )
+          : undefined;
       } catch (e: any) {
         throw new Error(`Error appending thread ${e?.message ?? e}`);
       }
-      const message = new TextDecoder().decode(decryptedBuffer);
+      const message = new TextDecoder().decode(messageBuffer);
+      if (nicknameBuffer) {
+        setNickname(from, new TextDecoder().decode(nicknameBuffer));
+      }
 
       return {
         from: getNickname(from),
@@ -606,5 +637,19 @@ export class Client {
 
   public getEncryptedThread(thumbprint: Thumbprint) {
     return this.storage.getItem(`messages:${thumbprint}`);
+  }
+
+  private notifySubscribers() {
+    for (const sub of this.subscriptions) {
+      sub();
+    }
+  }
+  private subscriptions = new Set<() => void>();
+  public subscribe(onChange: () => void) {
+    this.subscriptions.add(onChange);
+
+    return () => {
+      this.subscriptions.delete(onChange);
+    };
   }
 }

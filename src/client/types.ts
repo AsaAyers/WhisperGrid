@@ -6,6 +6,7 @@ export type TaggedString<T extends string | object> = string & {
 };
 
 export type SignedInvitation = TaggedString<Invitation>;
+export type SignedReply = TaggedString<ReplyMessage>;
 
 export type Invitation = {
   header: {

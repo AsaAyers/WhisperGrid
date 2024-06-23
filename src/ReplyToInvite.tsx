@@ -29,7 +29,7 @@ export function ReplyToInvite(): React.ReactNode {
 
   const [reply, setReply] = React.useState<string | null>(null);
   const onFinish: FormProps<FieldType>['onFinish'] = async (values) => {
-    const reply = await client.replyToInvitation(values.invitationString!, values.message!);
+    const reply = await client.replyToInvitation(values.invitationString!, values.message!, values.nickname!);
     setReply(reply);
   };
   return (
@@ -102,7 +102,6 @@ export function ReplyToInvite(): React.ReactNode {
 
       {invitation && invitationString && (
         <DisplayInvite
-          client={client}
           invitation={invitation} signedInvite={invitationString as SignedInvitation} />
       )}
 

@@ -165,7 +165,7 @@ export async function getJWKthumbprint<T = AlgorithmType>(
     "SHA-256",
     hextoArrayBuffer(hex)
   );
-  let alg = jwk.alg ? `${jwk.alg}/` : "";
+  const alg = jwk.alg ? `${jwk.alg}/` : "";
 
   return `id-${alg}${hextob64u(ArrayBuffertohex(sha256))}` as any;
 }

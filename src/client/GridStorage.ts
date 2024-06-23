@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { SignedInvitation } from "./types";
+import { ReplyMessage, SignedInvitation, SignedReply } from "./types";
 import { EncryptedPrivateKey, JWK, Thumbprint } from "./utils";
 
 type Key = `${StoredDataTypes["type"]}:${string}`;
@@ -48,7 +48,7 @@ type StoredDataTypes =
     }
   | { type: "invitation"; data: SignedInvitation }
   | { type: "invitations"; data: Thumbprint<"ECDH">[] }
-  | { type: "messages"; data: Array<string> }
+  | { type: "messages"; data: Array<SignedInvitation|SignedReply> }
   | { type: "encrypted-thread-key"; data: string }
   | { type: "public-key"; data: JWK<"ECDSA" | "ECDH", "public"> }
   | { type: "message-id"; data: string }

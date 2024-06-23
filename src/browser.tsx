@@ -6,9 +6,9 @@ import { TestStorage } from "./client/GridStorage";
 import { WhisperGridDemo } from "./WhisperGridDemo";
 import { RouterProvider, createBrowserRouter } from "react-router-dom";
 import { CreateInvitation } from "./CreateInvitation";
-import { ClientProvider, useClient, useClientSetup } from "./ClientProvider";
-import { DisplayInvite, InviteRoute } from "./DisplayInvite";
-import { Alert, Button, Flex } from "antd";
+import { ClientProvider } from "./ClientProvider";
+import { InviteRoute } from "./DisplayInvite";
+import { Alert, Flex } from "antd";
 import { ReplyToInvite } from "./ReplyToInvite";
 import { ThreadView } from "./ThreadView";
 
@@ -80,12 +80,6 @@ const router = createBrowserRouter([
 
 
 function HomePage() {
-  const { client } = useClientSetup();
-
-  React.useEffect(() => {
-
-  }, [])
-
   return (
     <Flex vertical>
       <h1>Whisper Grid</h1>

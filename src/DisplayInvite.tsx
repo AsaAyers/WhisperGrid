@@ -1,8 +1,7 @@
 import React from "react";
 import { Anchor, Button, Card, Flex, Modal, Space, Typography } from "antd";
-import { Invitation, SignedInvitation } from "./client/types";
+import { Invitation, SignedInvitation, SignedReply } from "./client/types";
 import TextArea from "antd/es/input/TextArea";
-import { Client } from "./client";
 import { useClient } from "./ClientProvider";
 import { useParams } from "react-router";
 import { invariant, parseJWS } from "./client/utils";
@@ -11,7 +10,6 @@ import { useNavigate } from "react-router-dom";
 type Props = {
   invitation: Invitation;
   signedInvite: SignedInvitation;
-  client: Client
 };
 
 export function InviteRoute() {
@@ -26,20 +24,20 @@ export function InviteRoute() {
 
   React.useEffect(() => {
     if (signedInvite) {
-      parseJWS(signedInvite).then((i) => setInvitation(i))
+      parseJWS<Invitation>(signedInvite).then((i) => setInvitation(i))
     }
   }, [signedInvite])
 
 
   if (invitation && signedInvite) {
-    return <DisplayInvite invitation={invitation} signedInvite={signedInvite} client={client} />
+    return <DisplayInvite invitation={invitation} signedInvite={signedInvite} />
   }
 
   return null
 }
 
 export function DisplayInvite({
-  signedInvite, invitation, client,
+  signedInvite, invitation,
 }: Props): React.ReactNode {
   const label = React.useMemo(() => (
     `(${invitation.payload.nickname}) ${invitation.payload.note ?? ""}`
@@ -68,7 +66,7 @@ export function DisplayInvite({
               The note is not encrypted: <Typography.Text code>{invitation.payload.note}</Typography.Text>
             </Typography.Text>
           )}
-          <DecryptReply client={client} />
+          <DecryptReply />
 
           <Typography.Text>
             You can verify the signature and content of the invitation by pasting it into{" "}
@@ -87,7 +85,8 @@ export function DisplayInvite({
 }
 
 
-function DecryptReply({ client }: { client: Client }) {
+function DecryptReply() {
+  const client = useClient()
   const [showDecryptionModal, setShowDecryptionModal] = React.useState(false);
   const navigate = useNavigate()
 
@@ -107,7 +106,7 @@ function DecryptReply({ client }: { client: Client }) {
 
         <TextArea
           onChange={(e) => {
-            client.appendThread(e.target.value)
+            client.appendThread(e.target.value as SignedReply)
               .then((result) => {
                 navigate(`/thread/${result.threadThumbprint}`)
               }).catch(() => {
