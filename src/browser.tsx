@@ -4,7 +4,7 @@ import ReactDOM from "react-dom/client";
 import { GridStorage } from "./index";
 import { TestStorage } from "./client/GridStorage";
 import { WhisperGridDemo } from "./WhisperGridDemo";
-import { RouterProvider, createBrowserRouter } from "react-router-dom";
+import { RouterProvider, createBrowserRouter, createHashRouter } from "react-router-dom";
 import { CreateInvitation } from "./CreateInvitation";
 import { ClientProvider } from "./ClientProvider";
 import { InviteRoute } from "./DisplayInvite";
@@ -44,7 +44,9 @@ const basename = location.pathname.startsWith("/WhisperGrid")
   ? '/WhisperGrid'
   : undefined;
 
-const router = createBrowserRouter([
+const selectedRouter = location.protocol === 'file:' ? createHashRouter : createBrowserRouter;
+
+const router = selectedRouter([
   {
     path: "/",
     element: <WhisperGridDemo />,
