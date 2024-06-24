@@ -1,10 +1,10 @@
 import React from "react";
-import { Anchor, Button, Card, Flex, List, Modal, Space, Typography } from "antd";
+import { Anchor, Button, Card, Descriptions, Flex, List, Modal, Space, Typography } from "antd";
 import { Invitation, SignedInvitation, SignedReply } from "./client/types";
 import TextArea from "antd/es/input/TextArea";
 import { useClient } from "./ClientProvider";
 import { useParams } from "react-router";
-import { invariant, parseJWS } from "./client/utils";
+import { Thumbprint, getJWKthumbprint, invariant, parseJWS } from "./client/utils";
 import { useNavigate } from "react-router-dom";
 
 type Props = {
@@ -42,6 +42,10 @@ export function DisplayInvite({
   const label = React.useMemo(() => (
     `(${invitation.payload.nickname}) ${invitation.payload.note ?? ""}`
   ), [invitation])
+  const [thumbprint, setThumbprint] = React.useState<Thumbprint | null>(null)
+  React.useEffect(() => {
+    getJWKthumbprint(invitation.payload.epk).then(setThumbprint)
+  })
 
   return (
     <Space direction="vertical" size={16}>
@@ -56,9 +60,22 @@ export function DisplayInvite({
             If you send it to someone else, they can use it to make a message to send back to you.
           </Typography.Text>
 
-          <Typography.Text code copyable style={{ maxWidth: '20rem' }}>
-            {signedInvite}
-          </Typography.Text>
+
+          <Descriptions title="Invitation details"
+            layout="vertical"
+            items={[
+              {
+                key: 'signed',
+                label: 'Signed Invite', children:
+                  <Typography.Text code copyable style={{ maxWidth: '20rem' }}>
+                    {signedInvite}
+                  </Typography.Text>
+              },
+              { label: 'Public Key', children: thumbprint, key: '' },
+              { label: 'Nickname', children: invitation.payload.nickname, key: 'nickname' },
+              { label: 'Note', children: invitation.payload.note, key: 'note' },
+            ]} />
+
           {invitation.payload.note && (
             <Typography.Text>
               The note is not encrypted: <Typography.Text code>{invitation.payload.note}</Typography.Text>
