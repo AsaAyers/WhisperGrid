@@ -9,24 +9,15 @@ describe("Alice and Bob can use WhisperGrid to have a conversation", () => {
   });
 
   it("Alice can create an invitation", () => {
-    cy.contains("Create Identity").click();
-    cy.contains("Password").type("AlicePassword");
-    cy.contains("Confirm password").type("AlicePassword{enter}");
-
-    cy.contains(/id-[a-zA-Z0-9_-]+/)
-      .invoke("text")
-      .as("aliceThumbprint");
+    cy.createIdentity("AlicePassword").as("aliceThumbprint");
 
     cy.contains("Create Invitation").click();
     cy.contains("Nickname").type("Alice");
     cy.contains("Note").type("Automated test invitation{enter}");
 
-    cy.contains("Logout").click();
-
-    cy.contains("Thumbprint").invoke("attr", "for").as("thumbprintId");
-    cy.get("@thumbprintId").then((thumbprintId) => {
-      cy.get(`#${thumbprintId}`).clear();
-    });
-    // .clear().type("@aliceThumbprint");
+    // cy.contains("Logout").click();
+    // cy.get<string>("@aliceThumbprint").then((aliceThumbprint) => {
+    //   cy.login(aliceThumbprint, "AlicePassword");
+    // });
   });
 });
