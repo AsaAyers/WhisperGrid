@@ -6,9 +6,9 @@ import { TestStorage } from "./client/GridStorage";
 import { WhisperGridDemo } from "./WhisperGridDemo";
 import { RouterProvider, createBrowserRouter, createHashRouter } from "react-router-dom";
 import { CreateInvitation } from "./CreateInvitation";
-import { ClientProvider } from "./ClientProvider";
+import { ClientProvider, useClient } from "./ClientProvider";
 import { InviteRoute } from "./DisplayInvite";
-import { Alert, Flex } from "antd";
+import { Alert, Flex, Typography } from "antd";
 import { ReplyToInvite } from "./ReplyToInvite";
 import { ThreadView } from "./ThreadView";
 
@@ -49,7 +49,11 @@ const selectedRouter = location.protocol === 'file:' ? createHashRouter : create
 const router = selectedRouter([
   {
     path: "/",
-    element: <WhisperGridDemo />,
+    element: (
+      <ClientProvider>
+        <WhisperGridDemo />
+      </ClientProvider>
+    ),
     errorElement: (
       <Flex vertical align="center">
         <Alert
@@ -89,9 +93,13 @@ const router = selectedRouter([
 
 
 function HomePage() {
+  const client = useClient()
   return (
     <Flex vertical>
       <h1>Whisper Grid</h1>
+      <Typography.Text code copyable>
+        {client.thumbprint}
+      </Typography.Text>
       <Alert
         message="Warning"
         description="This is experimental and has not been evaluated for security. Do not use this for anything important."
@@ -112,9 +120,7 @@ const root = ReactDOM.createRoot(
 
 root.render(
   <React.StrictMode>
-    <ClientProvider>
-      <RouterProvider router={router} />
-    </ClientProvider>
+    <RouterProvider router={router} />
   </React.StrictMode>
 )
 

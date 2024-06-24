@@ -2,15 +2,15 @@
 import React from "react";
 import { Flex, Layout, Menu, Typography } from "antd";
 import { LoginForm } from "./LoginForm";
-import { Client } from "./client";
 import { ItemType, MenuItemType } from "antd/es/menu/interface";
-import { PlusOutlined, SendOutlined, UserAddOutlined, UserOutlined } from "@ant-design/icons";
+import { LogoutOutlined, PlusOutlined, SendOutlined, UserAddOutlined, UserOutlined } from "@ant-design/icons";
 import { getJWKthumbprint, parseJWS } from "./client/utils";
 import { Invitation, SignedInvitation } from "./client/types";
 import { Outlet, useNavigate } from "react-router-dom";
+import { useClientSetup } from "./ClientProvider";
 
 export function WhisperGridDemo() {
-  const [client, setClient] = React.useState<null | Client>(null)
+  const { client, logout } = useClientSetup()
   const [invitations, setInvitations] = React.useState<Array<{
     key: string,
     invitation: Invitation
@@ -70,7 +70,12 @@ export function WhisperGridDemo() {
       options.unshift({
         key: '/create',
         icon: React.createElement(PlusOutlined),
-        label: 'Create Thread',
+        label: 'Create Invitation',
+      })
+      options.unshift({
+        key: 'logout',
+        icon: React.createElement(LogoutOutlined),
+        label: 'Logout',
       })
       return options
     }
@@ -93,6 +98,10 @@ export function WhisperGridDemo() {
             theme="dark"
             mode="inline"
             onClick={(e) => {
+              if (e.key === 'logout') {
+                logout()
+                return
+              }
               navigate(e.key)
             }}
             items={items} />
@@ -100,7 +109,7 @@ export function WhisperGridDemo() {
       )}
       <Layout.Content style={{ overflow: 'auto' }}>
         {!client && (
-          <LoginForm initializedClient={(c) => setClient(c)} />
+          <LoginForm />
         )}
         {client && (
           <Flex vertical align="center">

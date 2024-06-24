@@ -2,11 +2,13 @@ import React from "react";
 import { Client } from "./client";
 import { invariant } from "./client/utils";
 import { LocalGridStorage } from "./browser";
+import { useNavigate } from "react-router-dom";
 
 
 export function ClientProvider(props: React.PropsWithChildren) {
   const [client, setClient] = React.useState<undefined | Client>(undefined);
   const [clientUpdateKey, setClientUpdateKey] = React.useState(0);
+  const navigate = useNavigate()
 
   React.useEffect(() => {
     if (client) {
@@ -15,6 +17,11 @@ export function ClientProvider(props: React.PropsWithChildren) {
       });
     }
   }, [])
+
+  const logout = React.useCallback(() => {
+    navigate('/')
+    setClient(undefined)
+  }, []);
 
   const generateClient = React.useCallback((password: string) => {
     const storage = new LocalGridStorage();
@@ -43,13 +50,17 @@ export function ClientProvider(props: React.PropsWithChildren) {
     return {
       generateClient,
       loadClient,
+      logout,
       // Construct a new object on each update to make sure React hooks call
       // functions to get updates.
       client: client ? {
+        thumbprint: client.thumbprint,
         createInvitation: client.createInvitation.bind(client),
         getInvitation: client.getInvitation.bind(client),
         appendThread: client.appendThread.bind(client),
         replyToInvitation: client.replyToInvitation.bind(client),
+        getInvitations: client.getInvitations.bind(client),
+        getThreads: client.getThreads.bind(client),
         replyToThread: client.replyToThread.bind(client),
         getEncryptedThread: client.getEncryptedThread.bind(client),
         decryptMessage: client.decryptMessage.bind(client),
@@ -65,15 +76,19 @@ export function ClientProvider(props: React.PropsWithChildren) {
 }
 const clientContext = React.createContext<null | {
   client?: Pick<Client,
+    | 'thumbprint'
     | 'createInvitation'
     | 'getInvitation'
     | 'appendThread'
     | 'decryptMessage'
+    | 'getInvitations'
+    | 'getThreads'
     | 'getEncryptedThread'
     | 'replyToInvitation'
     | 'replyToThread'>;
   generateClient: (password: string) => Promise<Client>
   loadClient: (thumbprint: string, password: string) => Promise<Client>
+  logout: () => void
 }>(null);
 
 export const useClientSetup = () => {

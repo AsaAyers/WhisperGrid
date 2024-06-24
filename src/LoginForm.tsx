@@ -1,8 +1,8 @@
 import React from "react";
-import { Button, Flex, Form, FormProps, Input, Radio } from "antd";
-import { Client } from "./client";
-import { LocalGridStorage } from "./browser";
+import { Alert, Button, Flex, Form, FormProps, Input, Radio } from "antd";
 import { useClientSetup } from "./ClientProvider";
+
+const unsupportedBrowser = !window?.crypto?.subtle
 
 type FieldType = {
   mode: 'open'
@@ -14,25 +14,19 @@ type FieldType = {
   confirmPassword: string,
 }
 
-type Props = {
-  initializedClient: (client: Client) => void;
-}
-
-export function LoginForm({ initializedClient }: Props) {
+export function LoginForm() {
   const [form] = Form.useForm<FieldType>();
   const mode = Form.useWatch('mode', form);
 
   const { generateClient, loadClient } = useClientSetup()
 
   const onFinish: FormProps<FieldType>['onFinish'] = async (values) => {
-    let client
     if (values.mode === 'create') {
-      client = await generateClient(values.password)
+      const client = await generateClient(values.password)
       localStorage.setItem("thumbprint", client.thumbprint)
     } else {
-      client = await loadClient(values.thumbprint, values.password)
+      await loadClient(values.thumbprint, values.password)
     }
-    initializedClient(client)
   };
   const initialValues = React.useMemo(() => {
     const thumbprint = localStorage.getItem("thumbprint")
@@ -87,6 +81,7 @@ export function LoginForm({ initializedClient }: Props) {
         wrapperCol={{ span: 16 }}
         style={{ maxWidth: 600 }}
         initialValues={initialValues}
+        disabled={unsupportedBrowser}
         onFinish={onFinish}
         // onFinishFailed={onFinishFailed}
         autoComplete="off"
@@ -118,7 +113,7 @@ export function LoginForm({ initializedClient }: Props) {
 
         {mode === 'create' && (
           <Form.Item<FieldType>
-            label="Password"
+            label="Confirm password"
             name="confirmPassword"
             dependencies={['password']}
             rules={[
@@ -144,6 +139,14 @@ export function LoginForm({ initializedClient }: Props) {
           </Button>
         </Form.Item>
       </Form>
+
+      {unsupportedBrowser && (
+        <Alert
+          message="Warning"
+          description="This browser does not support the WebCrypto API, which is required for WhisperGrid to work."
+          type="warning"
+          showIcon />
+      )}
     </Flex >
   );
 }
