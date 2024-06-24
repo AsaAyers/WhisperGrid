@@ -98,7 +98,7 @@ export function ThreadView(): React.ReactNode {
     </Flex>
   );
 }
-function MessageCard({ message, thumbprint, decrypt = true, onCopy }: {
+export function MessageCard({ message, thumbprint, decrypt = true, onCopy }: {
   message: SignedInvitation | SignedReply
   thumbprint: Thumbprint;
   decrypt?: boolean

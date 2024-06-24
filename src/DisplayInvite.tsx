@@ -1,5 +1,5 @@
 import React from "react";
-import { Anchor, Button, Card, Flex, Modal, Space, Typography } from "antd";
+import { Anchor, Button, Card, Flex, List, Modal, Space, Typography } from "antd";
 import { Invitation, SignedInvitation, SignedReply } from "./client/types";
 import TextArea from "antd/es/input/TextArea";
 import { useClient } from "./ClientProvider";
@@ -56,8 +56,6 @@ export function DisplayInvite({
             If you send it to someone else, they can use it to make a message to send back to you.
           </Typography.Text>
 
-
-
           <Typography.Text code copyable style={{ maxWidth: '20rem' }}>
             {signedInvite}
           </Typography.Text>
@@ -67,17 +65,6 @@ export function DisplayInvite({
             </Typography.Text>
           )}
           <DecryptReply />
-
-          <Typography.Text>
-            You can verify the signature and content of the invitation by pasting it into{" "}
-            <Anchor.Link href="https://jwt.io" target="_blank" title="JSON Web Tokens">
-              jwt.io
-            </Anchor.Link>. It will match the output below:
-          </Typography.Text>
-
-          <Typography.Text code style={{ whiteSpace: 'pre' }}>
-            {JSON.stringify(invitation, null, 2)}
-          </Typography.Text>
         </Flex>
       </Card>
     </Space>
