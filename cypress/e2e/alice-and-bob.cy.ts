@@ -15,7 +15,25 @@ describe("Alice and Bob can use WhisperGrid to have a conversation", () => {
     cy.contains("Nickname").type("Alice");
     cy.contains("Note").type("Automated test invitation{enter}");
 
-    // cy.contains("Logout").click();
+    cy.get('[aria-label="Copy"]')
+      .parent()
+      .invoke("text")
+      .then((invitation) => {
+        console.log({ invitation });
+        return invitation;
+      })
+      .as("invitation");
+
+    cy.contains("Logout").click();
+    cy.createIdentity("BobPassword").as("bobThumbprint");
+
+    cy.contains("Reply to invite").click();
+
+    cy.get<string>("@invitation").then((invitation) => {
+      cy.get("textarea").type(invitation);
+    });
+    cy.contains("Nickname").type("Bob");
+
     // cy.get<string>("@aliceThumbprint").then((aliceThumbprint) => {
     //   cy.login(aliceThumbprint, "AlicePassword");
     // });
