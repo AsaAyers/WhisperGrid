@@ -66,15 +66,19 @@ beforeEach(() => {
  * have defaults and auto-prefix the filenames.
  */
 Cypress.Commands.add("scre", function (this, label) {
-  cy.screenshot(
-    `${screenshotIndex++}_${
-      this.currentTest?.title ?? this.test?.title
-    }___${label}`,
-    {
-      capture: "fullPage",
-      overwrite: true,
-    }
-  );
+  // Is this run being recorded?
+  const video = Cypress.config("video");
+  if (!video) {
+    cy.screenshot(
+      `${screenshotIndex++}_${
+        this.currentTest?.title ?? this.test?.title
+      }___${label}`,
+      {
+        capture: "fullPage",
+        overwrite: true,
+      }
+    );
+  }
 });
 //
 //
