@@ -7,7 +7,6 @@ import { useParams } from "react-router";
 import { Thumbprint, getJWKthumbprint, invariant, parseJWS, verifyJWS } from "./client/utils";
 import { useNavigate } from "react-router-dom";
 import { useForm } from "antd/es/form/Form";
-import useModal from "antd/es/modal/useModal";
 
 type Props = {
   invitation: Invitation;
@@ -99,6 +98,7 @@ export function DisplayInvite({
   );
 }
 
+const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
 
 function DecryptReply() {
   const client = useClient()
@@ -111,20 +111,30 @@ function DecryptReply() {
   React.useEffect(() => {
     let cancel = false
     if (encryptedMessage) {
-      verifyJWS(encryptedMessage).then(() => {
+      delay(10).then(async () => {
         if (!cancel) {
+          verifyJWS(encryptedMessage)
+        }
+        if (!cancel) {
+          console.log('decrypted')
           setDecryptedMessage(encryptedMessage)
         }
       }).catch(() => {
         // ignore errors
       })
+    } if (decryptedMessage) {
+      delay(10).then(async () => {
+        const result = await client.appendThread(decryptedMessage)
+        if (!cancel) {
+          console.log({ result, cancel })
+          navigate(`/thread/${result.threadThumbprint}`)
+        }
+      })
     }
     return () => {
       cancel = true
     }
-  }, [encryptedMessage])
-
-
+  }, [encryptedMessage, decryptedMessage])
 
   return (
     <>
@@ -149,6 +159,7 @@ function DecryptReply() {
         <Modal
           title="Decrypt reply"
           open={showDecryptionModal}
+          footer={[]}
         >
           <Typography.Title>
             Paste an encrypted reply below to decrypt it.

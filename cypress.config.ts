@@ -9,6 +9,8 @@ export default defineConfig({
     baseUrl: "http://localhost:1234",
     video: true,
     videoCompression: true,
+    viewportWidth: 800,
+    viewportHeight: 400,
     trashAssetsBeforeRuns: true,
     screenshotOnRunFailure: true,
     setupNodeEvents() {

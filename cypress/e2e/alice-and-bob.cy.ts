@@ -50,17 +50,19 @@ describe("Alice and Bob can use WhisperGrid to have a conversation", () => {
       return cy.login(aliceThumbprint, alicePassword);
     });
 
+    // cy.get(`[aria-label="right"]`).click();
+
     cy.get('[role="menuitem"]')
       .contains("(Alice) Automated test invitation")
-      .click();
+      .click({ force: true });
 
     cy.get("button").contains("Decrypt reply").click();
     cy.get<string>("@bobToAlice").then((bobToAlice) => {
       cy.labeledInput("Encrypted Message").paste(bobToAlice);
     });
-    cy.get("button").contains("Decrypt").click({ force: true });
 
     cy.scre("alice-view-thread");
+    cy.contains("Hello Alice, this is a message for testing Whisper Grid");
     cy.scre("alice-view");
   });
 });
