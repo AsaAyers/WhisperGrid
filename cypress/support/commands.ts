@@ -70,7 +70,9 @@ beforeEach(() => {
 Cypress.Commands.add("scre", function (this, label) {
   // Is this run being recorded?
   const video = Cypress.config("video");
-  if (!video) {
+  if (video) {
+    cy.then(() => new Promise((resolve) => setTimeout(resolve, 500)));
+  } else {
     cy.screenshot(
       `${screenshotIndex++}_${
         this.currentTest?.title ?? this.test?.title

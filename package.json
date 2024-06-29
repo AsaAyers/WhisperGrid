@@ -11,8 +11,9 @@
     "deploy": "gh-pages -d dist",
     "lint": "eslint src cypress",
     "start": "parcel index.html",
+    "cy:run": "cypress run",
     "cy:open": "cypress open",
-    "test": "jest",
+    "test": "jest && npm run cy:run",
     "prepare": "husky"
   },
   "author": "",

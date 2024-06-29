@@ -66,6 +66,7 @@ describe("Alice and Bob can use WhisperGrid to have a conversation", () => {
 
     cy.scre("alice-view-thread");
     cy.contains("Hello Alice, this is a message for testing Whisper Grid");
+    cy.contains("Automated test invitation");
     cy.scre("alice-view");
   });
 });
