@@ -144,8 +144,9 @@ export function MessageCard({ message, thumbprint, decrypt = true, onCopy }: {
         <Typography.Paragraph
           code
           copyable={{
+            format: 'text/plain',
             onCopy: () => {
-              console.log('copy')
+              window.cypressCopyText = message
               onCopy?.()
             }
           }}

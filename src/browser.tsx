@@ -91,13 +91,28 @@ const router = selectedRouter([
   basename,
 });
 
+// declare the optional window property cypress.CopyText
+declare global {
+  interface Window {
+    cypressCopyText?: string;
+  }
+}
+
 
 function HomePage() {
   const client = useClient()
   return (
     <Flex vertical>
       <h1>Whisper Grid</h1>
-      <Typography.Text code copyable>
+      <Typography.Text
+        copyable={{
+          format: 'text/plain',
+          onCopy() {
+            window.cypressCopyText = client.thumbprint
+          }
+        }}
+        code
+      >
         {client.thumbprint}
       </Typography.Text>
       <Alert

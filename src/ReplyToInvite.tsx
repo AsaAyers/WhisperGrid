@@ -95,6 +95,7 @@ export function ReplyToInvite(): React.ReactNode {
           </Form.Item>
           <Form.Item<FieldType>
             name="message"
+            label="Message"
             rules={[{ required: true }]}
           >
             <Space.Compact block>

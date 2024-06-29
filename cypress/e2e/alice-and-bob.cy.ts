@@ -8,34 +8,59 @@ describe("Alice and Bob can use WhisperGrid to have a conversation", () => {
     cy.clearLocalStorage();
   });
 
-  it("Alice can create an invitation", () => {
-    cy.createIdentity("AlicePassword").as("aliceThumbprint");
+  it("alice-and-bob generated keys", () => {
+    cy.then(() => {
+      console.clear();
+    });
+    cy.clearLocalStorage();
+    const alicePassword = "Alice_Password";
+    const bobPassword = "Bob_Password";
+
+    cy.createIdentity(alicePassword).as("aliceThumbprint");
+    cy.scre("alice-identity");
 
     cy.contains("Create Invitation").click();
     cy.contains("Nickname").type("Alice");
     cy.contains("Note").type("Automated test invitation{enter}");
 
-    cy.get('[aria-label="Copy"]')
-      .parent()
-      .invoke("text")
-      .then((invitation) => {
-        console.log({ invitation });
-        return invitation;
-      })
-      .as("invitation");
+    cy.copyButtonText("Copy").as("invitation");
+    cy.scre("alice-invitation");
+    cy.contains("Expand").click();
+    cy.scre("alice-invitation-expanded");
 
     cy.contains("Logout").click();
-    cy.createIdentity("BobPassword").as("bobThumbprint");
+    cy.createIdentity(bobPassword).as("bobThumbprint");
 
     cy.contains("Reply to invite").click();
 
     cy.get<string>("@invitation").then((invitation) => {
-      cy.get("textarea").type(invitation);
+      cy.get("textarea").paste(invitation);
     });
-    cy.contains("Nickname").type("Bob");
+    cy.labeledInput("Nickname").type("Bob");
+    cy.labeledInput("Message").type(
+      "Hello Alice, this is a message for testing Whisper Grid{enter}"
+    );
 
-    // cy.get<string>("@aliceThumbprint").then((aliceThumbprint) => {
-    //   cy.login(aliceThumbprint, "AlicePassword");
-    // });
+    cy.contains("Expand").click();
+    cy.copyButtonText("Copy").as("bobToAlice");
+    cy.scre("bob-reply");
+    cy.contains("Logout").click();
+
+    cy.get<string>("@aliceThumbprint").then((aliceThumbprint) => {
+      return cy.login(aliceThumbprint, alicePassword);
+    });
+
+    cy.get('[role="menuitem"]')
+      .contains("(Alice) Automated test invitation")
+      .click();
+
+    cy.get("button").contains("Decrypt reply").click();
+    cy.get<string>("@bobToAlice").then((bobToAlice) => {
+      cy.labeledInput("Encrypted Message").paste(bobToAlice);
+    });
+    cy.get("button").contains("Decrypt").click({ force: true });
+
+    cy.scre("alice-view-thread");
+    cy.scre("alice-view");
   });
 });

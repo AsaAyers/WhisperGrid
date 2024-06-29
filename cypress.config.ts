@@ -1,8 +1,17 @@
 import { defineConfig } from "cypress";
 
 export default defineConfig({
+  video: true,
+  videoCompression: true,
+  trashAssetsBeforeRuns: true,
+  screenshotOnRunFailure: true,
   e2e: {
-    setupNodeEvents(on, config) {
+    baseUrl: "http://localhost:1234",
+    video: true,
+    videoCompression: true,
+    trashAssetsBeforeRuns: true,
+    screenshotOnRunFailure: true,
+    setupNodeEvents() {
       // implement node event listeners here
     },
   },

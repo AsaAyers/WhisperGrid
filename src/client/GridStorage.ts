@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { ReplyMessage, SignedInvitation, SignedReply } from "./types";
+import { SignedInvitation, SignedReply } from "./types";
 import { EncryptedPrivateKey, JWK, Thumbprint } from "./utils";
 
 type Key = `${StoredDataTypes["type"]}:${string}`;
@@ -83,7 +83,16 @@ export class TestStorage implements GridStorage {
     if (!Array.isArray(arr)) {
       arr = [];
     }
-    arr.push(value);
+    // TODO: Make this detect duplicates and out of order messages.  I think for
+    // the moment, I can de-duple the last one since the invitation seems to
+    // keep getting duplicated a bunch of times.
+    if (value[arr.length - 1] !== value) {
+      console.warn('Appending', key)
+      // console.log('Appending', key)
+      arr.push(value);
+    } else {
+      console.log('Skipping duplicate', key)
+    }
     this.setItem(key, arr);
   };
 }

@@ -34,11 +34,47 @@ Cypress.Commands.add("createIdentity", (password) => {
 });
 Cypress.Commands.add("labeledInput", (label) => {
   return cy
+    .get("label")
     .contains(label)
     .invoke("attr", "for")
     .then((forId) => {
       return cy.get(`#${forId}`);
     });
+});
+
+Cypress.Commands.add("copyButtonText", (label): Cypress.Chainable<string> => {
+  cy.get(`[aria-label="${label}"]`).click();
+  return cy.window().then((win) => {
+    return win.cypressCopyText ?? "";
+  });
+});
+
+Cypress.Commands.add("paste", { prevSubject: "element" }, (parent, text) => {
+  cy.get(parent.selector!).type(text, {
+    delay: 0,
+    log: true,
+  });
+});
+
+let screenshotIndex = 1;
+beforeEach(() => {
+  screenshotIndex = 1;
+});
+/**
+ * I tried to override the built-in `cy.screenshot` command but it kept
+ * complaining about me trying to screenshot a bunch of elements. I just want to
+ * have defaults and auto-prefix the filenames.
+ */
+Cypress.Commands.add("scre", function (this, label) {
+  cy.screenshot(
+    `${screenshotIndex++}_${
+      this.currentTest?.title ?? this.test?.title
+    }___${label}`,
+    {
+      capture: "fullPage",
+      overwrite: true,
+    }
+  );
 });
 //
 //
@@ -72,6 +108,9 @@ declare global {
       login(thumbprint: string, password: string): Chainable<void>;
       createIdentity(password: string): Chainable<string>;
       labeledInput(label: string): Chainable<JQuery<HTMLElement>>;
+      copyButtonText(label: string): Chainable<string>;
+      paste(text: string): Chainable<void>;
+      scre(label: string): Chainable<void>;
       // drag(subject: string, options?: Partial<TypeOptions>): Chainable<Element>;
       // dismiss(
       //   subject: string,

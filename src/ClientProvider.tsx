@@ -33,7 +33,6 @@ export function ClientProvider(props: React.PropsWithChildren) {
 
   const loadClient = React.useCallback((thumbprint: string, password: string) => {
     const storage = new LocalGridStorage();
-    console.log('loadClient', thumbprint, password)
     return Client.loadClient(storage, thumbprint, password).then(
       (c) => {
         setClient(c)
@@ -45,7 +44,7 @@ export function ClientProvider(props: React.PropsWithChildren) {
   const value = React.useMemo(() => {
     if (clientUpdateKey > -1) {
       // This hook needs to run any time this changes.
-      console.log({ clientUpdateKey })
+      // console.log({ clientUpdateKey })
     }
     return {
       generateClient,
