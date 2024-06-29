@@ -1,3 +1,6 @@
+/// <reference types="cypress" />
+import "../support/e2e.ts";
+
 describe("Alice and Bob can use WhisperGrid to have a conversation", () => {
   beforeEach(() => {
     // Cypress starts out with a blank slate for each test

@@ -92,7 +92,8 @@ describe("Client", () => {
     });
     const toAlice = await Bob.replyToInvitation(
       invitation,
-      "Hello Alice, this is my first message to you"
+      "Hello Alice, this is my first message to you",
+      "Bob"
     );
     const aliceView = await Alice.appendThread(toAlice);
     expect(aliceView.message).toMatchInlineSnapshot(
