@@ -49,23 +49,6 @@ export function getNickname(key: string) {
   return keyNicknames.get(key) + "(" + key + ")";
 }
 
-export async function serializeWithNicknames(data: any) {
-  const entries = Object.entries(data).map(([key, value]) => {
-    // const [prefix, ...rest] = key.split(":", 2);
-    const i = key.indexOf(":");
-    if (i > 0) {
-      const prefix = key.slice(0, i);
-      const thumbprint = key.slice(i + 1);
-      if (keyNicknames.has(thumbprint)) {
-        key = `${prefix}:[${keyNicknames.get(thumbprint)}]`;
-      }
-    }
-    return [key, value];
-  });
-
-  return JSON.stringify(Object.fromEntries(entries), null, 2);
-}
-
 const MAX_MESSAGE_ID = Number.MAX_SAFE_INTEGER / 2;
 
 export type DecryptedMessageType = {
@@ -87,9 +70,6 @@ export class Client {
     }
   }
 
-  log(...args: any[]) {
-    console.log(`[${this.clientNickname}]`, ...args);
-  }
   constructor(
     private storage: GridStorage,
     public readonly thumbprint: string,
