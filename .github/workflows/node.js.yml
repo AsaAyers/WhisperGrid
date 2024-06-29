@@ -27,6 +27,9 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     needs: [build, cypress-run]
+    name: Deploy with gh-pages
+    env:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
       - uses: actions/checkout@v4
       - name: Use Node.js 18
@@ -35,7 +38,9 @@ jobs:
           node-version: 18.x
           cache: "npm"
       - run: npm install
-      - run: npm run deploy
+      - run: |
+          git remote set-url origin https://git:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git
+          npm run deploy -- -u "github-actions-bot <support+actions@github.com>"
 
   cypress-run:
     runs-on: ubuntu-latest
