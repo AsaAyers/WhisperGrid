@@ -45,13 +45,15 @@ Cypress.Commands.add("labeledInput", (label) => {
 Cypress.Commands.add("copyButtonText", (label): Cypress.Chainable<string> => {
   cy.get(`[aria-label="${label}"]`).click();
   return cy.window().then((win) => {
+    // @ts-expect-error This is a hack to avoid needing real permission to read
+    // the clipboard.
     return win.cypressCopyText ?? "";
   });
 });
 
 Cypress.Commands.add("paste", { prevSubject: "element" }, (parent, text) => {
   cy.get(parent.selector!).type(text, {
-    delay: 0,
+    delay: 1,
     log: true,
   });
 });
