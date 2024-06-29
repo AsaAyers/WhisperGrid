@@ -96,7 +96,7 @@ describe("Client", () => {
       "Bob"
     );
     const aliceView = await Alice.appendThread(toAlice);
-    expect(aliceView.message).toMatchInlineSnapshot(
+    expect(aliceView.message.message).toMatchInlineSnapshot(
       `"Hello Alice, this is my first message to you"`
     );
 
@@ -106,7 +106,7 @@ describe("Client", () => {
     );
 
     const bobView = await Bob.appendThread(toBob);
-    expect(bobView.message).toMatchInlineSnapshot(
+    expect(bobView.message.message).toMatchInlineSnapshot(
       `"Hello Bob, this is my reply to you"`
     );
 
@@ -115,7 +115,7 @@ describe("Client", () => {
       "Hello Alice, this is my second message to you"
     );
     const aliceView2 = await Alice.appendThread(toAlice2);
-    expect(aliceView2.message).toMatchInlineSnapshot(
+    expect(aliceView2.message.message).toMatchInlineSnapshot(
       `"Hello Alice, this is my second message to you"`
     );
   });

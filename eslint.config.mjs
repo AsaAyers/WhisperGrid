@@ -17,6 +17,11 @@ export default [
         Cypress: false,
       },
     },
+    settings: {
+      react: {
+        version: "detect",
+      },
+    },
   },
   pluginJs.configs.recommended,
   ...tseslint.configs.recommended,

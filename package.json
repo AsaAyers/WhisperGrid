@@ -9,9 +9,11 @@
     "build": "parcel build index.html --public-url /WhisperGrid",
     "predeploy": "npm run build",
     "deploy": "gh-pages -d dist",
+    "lint": "eslint src cypress",
     "start": "parcel index.html",
     "cy:open": "cypress open",
-    "test": "jest"
+    "test": "jest",
+    "prepare": "husky"
   },
   "author": "",
   "license": "ISC",
@@ -43,6 +45,7 @@
     "eslint": "^8.57.0",
     "eslint-plugin-react": "^7.34.3",
     "globals": "^15.6.0",
+    "husky": "^9.0.11",
     "parcel-bundler": "^1.12.5",
     "typescript-eslint": "^7.13.1"
   }

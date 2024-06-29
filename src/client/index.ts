@@ -162,10 +162,6 @@ export class Client {
     return new Client(storage, thumbprint, id, storageKeys);
   }
 
-  toString() {
-    return this.thumbprint;
-  }
-
   async decryptFromSelf(message: string): Promise<string> {
     const selfEncrypted = await parseJWS<SelfEncrypted>(
       message,

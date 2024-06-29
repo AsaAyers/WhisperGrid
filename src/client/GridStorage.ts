@@ -48,11 +48,11 @@ type StoredDataTypes =
     }
   | { type: "invitation"; data: SignedInvitation }
   | { type: "invitations"; data: Thumbprint<"ECDH">[] }
-  | { type: "messages"; data: Array<SignedInvitation|SignedReply> }
+  | { type: "messages"; data: Array<SignedInvitation | SignedReply> }
   | { type: "encrypted-thread-key"; data: string }
   | { type: "public-key"; data: JWK<"ECDSA" | "ECDH", "public"> }
   | { type: "message-id"; data: string }
-  | { type: "threads"; data: Array<Thumbprint<"ECDH"> };
+  | { type: "threads"; data: Array<Thumbprint<"ECDH">> };
 
 export class TestStorage implements GridStorage {
   private data = new Map<string, any>();
@@ -87,11 +87,11 @@ export class TestStorage implements GridStorage {
     // the moment, I can de-duple the last one since the invitation seems to
     // keep getting duplicated a bunch of times.
     if (value[arr.length - 1] !== value) {
-      console.warn('Appending', key)
+      console.warn("Appending", key);
       // console.log('Appending', key)
       arr.push(value);
     } else {
-      console.log('Skipping duplicate', key)
+      console.log("Skipping duplicate", key);
     }
     this.setItem(key, arr);
   };
