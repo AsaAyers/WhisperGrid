@@ -6,7 +6,7 @@
   "module": "dist/index.js",
   "scripts": {
     "prebuild": "rm -rf dist",
-    "build": "parcel build index.html --public-url /WhisperGrid",
+    "build": "parcel build index.html 404.html --public-url /WhisperGrid",
     "predeploy": "npm run build",
     "deploy": "gh-pages -d dist",
     "lint": "eslint src cypress",
