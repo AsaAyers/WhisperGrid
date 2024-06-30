@@ -13,6 +13,7 @@ import { ReplyToInvite } from "./ReplyToInvite";
 import { ThreadView } from "./ThreadView";
 import { Logo } from "./Logo";
 import { HomePage } from "./HomePage";
+import { Settings } from "./Settings";
 
 export class LocalGridStorage extends TestStorage {
   /**
@@ -74,6 +75,10 @@ const router = selectedRouter([
       {
         path: 'create',
         element: <CreateInvitation />
+      },
+      {
+        path: '/settings',
+        element: <Settings />
       },
       {
         path: 'invitation/:thumbprint',

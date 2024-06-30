@@ -1,5 +1,5 @@
 import React from "react";
-import { Alert, Button, Card, Flex, Form, FormProps, Input, Radio, Typography } from "antd";
+import { Alert, Button, Flex, Form, FormProps, Input, Radio, Typography } from "antd";
 import { useClientSetup } from "./ClientProvider";
 import Link from "antd/es/typography/Link";
 

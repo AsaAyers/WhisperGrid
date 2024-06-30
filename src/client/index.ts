@@ -618,6 +618,62 @@ export class Client {
     return this.storage.getItem(`messages:${thumbprint}`);
   }
 
+  async makeBackup(password: string) {
+    const idJWKs = await exportKeyPair(this.identityKeyPair);
+    const storageJWKs = await exportKeyPair(this.storageKeyPair);
+
+    const encryptedIdentity = await encryptPrivateKey(
+      idJWKs.privateKeyJWK,
+      password
+    );
+    const encryptedStorageKey = await encryptPrivateKey(
+      storageJWKs.privateKeyJWK,
+      password
+    );
+
+    const thumbprint = await getJWKthumbprint(idJWKs.publicKeyJWK);
+
+    const invitations = this.storage
+      .getItem(`invitations:${this.thumbprint}`)
+      ?.map((invitationThumbprint) => {
+        return this.storage.getItem(`invitation:${invitationThumbprint}`);
+      });
+
+    const threads = this.storage
+      .getItem(`threads:${this.thumbprint}`)
+      ?.map((threadThumbprint) => {
+        const threadInfo = this.storage.getItem(
+          `thread-info:${threadThumbprint}`
+        );
+        const messages = this.storage.getItem(`messages:${threadThumbprint}`);
+
+        return [
+          threadThumbprint,
+          {
+            ...threadInfo,
+            messages,
+          },
+        ];
+      });
+
+    const payload = {
+      thumbprint,
+      encryptedIdentity,
+      encryptedStorageKey,
+      invitations,
+      threads: Object.fromEntries(threads ?? []),
+    };
+
+    return signJWS(
+      {
+        alg: "ES384",
+        jwk: idJWKs.publicKeyJWK,
+      },
+      payload,
+      this.identityKeyPair.privateKey
+    );
+  }
+
   private notifySubscribers() {
     for (const sub of this.subscriptions) {
       sub();
