@@ -4,13 +4,14 @@ import ReactDOM from "react-dom/client";
 import { GridStorage } from "./index";
 import { TestStorage } from "./client/GridStorage";
 import { WhisperGridDemo } from "./WhisperGridDemo";
-import { Navigate, RouterProvider, createBrowserRouter, createHashRouter, useSearchParams } from "react-router-dom";
+import { RouterProvider, createBrowserRouter, createHashRouter } from "react-router-dom";
 import { CreateInvitation } from "./CreateInvitation";
-import { ClientProvider, useClient } from "./ClientProvider";
+import { ClientProvider } from "./ClientProvider";
 import { InviteRoute } from "./DisplayInvite";
-import { Alert, Flex, Typography } from "antd";
+import { Alert, Flex } from "antd";
 import { ReplyToInvite } from "./ReplyToInvite";
 import { ThreadView } from "./ThreadView";
+import { HomePage } from "./HomePage";
 
 export class LocalGridStorage extends TestStorage {
   /**
@@ -99,46 +100,6 @@ declare global {
 }
 
 
-function HomePage() {
-  const client = useClient()
-  // const [searchParams] = useSearchParams()
-  // const path = searchParams.get('path')
-
-  return (
-    <Flex vertical>
-      <h1>Whisper Grid</h1>
-      {/* {path && (
-
-        <Navigate to={path}
-          replace
-          relative="route"
-        />
-      )} */}
-      <Typography.Text
-        copyable={{
-          format: 'text/plain',
-          onCopy() {
-            window.cypressCopyText = client.thumbprint
-          }
-        }}
-        code
-      >
-        {client.thumbprint}
-      </Typography.Text>
-      <Alert
-        message="Warning"
-        description="This is experimental and has not been evaluated for security. Do not use this for anything important."
-        type="warning"
-        showIcon
-      />
-      <p>
-        Whisper Grid is a decentralized messaging system that uses a key stored
-        in your browser to make sign and encrypt messages.
-      </p>
-    </Flex>
-  )
-}
-
 const root = ReactDOM.createRoot(
   document.getElementById("root")!
 );
@@ -148,4 +109,3 @@ root.render(
     <RouterProvider router={router} />
   </React.StrictMode>
 )
-
