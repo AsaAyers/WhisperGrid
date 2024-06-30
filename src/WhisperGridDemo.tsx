@@ -88,7 +88,7 @@ export function WhisperGridDemo() {
   return (
     <Layout hasSider={client != null}>
       {client && (
-        <Layout.Sider breakpoint="sm" collapsible >
+        <Layout.Sider breakpoint="xs" collapsible >
           <Flex>
             <Typography.Text style={{ color: 'white', }}>
               Whisper Grid
@@ -107,7 +107,10 @@ export function WhisperGridDemo() {
             items={items} />
         </Layout.Sider>
       )}
-      <Layout.Content style={{}}>
+      <Layout.Content style={{
+        padding: '1em',
+        overflow: 'auto',
+      }}>
         {!client && (
           <LoginForm />
         )}

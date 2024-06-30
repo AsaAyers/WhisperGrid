@@ -9,7 +9,15 @@ import {
   rstrtohex,
 } from "jsrsasign";
 import { setNickname } from "./index";
-import { TaggedString } from "./types";
+import {
+  Invitation,
+  ReplyMessage,
+  SelfEncrypted,
+  SignedInvitation,
+  SignedReply,
+  SignedSelfEncrypted,
+  TaggedString,
+} from "./types";
 
 export const ecdhAlg = {
   name: "ECDH",
@@ -272,10 +280,25 @@ export async function decryptPrivateKey<T = AlgorithmType>(
   );
   return privateKeyJWK;
 }
-export async function parseJWS<T extends { header: unknown; payload: unknown }>(
-  jws: string,
+export async function parseJWS<
+  T extends { header: unknown; payload: unknown },
+  J extends
+    | string
+    | SignedInvitation
+    | SignedReply
+    | SignedSelfEncrypted = string
+>(
+  jws: J,
   pubKey?: ECDSACryptoKey<"public"> | null
-): Promise<T> {
+): Promise<
+  J extends SignedInvitation
+    ? Invitation
+    : J extends SignedReply
+    ? ReplyMessage
+    : J extends SignedSelfEncrypted
+    ? SelfEncrypted
+    : T
+> {
   if (pubKey !== null) {
     const isValid = await verifyJWS(jws, pubKey);
     if (!isValid) {
@@ -287,7 +310,7 @@ export async function parseJWS<T extends { header: unknown; payload: unknown }>(
   const header = JSON.parse(b64utoutf8(encodedHeader));
   const payload = JSON.parse(b64utoutf8(encodedPayload));
 
-  return { header, payload } as T;
+  return { header, payload } as any;
 }
 
 export async function importPrivateKey<T = AlgorithmType>(

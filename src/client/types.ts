@@ -7,6 +7,7 @@ export type TaggedString<T extends string | object> = string & {
 
 export type SignedInvitation = TaggedString<Invitation>;
 export type SignedReply = TaggedString<ReplyMessage>;
+export type SignedSelfEncrypted = TaggedString<SelfEncrypted>;
 
 export type Invitation = {
   header: {
@@ -14,6 +15,7 @@ export type Invitation = {
     jwk: JWK<"ECDSA", "public">;
   };
   payload: {
+    sub: "grid-invitation";
     messageId: string;
     epk: JWK<"ECDH", "public">;
     note?: string;
@@ -27,6 +29,7 @@ export type SelfEncrypted = {
     jwk: JWK<"ECDSA", "public">;
   };
   payload: {
+    sub: "self-encrypted";
     message: string;
     iv: string;
     epk: JWK<"ECDH", "public">;
@@ -36,6 +39,7 @@ export type SelfEncrypted = {
 export type ReplyMessage = {
   header: { alg: "ES384"; jwk?: JWK<"ECDSA", "public"> };
   payload: {
+    sub: "grid-reply";
     re: Thumbprint;
     nickname?: string;
     messageId: string;

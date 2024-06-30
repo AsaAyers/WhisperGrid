@@ -1,6 +1,7 @@
 import React from "react";
-import { Alert, Button, Flex, Form, FormProps, Input, Radio } from "antd";
+import { Alert, Button, Card, Flex, Form, FormProps, Input, Radio, Typography } from "antd";
 import { useClientSetup } from "./ClientProvider";
+import Link from "antd/es/typography/Link";
 
 const unsupportedBrowser = !window?.crypto?.subtle
 
@@ -59,16 +60,18 @@ export function LoginForm() {
   return (
     <Flex
       vertical
+      align="center"
       style={{
-        padding: 24,
-        margin: "auto",
-        maxWidth: 800,
       }}
       gap="small">
 
+      <Alert
+        type="info"
+        message={`Whisper grid is an experimental system for decentralized, end-to-end
+encrypted messaging. This demo only stores data in your own browser (localStorage).
+`.trim()}
+      />
       <p>
-        Whisper grid is an experimental system for decentralized, end-to-end
-        encrypted messaging. This demo only stores data in your own browser (localStorage).
       </p>
       <p>
         You can create a new identity, or unlock an existing one from a previous session.
@@ -77,9 +80,6 @@ export function LoginForm() {
       <Form
         form={form}
         name="login"
-        labelCol={{ span: 8 }}
-        wrapperCol={{ span: 16 }}
-        style={{ maxWidth: 600 }}
         initialValues={initialValues}
         disabled={unsupportedBrowser}
         onFinish={onFinish}
@@ -133,6 +133,14 @@ export function LoginForm() {
           </Form.Item>
         )}
 
+        {unsupportedBrowser && (
+          <Alert
+            message="Warning"
+            description="This browser does not support the WebCrypto API, which is required for WhisperGrid to work."
+            type="warning"
+            showIcon />
+        )}
+
         <Form.Item wrapperCol={{ offset: 8, span: 16 }}>
           <Button type="primary" htmlType="submit">
             {mode === "create" ? "Create" : "Unlock"}
@@ -140,13 +148,12 @@ export function LoginForm() {
         </Form.Item>
       </Form>
 
-      {unsupportedBrowser && (
-        <Alert
-          message="Warning"
-          description="This browser does not support the WebCrypto API, which is required for WhisperGrid to work."
-          type="warning"
-          showIcon />
-      )}
+      <Typography.Text style={{ whiteSpace: 'nowrap' }}>
+        An explanation of this project is available at:{' '}
+        <Link href="https://gist.github.com/AsaAyers/2cce4de71d4e1eb972d3dc01715ab3a7" target="_blank">
+          whispergrid.md
+        </Link>
+      </Typography.Text>
     </Flex >
   );
 }

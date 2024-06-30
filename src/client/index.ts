@@ -189,6 +189,7 @@ export class Client {
         jwk: (await exportKeyPair(this.identityKeyPair)).publicKeyJWK,
       },
       payload: {
+        sub: "self-encrypted",
         message: bufferToB64u(encrypted),
         iv: Buffer.from(iv).toString("base64"),
         epk: jwks.publicKeyJWK,
@@ -226,6 +227,7 @@ export class Client {
         jwk: (await exportKeyPair(this.identityKeyPair)).publicKeyJWK,
       },
       payload: {
+        sub: "grid-invitation",
         messageId: Number(Math.floor(Math.random() * MAX_MESSAGE_ID)).toString(
           16
         ),
@@ -404,6 +406,7 @@ export class Client {
     const replyMessage: ReplyMessage = {
       header: { alg: "ES384" },
       payload: {
+        sub: "grid-reply",
         re,
         messageId: Number(nextId).toString(16),
         message: bufferToB64u(encryptedMessage),
