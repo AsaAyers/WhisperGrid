@@ -4,7 +4,7 @@ import ReactDOM from "react-dom/client";
 import { GridStorage } from "./index";
 import { TestStorage } from "./client/GridStorage";
 import { WhisperGridDemo } from "./WhisperGridDemo";
-import { RouterProvider, createBrowserRouter, createHashRouter } from "react-router-dom";
+import { Navigate, RouterProvider, createBrowserRouter, createHashRouter, useSearchParams } from "react-router-dom";
 import { CreateInvitation } from "./CreateInvitation";
 import { ClientProvider, useClient } from "./ClientProvider";
 import { InviteRoute } from "./DisplayInvite";
@@ -101,9 +101,19 @@ declare global {
 
 function HomePage() {
   const client = useClient()
+  const [searchParams] = useSearchParams()
+  const path = searchParams.get('path')
+
   return (
     <Flex vertical>
       <h1>Whisper Grid</h1>
+      {path && (
+
+        <Navigate to={path}
+          replace
+          relative="path"
+        />
+      )}
       <Typography.Text
         copyable={{
           format: 'text/plain',

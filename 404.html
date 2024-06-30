@@ -5,7 +5,7 @@
     <title>Whisper Grid SPA for Github Pages</title>
     <script type="text/javascript">
       var l = window.location;
-      const url = new URL(l.url);
+      const url = new URL(l);
       url.searchParams.set("path", url.pathname.split("/").slice(1).join("/"));
       url.pathname = "/WhisperGrid";
       l.replace(url);
