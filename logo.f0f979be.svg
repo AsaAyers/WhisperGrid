@@ -1,0 +1,23 @@
+<svg width="200" height="200" xmlns="http://www.w3.org/2000/svg">
+  <circle cx="100" cy="100" r="93" fill="none" stroke="black" stroke-width="7"></circle>
+  <line x1="70" y1="150" x2="80" y2="80" stroke="black" stroke-width="7"></line>
+  <line x1="70" y1="150" x2="40" y2="75" stroke="black" stroke-width="7"></line>
+  <line x1="80" y1="80" x2="160" y2="70" stroke="black" stroke-width="7"></line>
+  <line x1="40" y1="75" x2="110" y2="30" stroke="black" stroke-width="7"></line>
+  <line x1="110" y1="30" x2="120" y2="110" stroke="black" stroke-width="7"></line>
+  <line x1="130" y1="155" x2="160" y2="70" stroke="black" stroke-width="7"></line>
+  <line x1="120" y1="110" x2="70" y2="150" stroke="black" stroke-width="7"></line>
+  <line x1="130" y1="155" x2="80" y2="80" stroke="black" stroke-width="7"></line>
+  <line x1="160" y1="70" x2="110" y2="30" stroke="black" stroke-width="7"></line>
+  <circle cx="70" cy="150" r="14" fill="white" stroke-width="7" stroke="black"></circle>
+  <line x1="56" y1="150" x2="84" y2="150" stroke="black" stroke-width="7"></line>
+  <circle cx="80" cy="80" r="14" fill="white" stroke-width="7" stroke="black"></circle>
+  <line x1="80" y1="66" x2="80" y2="94" stroke="black" stroke-width="7"></line>
+  <circle cx="40" cy="75" r="14" fill="white" stroke-width="7" stroke="grey"></circle>
+  <circle cx="110" cy="30" r="14" fill="white" stroke-width="7" stroke="black"></circle>
+  <circle cx="130" cy="155" r="14" fill="white" stroke-width="7" stroke="black"></circle>
+  <line x1="130" y1="141" x2="130" y2="169" stroke="black" stroke-width="7"></line>
+  <circle cx="160" cy="70" r="14" fill="white" stroke-width="7" stroke="grey"></circle>
+  <circle cx="120" cy="110" r="14" fill="white" stroke-width="7" stroke="black"></circle>
+  <line x1="106" y1="110" x2="134" y2="110" stroke="black" stroke-width="7"></line>
+</svg>
