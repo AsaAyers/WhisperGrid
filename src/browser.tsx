@@ -11,6 +11,7 @@ import { InviteRoute } from "./DisplayInvite";
 import { Alert, Flex } from "antd";
 import { ReplyToInvite } from "./ReplyToInvite";
 import { ThreadView } from "./ThreadView";
+import { Logo } from "./Logo";
 import { HomePage } from "./HomePage";
 
 export class LocalGridStorage extends TestStorage {
@@ -48,6 +49,10 @@ const basename = location.pathname.startsWith("/WhisperGrid")
 const selectedRouter = location.protocol === 'file:' ? createHashRouter : createBrowserRouter;
 
 const router = selectedRouter([
+  {
+    path: '/logo.svg',
+    element: <Logo />
+  },
   {
     path: "/",
     element: (
