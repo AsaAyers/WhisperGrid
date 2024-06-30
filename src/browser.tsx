@@ -111,7 +111,7 @@ function HomePage() {
 
         <Navigate to={path}
           replace
-          relative="path"
+          relative="route"
         />
       )}
       <Typography.Text
