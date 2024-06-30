@@ -101,19 +101,19 @@ declare global {
 
 function HomePage() {
   const client = useClient()
-  const [searchParams] = useSearchParams()
-  const path = searchParams.get('path')
+  // const [searchParams] = useSearchParams()
+  // const path = searchParams.get('path')
 
   return (
     <Flex vertical>
       <h1>Whisper Grid</h1>
-      {path && (
+      {/* {path && (
 
         <Navigate to={path}
           replace
           relative="route"
         />
-      )}
+      )} */}
       <Typography.Text
         copyable={{
           format: 'text/plain',
