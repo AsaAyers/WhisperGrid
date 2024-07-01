@@ -9,18 +9,6 @@ import { Invitation, SignedInvitation } from "./client/types";
 import { Outlet, useHref, useLocation, useNavigate } from "react-router-dom";
 import { useClientSetup } from "./ClientProvider";
 
-/**
- * use registerProtocolHandler to handle any links that start with `grid:`
- */
-function GridProtocolHandler() {
-  const href = useHref({ pathname: '/grid/' }, { relative: 'route' })
-
-  React.useEffect(() => {
-    navigator.registerProtocolHandler('web+grid', `${window.location.origin}${href}%s`)
-  }, [href])
-  return <></>
-}
-
 export function WhisperGridDemo() {
   const { client, logout } = useClientSetup()
   const location = useLocation()
@@ -136,7 +124,6 @@ export function WhisperGridDemo() {
         )}
         {client && (
           <Flex vertical align="center">
-            <GridProtocolHandler />
             <Outlet />
           </Flex>
         )}

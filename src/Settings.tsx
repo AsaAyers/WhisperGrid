@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import React from "react";
 import { useClient, useClientSetup } from "./ClientProvider";
 import { Button, Flex, Form, Input, Modal } from "antd";
@@ -126,7 +127,18 @@ function RegisterHandler() {
       <Button
         type="default"
         onClick={() => {
-          navigator.registerProtocolHandler('web+grid', `${window.location.origin}${href}%s`)
+          try {
+            navigator.registerProtocolHandler('web+grid', `${window.location.origin}${href}%s`)
+            Modal.info({
+              title: 'Success',
+              content: 'Successfully registered grid handler for web+grid: links',
+            });
+          } catch (e: any) {
+            Modal.error({
+              title: 'Error',
+              content: `Failed to register handler: ${e.message}`,
+            });
+          }
         }}>
         RegisterHandler
       </Button>
