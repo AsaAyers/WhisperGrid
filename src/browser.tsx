@@ -14,6 +14,7 @@ import { ThreadView } from "./ThreadView";
 import { Logo } from "./Logo";
 import { HomePage } from "./HomePage";
 import { Settings } from "./Settings";
+import { GridRouter } from "./GridRouter";
 
 export class LocalGridStorage extends TestStorage {
   /**
@@ -53,6 +54,10 @@ const router = selectedRouter([
   {
     path: '/logo.svg',
     element: <Logo />
+  },
+  {
+    path: 'grid/:url',
+    element: <GridRouter />
   },
   {
     path: "/",

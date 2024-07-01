@@ -141,20 +141,23 @@ export function MessageCard({ message, thumbprint, decrypt = true, onCopy }: {
           {decryptedMessage.message}
         </Typography.Paragraph>
       ) : (
-        <Typography.Paragraph
-          code
-          copyable={{
-            format: 'text/plain',
-            onCopy: () => {
-              window.cypressCopyText = message
-              onCopy?.()
-            }
-          }}
-          ellipsis={{
-            expandable: true, rows: 3
-          }}>
-          {message}
-        </Typography.Paragraph>
+        <>
+
+          <Typography.Paragraph
+            code
+            copyable={{
+              format: 'text/plain',
+              onCopy: () => {
+                window.cypressCopyText = message
+                onCopy?.()
+              }
+            }}
+            ellipsis={{
+              expandable: true, rows: 3
+            }}>
+            {message}
+          </Typography.Paragraph>
+        </>
       )}
     </Card>);
 }

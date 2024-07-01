@@ -1,12 +1,12 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import React from "react";
-import { Button, Card, Descriptions, Flex, Form, Modal, Space, Typography } from "antd";
+import { Button, Card, Descriptions, Flex, Form, Modal, Space, Typography, notification } from "antd";
 import { Invitation, SignedInvitation, SignedReply } from "./client/types";
 import TextArea from "antd/es/input/TextArea";
 import { useClient } from "./ClientProvider";
 import { useParams } from "react-router";
 import { Thumbprint, getJWKthumbprint, invariant, parseJWS, verifyJWS } from "./client/utils";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { useForm } from "antd/es/form/Form";
 
 type Props = {
@@ -48,6 +48,8 @@ export function DisplayInvite({
   React.useEffect(() => {
     getJWKthumbprint(invitation.payload.epk).then(setThumbprint)
   })
+  const location = useLocation()
+  const pathname = location.pathname
 
   return (
     <Space direction="vertical" size={16}>
@@ -76,13 +78,20 @@ export function DisplayInvite({
               { label: 'Public Key', children: thumbprint, key: '' },
               { label: 'Nickname', children: invitation.payload.nickname, key: 'nickname' },
               { label: 'Note', children: invitation.payload.note, key: 'note' },
+              {
+                label: "Grid protocol link", children: (
+                  <Flex vertical>
+                    <Typography.Link href={`web+grid:${pathname}`}>
+                      {`web+grid:${pathname}`}
+                    </Typography.Link>
+                    <Typography.Paragraph>
+                      A reply can be added to the hash portion of the URL to get
+                      decoded automatically by its recipient.
+                    </Typography.Paragraph>
+                  </Flex>
+                ), key: 'web+grid'
+              }
             ]} />
-
-          {invitation.payload.note && (
-            <Typography.Text>
-              The note is not encrypted: <Typography.Text code>{invitation.payload.note}</Typography.Text>
-            </Typography.Text>
-          )}
           <DecryptReply />
         </Flex>
       </Card>
@@ -124,30 +133,53 @@ function CopyInvite({ signedInvite }: { signedInvite: SignedInvitation }): React
 const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
 
 function DecryptReply() {
+  type FieldType = {
+    encrypted_message: SignedReply
+  }
   const client = useClient()
   const [showDecryptionModal, setShowDecryptionModal] = React.useState(false);
   const navigate = useNavigate()
-  const [form] = useForm()
+  const [form] = useForm<FieldType>()
   const encryptedMessage = Form.useWatch('encrypted_message', form)
-  const [decryptedMessage, setDecryptedMessage] = React.useState<SignedReply | null>(null)
+  const [signedReply, setSignedReply] = React.useState<SignedReply | null>(null)
+  const hash = useLocation().hash
+  const [notifications, contextHolder] = notification.useNotification()
+
+  React.useEffect(() => {
+    async function validateHash() {
+      if (hash) {
+        console.log('hash', hash)
+        const isValid = await verifyJWS(hash.substring(1))
+        if (isValid) {
+          setSignedReply(hash.substring(1) as SignedReply)
+        } else {
+          notifications.warning({
+            message: "Invalid hash",
+            description: "The hash provided is not a valid signed reply. (The part of the URL after the #)"
+          })
+        }
+      }
+    }
+    validateHash()
+  }, [hash])
 
   React.useEffect(() => {
     let cancel = false
     if (encryptedMessage) {
       delay(10).then(async () => {
+        let isValid = false
         if (!cancel) {
-          verifyJWS(encryptedMessage)
+          isValid = await verifyJWS(encryptedMessage)
         }
-        if (!cancel) {
-          console.log('decrypted')
-          setDecryptedMessage(encryptedMessage)
+        if (!cancel && isValid) {
+          setSignedReply(encryptedMessage)
         }
       }).catch(() => {
         // ignore errors
       })
-    } if (decryptedMessage) {
+    } if (signedReply) {
       delay(10).then(async () => {
-        const result = await client.appendThread(decryptedMessage)
+        const result = await client.appendThread(signedReply)
         if (!cancel) {
           console.log({ result, cancel })
           navigate(`/thread/${result.threadThumbprint}`)
@@ -157,7 +189,7 @@ function DecryptReply() {
     return () => {
       cancel = true
     }
-  }, [encryptedMessage, decryptedMessage])
+  }, [encryptedMessage, signedReply])
 
   return (
     <>
@@ -192,6 +224,7 @@ function DecryptReply() {
           </Form.Item>
         </Modal>
       </Form>
+      {contextHolder}
     </>
   )
 }

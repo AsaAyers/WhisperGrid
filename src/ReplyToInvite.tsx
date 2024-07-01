@@ -83,6 +83,15 @@ export function ReplyToInvite(): React.ReactNode {
           <>
             <MessageCard message={reply} thumbprint={thumbprint} decrypt={false} />
             <Alert message="Message encrypted, copy it from above" type="success" />
+
+            <Typography.Link
+              ellipsis
+              href={`web+grid:/invitation/${thumbprint}#${reply}`}
+            >
+              {
+                `web+grid:/invitation/${thumbprint}#${reply}`
+              }
+            </Typography.Link>
           </>
         )}
         <Card>

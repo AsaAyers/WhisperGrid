@@ -87,11 +87,10 @@ export class TestStorage implements GridStorage {
     // the moment, I can de-duple the last one since the invitation seems to
     // keep getting duplicated a bunch of times.
     if (value[arr.length - 1] !== value) {
-      console.warn("Appending", key);
       // console.log('Appending', key)
       arr.push(value);
     } else {
-      console.log("Skipping duplicate", key);
+      // console.log("Skipping duplicate", key);
     }
     this.setItem(key, arr);
   };
