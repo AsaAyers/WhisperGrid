@@ -3,6 +3,7 @@ import { Client } from "./client";
 import { invariant } from "./client/utils";
 import { LocalGridStorage } from "./browser";
 import { useNavigate } from "react-router-dom";
+import { BackupPayload } from "./client/types";
 
 
 export function ClientProvider(props: React.PropsWithChildren) {
@@ -19,6 +20,7 @@ export function ClientProvider(props: React.PropsWithChildren) {
   }, [])
 
   const logout = React.useCallback(() => {
+    localStorage.removeItem("unprotected-password-for-testing")
     navigate('/')
     setClient(undefined)
   }, []);
@@ -41,12 +43,22 @@ export function ClientProvider(props: React.PropsWithChildren) {
     );
   }, []);
 
+  const loadFromBackup = React.useCallback((backup: BackupPayload, password: string) => {
+    const storage = new LocalGridStorage();
+    return Client.loadFromBackup(storage, backup, password).then((c) => {
+      setClient(c)
+      return c
+    })
+  }, [])
+
+
   const value = React.useMemo(() => {
     if (clientUpdateKey > -1) {
       // This hook needs to run any time this changes.
       // console.log({ clientUpdateKey })
     }
     return {
+      loadFromBackup,
       generateClient,
       loadClient,
       logout,
@@ -87,6 +99,7 @@ const clientContext = React.createContext<null | {
     | 'makeBackup'
     | 'replyToInvitation'
     | 'replyToThread'>;
+  loadFromBackup: (backup: BackupPayload, password: string) => Promise<Client>
   generateClient: (password: string) => Promise<Client>
   loadClient: (thumbprint: string, password: string) => Promise<Client>
   logout: () => void

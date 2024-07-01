@@ -10,9 +10,11 @@ import {
 } from "jsrsasign";
 import { setNickname } from "./index";
 import {
+  BackupJWS,
   Invitation,
   ReplyMessage,
   SelfEncrypted,
+  SignedBackup,
   SignedInvitation,
   SignedReply,
   SignedSelfEncrypted,
@@ -107,11 +109,20 @@ export async function deriveSharedSecret(
     ["encrypt", "decrypt"]
   )) as SymmetricKey;
 }
-export async function signJWS(
-  header: object,
-  payload: object,
+
+type Header = {
+  iat?: number;
+  alg: "ES384";
+  jwk: JWK;
+};
+export async function signJWS<H extends Header = Header, P = object>(
+  header: H,
+  payload: P,
   privateKey: ECDSACryptoKey<"private">
 ): Promise<string> {
+  const unixTimetsamp = Math.floor(Date.now() / 1000);
+  header.iat = unixTimetsamp;
+
   const encodedHeader = utf8tob64u(JSON.stringify(header));
   const encodedPayload = utf8tob64u(JSON.stringify(payload));
   const dataToSign = `${encodedHeader}.${encodedPayload}`;
@@ -134,6 +145,10 @@ export async function verifyJWS(
   jws: string,
   pubKey?: ECDSACryptoKey<"public">
 ): Promise<boolean> {
+  if (jws.startsWith('"') && jws.endsWith('"')) {
+    jws = jws.slice(1, -1);
+  }
+
   const [header, payload, signature] = jws.split(".");
   const signedData = `${header}.${payload}`;
 
@@ -286,6 +301,7 @@ export async function parseJWS<
     | string
     | SignedInvitation
     | SignedReply
+    | SignedBackup
     | SignedSelfEncrypted = string
 >(
   jws: J,
@@ -297,15 +313,18 @@ export async function parseJWS<
     ? ReplyMessage
     : J extends SignedSelfEncrypted
     ? SelfEncrypted
+    : J extends SignedBackup
+    ? BackupJWS
     : T
 > {
   if (pubKey !== null) {
     const isValid = await verifyJWS(jws, pubKey);
-    if (!isValid) {
-      throw new Error(`JWS verification failed`);
-    }
+    invariant(isValid, `JWS verification failed`);
   }
 
+  if (jws.startsWith('"') && jws.endsWith('"')) {
+    jws = jws.slice(1, -1) as any;
+  }
   const [encodedHeader, encodedPayload] = jws.split(".");
   const header = JSON.parse(b64utoutf8(encodedHeader));
   const payload = JSON.parse(b64utoutf8(encodedPayload));

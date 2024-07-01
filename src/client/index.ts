@@ -6,6 +6,8 @@ import {
   SelfEncrypted,
   ReplyMessage,
   SignedReply,
+  BackupPayload,
+  SignedBackup,
 } from "./types";
 import {
   generateECDSAKeyPair,
@@ -109,6 +111,81 @@ export class Client {
     });
 
     return Client.loadClient(storage, thumbprint, password);
+  }
+
+  static async loadFromBackup(
+    storage: GridStorage,
+    backup: BackupPayload | SignedBackup,
+    password: string
+  ): Promise<Client> {
+    if (typeof backup === "string") {
+      const jws = await parseJWS(backup);
+      return Client.loadFromBackup(storage, jws.payload, password);
+    }
+
+    const identityPrivateKey = await decryptPrivateKey(
+      backup.encryptedIdentity,
+      password
+    );
+    const storagePrivateKey = await decryptPrivateKey(
+      backup.encryptedStorageKey,
+      password
+    );
+
+    const identityKeyPair: ECDSACryptoKeyPair = await importKeyPair(
+      {
+        privateKeyJWK: identityPrivateKey,
+        publicKeyJWK: backup.idJWK,
+      },
+      "ecdsa"
+    );
+    const storageKeyPair: ECDHCryptoKeyPair = await importKeyPair(
+      {
+        privateKeyJWK: storagePrivateKey,
+        publicKeyJWK: backup.storageJWK,
+      },
+      "ecdh"
+    );
+
+    storage.setItem(`identity:${backup.thumbprint}`, {
+      id: {
+        jwk: await exportKey(identityKeyPair.publicKey),
+        private: backup.encryptedIdentity,
+      },
+      storage: {
+        jwk: await exportKey(storageKeyPair.publicKey),
+        private: backup.encryptedStorageKey,
+      },
+    });
+
+    for (const invitation of backup.invitations ?? []) {
+      const invite = await parseJWS(invitation);
+      const thumbprint = await getJWKthumbprint(invite.payload.epk);
+      console.log("thumbprint", thumbprint);
+      storage.setItem(`invitation:${thumbprint}`, invitation);
+      storage.appendItem(`invitations:${backup.thumbprint}`, thumbprint);
+    }
+
+    for (const [
+      threadThumbprint,
+      { messages, ...threadInfo },
+    ] of Object.entries(backup.threads)) {
+      storage.setItem(`thread-info:${threadThumbprint}`, threadInfo);
+      storage.appendItem(
+        `threads:${backup.thumbprint}`,
+        threadThumbprint as Thumbprint<"ECDH">
+      );
+      for (const message of messages) {
+        storage.appendItem(`messages:${threadThumbprint}`, message);
+      }
+    }
+    const client = new Client(
+      storage,
+      backup.thumbprint,
+      identityKeyPair,
+      storageKeyPair
+    );
+    return client;
   }
 
   static async loadClient(
@@ -636,7 +713,7 @@ export class Client {
     const invitations = this.storage
       .getItem(`invitations:${this.thumbprint}`)
       ?.map((invitationThumbprint) => {
-        return this.storage.getItem(`invitation:${invitationThumbprint}`);
+        return this.storage.getItem(`invitation:${invitationThumbprint}`)!;
       });
 
     const threads = this.storage
@@ -656,10 +733,12 @@ export class Client {
         ];
       });
 
-    const payload = {
+    const payload: BackupPayload = {
       thumbprint,
       encryptedIdentity,
+      idJWK: idJWKs.publicKeyJWK,
       encryptedStorageKey,
+      storageJWK: storageJWKs.publicKeyJWK,
       invitations,
       threads: Object.fromEntries(threads ?? []),
     };
@@ -671,7 +750,7 @@ export class Client {
       },
       payload,
       this.identityKeyPair.privateKey
-    );
+    ) as Promise<SignedBackup>;
   }
 
   private notifySubscribers() {

@@ -1,4 +1,5 @@
-import { JWK, Thumbprint } from "./utils";
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import { EncryptedPrivateKey, JWK, Thumbprint } from "./utils";
 
 const objectType = Symbol("objectType");
 export type TaggedString<T extends string | object> = string & {
@@ -8,6 +9,7 @@ export type TaggedString<T extends string | object> = string & {
 export type SignedInvitation = TaggedString<Invitation>;
 export type SignedReply = TaggedString<ReplyMessage>;
 export type SignedSelfEncrypted = TaggedString<SelfEncrypted>;
+export type SignedBackup = TaggedString<BackupJWS>;
 
 export type Invitation = {
   header: {
@@ -47,4 +49,21 @@ export type ReplyMessage = {
     message: string;
     iv: string;
   };
+};
+
+export type BackupJWS = {
+  header: {
+    alg: "ES384";
+    jwk: JWK<"ECDSA", "public">;
+  };
+  payload: BackupPayload;
+};
+export type BackupPayload = {
+  thumbprint: Thumbprint;
+  encryptedIdentity: EncryptedPrivateKey<"ECDSA">;
+  encryptedStorageKey: EncryptedPrivateKey<"ECDH">;
+  idJWK: JWK<"ECDSA", "public">;
+  storageJWK: JWK<"ECDH", "public">;
+  invitations?: SignedInvitation[];
+  threads: Record<string, any>;
 };
