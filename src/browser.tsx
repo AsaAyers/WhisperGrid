@@ -4,7 +4,7 @@ import ReactDOM from "react-dom/client";
 import { GridStorage } from "./index";
 import { TestStorage } from "./client/GridStorage";
 import { WhisperGridDemo } from "./WhisperGridDemo";
-import { RouterProvider, createBrowserRouter, createHashRouter } from "react-router-dom";
+import { RouterProvider, createBrowserRouter, createHashRouter, useRouteError } from "react-router-dom";
 import { CreateInvitation } from "./CreateInvitation";
 import { ClientProvider } from "./ClientProvider";
 import { InviteRoute } from "./DisplayInvite";
@@ -61,16 +61,7 @@ const router = selectedRouter([
         <WhisperGridDemo />
       </ClientProvider>
     ),
-    errorElement: (
-      <Flex vertical align="center">
-        <Alert
-          message="Not Found"
-          description="404 Not Found"
-          type="error"
-          showIcon
-        />
-      </Flex>
-    ),
+    errorElement: <Error />,
     children: [
       {
         path: 'create',
@@ -82,7 +73,7 @@ const router = selectedRouter([
       },
       {
         path: 'invitation/:thumbprint',
-        element: <InviteRoute />
+        element: <InviteRoute />,
       },
       {
         path: 'thread/:thumbprint',
@@ -119,3 +110,15 @@ root.render(
     <RouterProvider router={router} />
   </React.StrictMode>
 )
+
+function Error(): React.ReactNode {
+  const error: any = useRouteError();
+  const message = error?.data ?? error?.message ?? "An error occurred";
+  return <Flex vertical align="center">
+    <Alert
+      message="Error"
+      description={message}
+      type="error"
+      showIcon />
+  </Flex>;
+}
