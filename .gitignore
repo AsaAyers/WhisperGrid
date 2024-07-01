@@ -4,3 +4,4 @@ node_modules/
 dist/
 chrome/
 .husky/
+package-lock.json
