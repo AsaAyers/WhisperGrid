@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import React from "react";
 import { Button, Card, Descriptions, Flex, Form, Modal, Space, Typography } from "antd";
 import { Invitation, SignedInvitation, SignedReply } from "./client/types";
@@ -68,18 +69,9 @@ export function DisplayInvite({
               {
                 key: 'signed',
                 label: 'Signed Invite', children:
-                  <Typography.Paragraph code
-                    copyable={{
-                      format: 'text/plain',
-                      onCopy() {
-                        window.cypressCopyText = signedInvite
-                      }
-                    }}
-                    ellipsis={{
-                      expandable: true, rows: 3,
-                    }} style={{ maxWidth: '20rem' }}>
-                    {signedInvite}
-                  </Typography.Paragraph>
+                  <Boundary>
+                    <CopyInvite signedInvite={signedInvite} />
+                  </Boundary>
               },
               { label: 'Public Key', children: thumbprint, key: '' },
               { label: 'Nickname', children: invitation.payload.nickname, key: 'nickname' },
@@ -96,6 +88,37 @@ export function DisplayInvite({
       </Card>
     </Space>
   );
+}
+
+class Boundary extends React.Component<React.PropsWithChildren<object>> {
+  state = { hasError: false, error: null as any | null };
+
+  static getDerivedStateFromError(error: any) {
+    return { hasError: true, error };
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return <Typography.Text type="danger">{this.state.error?.message}</Typography.Text>;
+    }
+
+    return this.props.children;
+  }
+}
+
+function CopyInvite({ signedInvite }: { signedInvite: SignedInvitation }): React.ReactNode {
+  return <Typography.Paragraph code
+    copyable={{
+      format: 'text/plain',
+      onCopy() {
+        window.cypressCopyText = signedInvite;
+      }
+    }}
+    ellipsis={{
+      expandable: true, rows: 3,
+    }} style={{ maxWidth: '20rem' }}>
+    {signedInvite}
+  </Typography.Paragraph>;
 }
 
 const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
