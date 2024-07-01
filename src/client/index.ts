@@ -57,6 +57,7 @@ export type DecryptedMessageType = {
   message: string;
   type: "invite" | "message";
   from: string;
+  iat: number;
 };
 
 export class Client {
@@ -264,6 +265,7 @@ export class Client {
       header: {
         alg: "ES384",
         jwk: (await exportKeyPair(this.identityKeyPair)).publicKeyJWK,
+        iat: 0,
       },
       payload: {
         sub: "self-encrypted",
@@ -302,6 +304,7 @@ export class Client {
       header: {
         alg: "ES384",
         jwk: (await exportKeyPair(this.identityKeyPair)).publicKeyJWK,
+        iat: 0,
       },
       payload: {
         sub: "grid-invitation",
@@ -481,7 +484,7 @@ export class Client {
 
     const re = await getJWKthumbprint(threadInfo.theirEPK);
     const replyMessage: ReplyMessage = {
-      header: { alg: "ES384" },
+      header: { alg: "ES384", iat: 0 },
       payload: {
         sub: "grid-reply",
         re,
@@ -669,6 +672,7 @@ export class Client {
         from: getNickname(from),
         message,
         type: "message",
+        iat: jws.header.iat!,
       };
     } else {
       // Looks like an Invite
@@ -687,6 +691,7 @@ export class Client {
         from: getNickname(from),
         message,
         type: "invite",
+        iat: jwsInvite.header.iat!,
       };
     }
   }

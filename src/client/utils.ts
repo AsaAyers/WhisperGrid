@@ -113,7 +113,7 @@ export async function deriveSharedSecret(
 type Header = {
   iat?: number;
   alg: "ES384";
-  jwk: JWK;
+  jwk?: JWK<any, any>;
 };
 export async function signJWS<H extends Header = Header, P = object>(
   header: H,

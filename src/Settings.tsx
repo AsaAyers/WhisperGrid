@@ -1,9 +1,10 @@
 import React from "react";
-import { useClient } from "./ClientProvider";
+import { useClient, useClientSetup } from "./ClientProvider";
 import { Button, Flex, Form, Input, Modal } from "antd";
 import { invariant } from "./client/utils";
+import { useHref } from "react-router-dom";
 
-export function Settings() {
+function Backup() {
   type FieldType = {
     password: string;
     confirmPassword: string;
@@ -15,7 +16,7 @@ export function Settings() {
 
 
   return (
-    <Flex vertical>
+    <>
       <Button
         type="default"
         onClick={() => {
@@ -87,6 +88,59 @@ export function Settings() {
           </Form.Item>
         </Form>
       </Modal>
+    </>
+  );
+}
+
+function DeleteAll() {
+  const [modals, modalContext] = Modal.useModal();
+  const { logout } = useClientSetup()
+
+
+  return (
+    <>
+      <Button
+        type="default"
+        onClick={() => {
+          modals.confirm({
+            title: 'Delete all data',
+            content: 'Are you sure you want to delete all data? This action cannot be undone.',
+            onOk: async () => {
+              localStorage.clear();
+              logout()
+            },
+          });
+        }}>
+        Delete all data
+      </Button>
+      {modalContext}
+    </>
+  );
+}
+
+function RegisterHandler() {
+  const href = useHref({ pathname: '/grid/' }, { relative: 'route' })
+
+  return (
+    <>
+      <Button
+        type="default"
+        onClick={() => {
+          navigator.registerProtocolHandler('web+grid', `${window.location.origin}${href}%s`)
+        }}>
+        RegisterHandler
+      </Button>
+    </>
+  );
+
+}
+
+export function Settings() {
+  return (
+    <Flex vertical >
+      <Backup />
+      <DeleteAll />
+      <RegisterHandler />
     </Flex>
   );
 }

@@ -14,6 +14,7 @@ export type SignedBackup = TaggedString<BackupJWS>;
 export type Invitation = {
   header: {
     alg: "ES384";
+    iat: number;
     jwk: JWK<"ECDSA", "public">;
   };
   payload: {
@@ -28,6 +29,7 @@ export type Invitation = {
 export type SelfEncrypted = {
   header: {
     alg: "ES384";
+    iat: number;
     jwk: JWK<"ECDSA", "public">;
   };
   payload: {
@@ -39,7 +41,7 @@ export type SelfEncrypted = {
 };
 
 export type ReplyMessage = {
-  header: { alg: "ES384"; jwk?: JWK<"ECDSA", "public"> };
+  header: { alg: "ES384"; jwk?: JWK<"ECDSA", "public">; iat: number };
   payload: {
     sub: "grid-reply";
     re: Thumbprint;
@@ -55,6 +57,7 @@ export type BackupJWS = {
   header: {
     alg: "ES384";
     jwk: JWK<"ECDSA", "public">;
+    iat: number;
   };
   payload: BackupPayload;
 };

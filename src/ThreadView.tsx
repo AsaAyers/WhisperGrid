@@ -132,6 +132,9 @@ export function MessageCard({ message, thumbprint, decrypt = true, onCopy }: {
       extra={[
         <Typography.Link key="encrypted" onClick={() => setShowDecrypted((s) => !s)}>
           {showDecrypted && decryptedMessage ? 'Show' : 'Hide'} Encrypted
+        </Typography.Link>,
+        <Typography.Link href={`web+grid:/thread/`} key="web+grid">
+          web+grid
         </Typography.Link>
       ]}>
 
