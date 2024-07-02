@@ -112,6 +112,13 @@ export function ThreadView(): React.ReactNode {
                     }}>
                     {message.original}
                   </Typography.Paragraph>
+
+                  <Typography.Link
+                    ellipsis
+                    href={`web+grid:/invitation/${thumbprint}#${message.original}`}
+                  >
+                    {`web+grid:/invitation/${thumbprint}#${message.original}`}
+                  </Typography.Link>
                 </Flex>
               )}
             >
@@ -137,6 +144,12 @@ export function ThreadView(): React.ReactNode {
             }} >
             {newReply}
           </Typography.Paragraph>
+          <Typography.Link
+            ellipsis
+            href={`web+grid:/invitation/${thumbprint}#${newReply}`}
+          >
+            {`web+grid:/invitation/${thumbprint}#${newReply}`}
+          </Typography.Link>
           <Alert message="Message encrypted, copy it from above" type="success" />
         </>
       )}

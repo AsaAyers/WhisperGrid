@@ -6,6 +6,7 @@ import TextArea from "antd/es/input/TextArea";
 import { useClient } from "./ClientProvider";
 import { SendOutlined } from "@ant-design/icons";
 import { MessageCard } from "./ThreadView";
+import { useLocation } from "react-router-dom";
 
 export function ReplyToInvite(): React.ReactNode {
   const client = useClient();
@@ -18,6 +19,10 @@ export function ReplyToInvite(): React.ReactNode {
   const invitationString = Form.useWatch('invitationString', form);
   const [invitation, setInvitation] = React.useState<Invitation | null>(null);
   const [thumbprint, setThumbprint] = React.useState<Thumbprint | null>(null);
+  const location = useLocation();
+  const hash = location.hash
+
+
   React.useMemo(() => {
     if (invitationString) {
       parseJWS<Invitation>(invitationString).catch(() => {
@@ -44,7 +49,9 @@ export function ReplyToInvite(): React.ReactNode {
       disabled={reply != null}
       // wrapperCol={{ span: 16 }}
       // style={{ maxWidth: 600 }}
-      initialValues={{}}
+      initialValues={{
+        invitationString: hash ? hash.slice(1) : undefined
+      }}
       onFinish={onFinish}
       // onFinishFailed={onFinishFailed}
       autoComplete="off"
@@ -88,9 +95,7 @@ export function ReplyToInvite(): React.ReactNode {
               ellipsis
               href={`web+grid:/invitation/${thumbprint}#${reply}`}
             >
-              {
-                `web+grid:/invitation/${thumbprint}#${reply}`
-              }
+              {`web+grid:/invitation/${thumbprint}#${reply}`}
             </Typography.Link>
           </>
         )}

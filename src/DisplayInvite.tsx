@@ -6,7 +6,7 @@ import TextArea from "antd/es/input/TextArea";
 import { useClient } from "./ClientProvider";
 import { useParams } from "react-router";
 import { Thumbprint, getJWKthumbprint, invariant, parseJWS, verifyJWS } from "./client/utils";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useHref, useLocation, useNavigate } from "react-router-dom";
 import { useForm } from "antd/es/form/Form";
 
 type Props = {
@@ -50,6 +50,9 @@ export function DisplayInvite({
   })
   const location = useLocation()
   const pathname = location.pathname
+  const replyHref = useHref('/reply')
+
+
 
   return (
     <Space direction="vertical" size={16}>
@@ -81,8 +84,8 @@ export function DisplayInvite({
               {
                 label: "Grid protocol link", children: (
                   <Flex vertical>
-                    <Typography.Link href={`web+grid:${pathname}`}>
-                      {`web+grid:${pathname}`}
+                    <Typography.Link href={`web+grid:${replyHref}#${signedInvite}`}>
+                      {`web+grid:${replyHref}#${signedInvite.substring(0, 10)}...`}
                     </Typography.Link>
                     <Typography.Paragraph>
                       A reply can be added to the hash portion of the URL to get
