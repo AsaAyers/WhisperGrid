@@ -61,11 +61,12 @@ export function ThreadView(): React.ReactNode {
   const [newReply, setNewReply] = React.useState<SignedReply | null>(null);
 
   const onFinish: FormProps<FieldType>['onFinish'] = async (values) => {
-    let reply
+    let reply: SignedReply | void = undefined
     if (matchJWS.test(values.message)) {
-      reply = await client.appendThread(values.message as SignedReply, thumbprint).catch(e => {
+      await client.appendThread(values.message as SignedReply, thumbprint).catch(e => {
         console.error(e)
       })
+      reply = values.message as SignedReply
     }
     if (!reply) {
       reply = await client.replyToThread(thumbprint, values.message, { selfSign: false }).catch(
@@ -87,14 +88,18 @@ export function ThreadView(): React.ReactNode {
   }
 
   return (
-    <Flex vertical gap="small">
+    <Flex
+      vertical
+      align="stretch"
+      gap="small"
+      style={{ width: '100%', height: '100%' }}>
       <Timeline
         mode="left"
         items={thread.map((message) => ({
           dot: (
             <Popover title="Message Info"
               content={(
-                <Flex vertical gap="small">
+                <Flex vertical gap="small" style={{ maxWidth: '90vw' }}>
                   <Typography.Text>
                     From {message.fromThumbprint}
                   </Typography.Text>
@@ -155,31 +160,29 @@ export function ThreadView(): React.ReactNode {
       )}
 
 
-      <Card>
+      <div style={{ flex: 1, flexGrow: 1 }}></div>
+      <Card size="small" title={
+        <Typography.Text>
+          <Avatar
+            icon={<UserOutlined />}
+            style={{ backgroundColor: myColor }}
+            size="small" />
+          {threadInfo?.myNickname ?? ""}
+        </Typography.Text>
+      }>
         <Form onFinish={onFinish} form={form} >
-          <Flex vertical gap="small">
-            <Typography.Text>
-              <Avatar
-                icon={<UserOutlined />}
-                style={{ backgroundColor: myColor }}
-                size="small" />
-              {threadInfo?.myNickname ?? ""}
-            </Typography.Text>
-
-            <Form.Item<FieldType>
-              name="message"
-              rules={[{ required: true, message: 'Please input your password!' }]}
-            >
-              <Space.Compact block>
-                <Input defaultValue="" />
-                <Button type="primary" htmlType="submit">
-                  <SendOutlined />
-                </Button>
-              </Space.Compact>
-            </Form.Item>
-          </Flex>
+          <Form.Item<FieldType>
+            name="message"
+            rules={[{ required: true, message: 'Please input your password!' }]}
+          >
+            <Space.Compact block>
+              <Input defaultValue="" />
+              <Button type="primary" htmlType="submit">
+                <SendOutlined />
+              </Button>
+            </Space.Compact>
+          </Form.Item>
         </Form>
-
       </Card>
     </Flex >
   );

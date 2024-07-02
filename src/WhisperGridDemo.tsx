@@ -123,9 +123,7 @@ export function WhisperGridDemo() {
           <LoginForm />
         )}
         {client && (
-          <Flex vertical align="center">
-            <Outlet />
-          </Flex>
+          <Outlet />
         )}
 
       </Layout.Content>
