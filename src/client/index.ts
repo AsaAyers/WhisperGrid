@@ -48,7 +48,7 @@ export function setNickname(key: string, nickname: string) {
 }
 
 export function getNickname(key: string) {
-  return keyNicknames.get(key) + "(" + key + ")";
+  return keyNicknames.get(key) + "_" + key.substring(key.length - 6);
 }
 
 const MAX_MESSAGE_ID = Number.MAX_SAFE_INTEGER / 2;
@@ -57,6 +57,7 @@ export type DecryptedMessageType = {
   message: string;
   type: "invite" | "message";
   from: string;
+  fromThumbprint: Thumbprint<"ECDSA">;
   iat: number;
 };
 
@@ -670,6 +671,7 @@ export class Client {
 
       return {
         from: getNickname(from),
+        fromThumbprint: from,
         message,
         type: "message",
         iat: jws.header.iat!,
@@ -689,6 +691,7 @@ export class Client {
       }
       return {
         from: getNickname(from),
+        fromThumbprint: from,
         message,
         type: "invite",
         iat: jwsInvite.header.iat!,
@@ -698,6 +701,18 @@ export class Client {
 
   public getEncryptedThread(thumbprint: Thumbprint) {
     return this.storage.getItem(`messages:${thumbprint}`);
+  }
+
+  public async getThreadInfo(thread: Thumbprint) {
+    const threadInfo = this.storage.getItem(`thread-info:${thread}`);
+    invariant(threadInfo, "Thread not found");
+
+    return {
+      myNickname: getNickname(this.thumbprint),
+      theirNickname: getNickname(
+        await getJWKthumbprint(threadInfo.theirSignature)
+      ),
+    };
   }
 
   async makeBackup(password: string) {

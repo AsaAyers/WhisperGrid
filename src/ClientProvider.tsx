@@ -74,6 +74,7 @@ export function ClientProvider(props: React.PropsWithChildren) {
         getThreads: client.getThreads.bind(client),
         makeBackup: client.makeBackup.bind(client),
         replyToThread: client.replyToThread.bind(client),
+        getThreadInfo: client.getThreadInfo.bind(client),
         getEncryptedThread: client.getEncryptedThread.bind(client),
         decryptMessage: client.decryptMessage.bind(client),
       } : undefined,
@@ -96,6 +97,7 @@ const clientContext = React.createContext<null | {
     | 'getInvitations'
     | 'getThreads'
     | 'getEncryptedThread'
+    | 'getThreadInfo'
     | 'makeBackup'
     | 'replyToInvitation'
     | 'replyToThread'>;

@@ -6,7 +6,7 @@ import { ItemType, MenuItemType } from "antd/es/menu/interface";
 import { LogoutOutlined, PlusOutlined, SendOutlined, SettingOutlined, UserAddOutlined, UserOutlined } from "@ant-design/icons";
 import { getJWKthumbprint, parseJWS } from "./client/utils";
 import { Invitation, SignedInvitation } from "./client/types";
-import { Outlet, useHref, useLocation, useNavigate } from "react-router-dom";
+import { Outlet, useLocation, useNavigate } from "react-router-dom";
 import { useClientSetup } from "./ClientProvider";
 
 export function WhisperGridDemo() {
