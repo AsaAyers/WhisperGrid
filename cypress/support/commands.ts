@@ -18,6 +18,41 @@ Cypress.Commands.add("login", (thumbprint, password) => {
   cy.contains("Thumbprint").type(thumbprint);
   cy.contains("Password").type(password + "{enter}");
 });
+Cypress.Commands.add("logout", () => {
+  cy.contains("Logout").click();
+  cy.visit("http://localhost:1234/");
+});
+Cypress.Commands.add("replyToInvite", (invitation, nickname, note = "") => {
+  cy.contains("Reply to invite").click();
+  cy.get("textarea").paste(invitation);
+  cy.labeledInput("Nickname").type(nickname);
+  cy.labeledInput("Message").type(note + "{enter}");
+  return cy.copyButtonText("Copy");
+});
+Cypress.Commands.add("makeInvite", (nickname, note = "") => {
+  cy.contains("Create Invitation").click();
+  cy.contains("Nickname").type(nickname);
+  cy.contains("Note").type(note + "{enter}");
+  return cy.copyButtonText("Copy").then((invite) => {
+    return invite;
+  });
+});
+Cypress.Commands.add("openBackup", (thumbprint, password) => {
+  cy.contains("Open Backup").click();
+  cy.get("input[type=file]").selectFile(
+    "cypress/downloads/grid-" + thumbprint + ".jws.txt",
+    { force: true }
+  );
+
+  cy.labeledInput("Password").type(password);
+  cy.contains("Unlock").click();
+  return cy
+    .contains(/id-[a-zA-Z0-9_-]+/)
+    .invoke("text")
+    .then((aliceThumbprint) => {
+      return aliceThumbprint;
+    });
+});
 Cypress.Commands.add("createIdentity", (password) => {
   cy.visit("http://localhost:1234/");
   cy.contains("Create Identity").click();
@@ -28,7 +63,6 @@ Cypress.Commands.add("createIdentity", (password) => {
     .contains(/id-[a-zA-Z0-9_-]+/)
     .invoke("text")
     .then((aliceThumbprint) => {
-      console.log("a", aliceThumbprint);
       return aliceThumbprint;
     });
 });
@@ -113,8 +147,16 @@ declare global {
   // eslint-disable-next-line @typescript-eslint/no-namespace
   namespace Cypress {
     interface Chainable {
+      logout(): Chainable<void>;
       login(thumbprint: string, password: string): Chainable<void>;
       createIdentity(password: string): Chainable<string>;
+      openBackup(thumbprint: string, password: string): Chainable<string>;
+      makeInvite(nickname: string, note?: string): Chainable<string>;
+      replyToInvite(
+        invite: string,
+        nickname: string,
+        note?: string
+      ): Chainable<string>;
       labeledInput(label: string): Chainable<JQuery<HTMLElement>>;
       copyButtonText(label: string): Chainable<string>;
       paste(text: string): Chainable<void>;

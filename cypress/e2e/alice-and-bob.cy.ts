@@ -34,18 +34,15 @@ describe("Alice and Bob can use WhisperGrid to have a conversation", () => {
     cy.contains("Logout").click();
     cy.createIdentity(bobPassword).as("bobThumbprint");
 
-    cy.contains("Reply to invite").click();
-
-    cy.get<string>("@invitation").then((invitation) => {
-      cy.get("textarea").paste(invitation);
-    });
-    cy.labeledInput("Nickname").type("Bob");
-    cy.labeledInput("Message").type(
-      "Hello Alice, this is a message for testing Whisper Grid{enter}"
-    );
-
-    cy.contains("Expand").click();
-    cy.copyButtonText("Copy").as("bobToAlice");
+    cy.get<string>("@invitation")
+      .then((invitation) => {
+        cy.replyToInvite(
+          invitation,
+          "Bob",
+          "Hello Alice, this is a message for testing Whisper Grid{enter}"
+        );
+      })
+      .as("bobToAlice");
     cy.scre("bob-reply");
     cy.contains("Logout").click();
 

@@ -4,3 +4,5 @@ node_modules/
 dist/
 chrome/
 .husky/
+cypress/downloads/
+cypress/videos/
