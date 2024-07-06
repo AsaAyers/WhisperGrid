@@ -11,16 +11,28 @@ import {
 import { setNickname } from "./index";
 import {
   BackupJWS,
+  Encrypted,
   Invitation,
   ReplyMessage,
+  ReplyToInvite,
   SelfEncrypted,
   SignedBackup,
   SignedInvitation,
   SignedReply,
+  SignedReplyToInvite,
   SignedSelfEncrypted,
   TaggedString,
 } from "./types";
 
+export const b64uToBuffer = (str: string) =>
+  Buffer.from(str.replace("-", "+").replace("_", "/"), "base64");
+
+export const bufferToB64u = (src: Uint8Array | ArrayBuffer) =>
+  Buffer.from(src)
+    .toString("base64")
+    .replace("+", "-")
+    .replace("/", "_")
+    .replace("=", "");
 export const ecdhAlg = {
   name: "ECDH",
   namedCurve: "P-384",
@@ -115,7 +127,7 @@ type Header = {
   alg: "ES384";
   jwk?: JWK<any, any>;
 };
-export async function signJWS<H extends Header = Header, P = object>(
+export async function signJWS<H extends Header = Header, P = object | string>(
   header: H,
   payload: P,
   privateKey: ECDSACryptoKey<"private">
@@ -124,7 +136,10 @@ export async function signJWS<H extends Header = Header, P = object>(
   header.iat = unixTimetsamp;
 
   const encodedHeader = utf8tob64u(JSON.stringify(header));
-  const encodedPayload = utf8tob64u(JSON.stringify(payload));
+
+  const encodedPayload = utf8tob64u(
+    typeof payload === "string" ? payload : JSON.stringify(payload)
+  );
   const dataToSign = `${encodedHeader}.${encodedPayload}`;
 
   const signature = await window.crypto.subtle.sign(
@@ -143,7 +158,7 @@ export async function signJWS<H extends Header = Header, P = object>(
 }
 export async function verifyJWS(
   jws: string,
-  pubKey?: ECDSACryptoKey<"public">
+  pubKey?: ECDSACryptoKey<"public"> | JWK<"ECDSA", "public"> | null
 ): Promise<boolean> {
   if (jws.startsWith('"') && jws.endsWith('"')) {
     jws = jws.slice(1, -1);
@@ -166,9 +181,13 @@ export async function verifyJWS(
     return false;
   }
 
+  if ("kty" in pubKey) {
+    pubKey = await importPublicKey("ECDSA", pubKey);
+  }
+
   const isValid = await window.crypto.subtle.verify(
     { name: ecdsaAlg.name, hash: { name: "SHA-384" } },
-    pubKey,
+    pubKey as CryptoKey,
     hextoArrayBuffer(b64utohex(signature)),
     new TextEncoder().encode(signedData)
   );
@@ -301,6 +320,7 @@ export async function parseJWS<
     | string
     | SignedInvitation
     | SignedReply
+    | SignedReplyToInvite
     | SignedBackup
     | SignedSelfEncrypted = string
 >(
@@ -311,6 +331,8 @@ export async function parseJWS<
     ? Invitation
     : J extends SignedReply
     ? ReplyMessage
+    : J extends SignedReplyToInvite
+    ? ReplyToInvite
     : J extends SignedSelfEncrypted
     ? SelfEncrypted
     : J extends SignedBackup
@@ -327,7 +349,12 @@ export async function parseJWS<
   }
   const [encodedHeader, encodedPayload] = jws.split(".");
   const header = JSON.parse(b64utoutf8(encodedHeader));
-  const payload = JSON.parse(b64utoutf8(encodedPayload));
+  let payload = b64utoutf8(encodedPayload);
+  try {
+    payload = JSON.parse(payload);
+  } catch (e) {
+    // ignore JSON parse errors
+  }
 
   return { header, payload } as any;
 }
@@ -383,4 +410,57 @@ export async function importKeyPair<T = AlgorithmType>(
       type === "ecdh" ? [] : ["verify"]
     )) as TaggedKey<[T, "public"]>,
   };
+}
+
+export async function encryptData<T extends string | object>(
+  secret: SymmetricKey,
+  message: T
+): Promise<{
+  iv: string;
+  encrypted: Encrypted<T>;
+}> {
+  try {
+    const iv = window.crypto.getRandomValues(new Uint8Array(12));
+    const encrypted = await window.crypto.subtle.encrypt(
+      {
+        name: "AES-GCM",
+        iv,
+      },
+      secret,
+      new TextEncoder().encode(
+        JSON.stringify({
+          m: message,
+        })
+      )
+    );
+    return {
+      iv: Buffer.from(iv).toString("base64"),
+      encrypted: bufferToB64u(encrypted) as Encrypted<T>,
+    };
+  } catch (e: any) {
+    throw new Error("Failed to encrypt " + e?.message);
+  }
+}
+
+export async function decryptData<T extends string | object>(
+  secret: SymmetricKey,
+  iv: string,
+  encryptedPayload: Encrypted<T>
+): Promise<T> {
+  try {
+    const payloadBuffer = await window.crypto.subtle.decrypt(
+      {
+        name: "AES-GCM",
+        iv: b64uToBuffer(iv),
+      },
+      secret,
+      b64uToBuffer(encryptedPayload)
+    );
+    const decoded = new TextDecoder().decode(payloadBuffer);
+    const decrypted = JSON.parse(decoded);
+
+    return (decrypted?.m ?? decrypted) as T;
+  } catch (e: any) {
+    throw new Error("Failed to decrypt " + e?.message);
+  }
 }

@@ -8,6 +8,12 @@ import {
   SignedReply,
   BackupPayload,
   SignedBackup,
+  ReplyToInvite,
+  SignedReplyToInvite,
+  Decrypted,
+  SignedSelfEncrypted,
+  ReplyToInvitePayload,
+  ReplyPayload,
 } from "./types";
 import {
   generateECDSAKeyPair,
@@ -30,18 +36,10 @@ import {
   SymmetricKey,
   importPrivateKey,
   importPublicKey,
-  ECDSACryptoKey,
+  decryptData,
+  encryptData,
 } from "./utils";
 import { ArrayBuffertohex } from "jsrsasign";
-const bufferToB64u = (src: Uint8Array | ArrayBuffer) =>
-  Buffer.from(src)
-    .toString("base64")
-    .replace("+", "-")
-    .replace("/", "_")
-    .replace("=", "");
-
-const b64uToBuffer = (str: string) =>
-  Buffer.from(str.replace("-", "+").replace("_", "/"), "base64");
 
 const keyNicknames = new Map<string, string>();
 export function setNickname(key: string, nickname: string) {
@@ -77,7 +75,7 @@ export class Client {
 
   constructor(
     private storage: GridStorage,
-    public readonly thumbprint: string,
+    public readonly thumbprint: Thumbprint<"ECDSA">,
     private readonly identityKeyPair: ECDSACryptoKeyPair,
     private readonly storageKeyPair: ECDHCryptoKeyPair
   ) {}
@@ -190,7 +188,7 @@ export class Client {
 
   static async loadClient(
     storage: GridStorage,
-    thumbprint: string,
+    thumbprint: Thumbprint<"ECDSA">,
     password: string
   ) {
     const storedData = storage.getItem(`identity:${thumbprint}`);
@@ -219,27 +217,24 @@ export class Client {
     return new Client(storage, thumbprint, id, storageKeys);
   }
 
-  async decryptFromSelf(message: string): Promise<string> {
-    const selfEncrypted = await parseJWS<SelfEncrypted>(
+  async decryptFromSelf(message: SignedSelfEncrypted): Promise<string> {
+    const selfEncrypted = await parseJWS(
       message,
       this.identityKeyPair.publicKey
     );
 
-    const epk = await importPublicKey("ECDH", selfEncrypted.payload.epk);
+    const epk = await importPublicKey("ECDH", selfEncrypted.header.epk);
 
     const secret = await deriveSharedSecret(
       this.storageKeyPair.privateKey,
       epk
     );
-    const decryptedBuffer = await window.crypto.subtle.decrypt(
-      {
-        name: "AES-GCM",
-        iv: b64uToBuffer(selfEncrypted.payload.iv),
-      },
+    const payload = await decryptData(
       secret,
-      b64uToBuffer(selfEncrypted.payload.message)
+      selfEncrypted.header.iv,
+      selfEncrypted.payload
     );
-    return new TextDecoder().decode(decryptedBuffer);
+    return payload;
   }
   async encryptToSelf(message: string) {
     const epk = await generateECDHKeyPair();
@@ -249,43 +244,37 @@ export class Client {
       epk.privateKey,
       this.storageKeyPair.publicKey
     );
-
-    const iv = window.crypto.getRandomValues(new Uint8Array(12));
-    const encrypted = await window.crypto.subtle.encrypt(
-      {
-        name: "AES-GCM",
-        iv,
-      },
-      secret,
-      new TextEncoder().encode(message)
-    );
+    const { iv, encrypted } = await encryptData(secret, message);
 
     const selfEncrypted: SelfEncrypted = {
       header: {
         alg: "ES384",
         jwk: (await exportKeyPair(this.identityKeyPair)).publicKeyJWK,
         iat: 0,
-      },
-      payload: {
         sub: "self-encrypted",
-        message: bufferToB64u(encrypted),
-        iv: Buffer.from(iv).toString("base64"),
+        iv,
         epk: jwks.publicKeyJWK,
       },
+      payload: encrypted,
     };
 
-    const encryptedJWS = await signJWS(
+    const encryptedJWS = (await signJWS(
       selfEncrypted.header,
       selfEncrypted.payload,
       this.identityKeyPair.privateKey
+    )) as SignedSelfEncrypted;
+    // try {
+    invariant(await verifyJWS(encryptedJWS), "Error encrypting message");
+    const decryptedMessage = await this.decryptFromSelf(encryptedJWS);
+    invariant(decryptedMessage, "Decrypted message is empty");
+    invariant(
+      decryptedMessage === message ||
+        message === JSON.stringify(decryptedMessage),
+      "Decrypted message mismatch"
     );
-    try {
-      invariant(await verifyJWS(encryptedJWS), "Error encrypting message");
-      const decryptedMessage = await this.decryptFromSelf(encryptedJWS);
-      invariant(decryptedMessage === message, "Decrypted message mismatch");
-    } catch (e: any) {
-      throw new Error(`Error encrypting message: ${e?.message ?? e}`);
-    }
+    // } catch (e: any) {
+    //   throw new Error(`Error encrypting message: ${e?.message ?? e}`);
+    // }
 
     return encryptedJWS;
   }
@@ -304,9 +293,9 @@ export class Client {
         alg: "ES384",
         jwk: (await exportKeyPair(this.identityKeyPair)).publicKeyJWK,
         iat: 0,
+        sub: "grid-invitation",
       },
       payload: {
-        sub: "grid-invitation",
         messageId: Number(Math.floor(Math.random() * MAX_MESSAGE_ID)).toString(
           16
         ),
@@ -458,62 +447,52 @@ export class Client {
     }
   ) {
     const { secret, epk } = await this.readThreadSecret(threadId);
-    const iv = window.crypto.getRandomValues(new Uint8Array(12));
-    const encryptedMessage = await window.crypto.subtle.encrypt(
-      {
-        name: "AES-GCM",
-        iv,
-      },
-      secret,
-      new TextEncoder().encode(message)
-    );
-    const encryptedNickname = options?.nickname
-      ? await window.crypto.subtle.encrypt(
-          {
-            name: "AES-GCM",
-            iv,
-          },
-          secret,
-          new TextEncoder().encode(options.nickname)
-        )
-      : null;
-
     const messageId = this.storage.getItem(`message-id:${threadId}`);
     invariant(typeof messageId === "string", `Invalid message id ${messageId}`);
 
-    const nextId = parseInt(messageId, 16) + 1;
-    // if (nextId >= MAX_MESSAGE_ID) {
-    //   nextId = 1;
-    // }
+    const nextId = incMessageId(messageId);
     this.storage.setItem(`message-id:${threadId}`, Number(nextId).toString(16));
 
     const threadInfo = this.storage.getItem(`thread-info:${threadId}`);
     invariant(threadInfo, "Thread not found");
 
-    const replyMessage: ReplyMessage = {
-      header: { alg: "ES384", iat: 0 },
-      payload: {
+    let replyMessage: Decrypted<ReplyMessage | ReplyToInvite> = {
+      header: {
+        iat: 0,
+        alg: "ES384",
         sub: "grid-reply",
         re: threadId,
+        iv: "",
+        from: this.thumbprint,
+      },
+      payload: {
         messageId: Number(nextId).toString(16),
-        message: bufferToB64u(encryptedMessage),
-        nickname: encryptedNickname
-          ? bufferToB64u(encryptedNickname)
-          : undefined,
-        iv: Buffer.from(iv).toString("base64"),
+        message,
       },
     };
-    if (options?.selfSign) {
-      replyMessage.header.jwk = (
-        await exportKeyPair(this.identityKeyPair)
-      ).publicKeyJWK;
-      replyMessage.payload.epk = epk;
-      replyMessage.header.invite = await getJWKthumbprint(threadInfo.theirEPK);
+    if (options?.selfSign && options.nickname) {
+      const ack: Decrypted<ReplyToInvite> = {
+        header: {
+          ...replyMessage.header,
+          sub: "reply-to-invite",
+          jwk: await exportKey(this.identityKeyPair.publicKey),
+          invite: await getJWKthumbprint(threadInfo.theirEPK),
+          epk,
+          re: undefined,
+        },
+        payload: {
+          ...replyMessage.payload,
+          nickname: options.nickname,
+        },
+      };
+      replyMessage = ack;
     }
 
+    const { iv, encrypted } = await encryptData(secret, replyMessage.payload);
+    replyMessage.header.iv = iv;
     const encryptedJWS = (await signJWS(
       replyMessage.header,
-      replyMessage.payload,
+      encrypted,
       this.identityKeyPair.privateKey
     )) as SignedReply;
 
@@ -522,25 +501,12 @@ export class Client {
       "Error encrypting message"
     );
 
-    const decryptedBuffer = await window.crypto.subtle.decrypt(
-      {
-        name: "AES-GCM",
-        iv: Uint8Array.from(iv),
-      },
-      secret,
-      b64uToBuffer(replyMessage.payload.message)
-    );
-    invariant(
-      new TextDecoder().decode(decryptedBuffer) === message,
-      "Decrypted message mismatch"
-    );
-
     await this.appendThread(encryptedJWS, threadId);
     return encryptedJWS;
   }
 
   public async appendThread(
-    encryptedMessage: SignedInvitation | SignedReply,
+    encryptedMessage: SignedInvitation | SignedReply | SignedReplyToInvite,
     threadId?: ThreadID
   ): Promise<{
     threadId: ThreadID;
@@ -550,45 +516,62 @@ export class Client {
     };
   }> {
     if (!threadId) {
-      const jws = await parseJWS<ReplyMessage>(encryptedMessage, null);
+      const jws = await parseJWS(encryptedMessage, null);
+      switch (jws.header.sub) {
+        case "grid-invitation": {
+          // const invite = jws as Invitation;
+          break;
+        }
+        case "reply-to-invite": {
+          const reply = jws as ReplyToInvite;
+          invariant(reply.header.epk, "First message must have an epk");
+          invariant(
+            reply.header.invite,
+            'First message must have an "invite" header'
+          );
+          const invitationThumbprint = reply.header.invite;
+          const invitation = this.storage.getItem(
+            `invitation:${invitationThumbprint}`
+          );
+          invariant(invitation, "Invitation not found " + invitationThumbprint);
+          const invitationJWS = await parseJWS<Invitation>(invitation);
 
-      // invariant(jws.header.jwk, "First message must be self-signed");
-      if (!jws.header.jwk) {
-        invariant(
-          this.storage.hasItem(`thread-info:${jws.payload.re}`),
-          "Thread not found"
-        );
-        return this.appendThread(encryptedMessage, jws.payload.re);
-      } else {
-        invariant(jws.payload.epk, "First message must have an epk");
-        invariant(
-          jws.header.invite,
-          'First message must have an "invite" header'
-        );
-        const invitationThumbprint = jws.header.invite;
-        const invitation = this.storage.getItem(
-          `invitation:${invitationThumbprint}`
-        );
-        invariant(invitation, "Invitation not found " + invitationThumbprint);
-        const invitationJWS = await parseJWS<Invitation>(invitation);
+          const myThumbprint = await getJWKthumbprint(
+            invitationJWS.payload.epk
+          );
+          threadId = await this.startThread(
+            invitation,
+            reply.header.epk,
+            reply.header.jwk,
+            incMessageId(invitationJWS.payload.messageId),
+            myThumbprint
+          );
+          // FALLS THROUGH
+        }
+        case "grid-reply": {
+          const reply = jws as ReplyMessage;
+          threadId ??= reply.header.re;
+          const threadInfo = this.storage.getItem(`thread-info:${threadId}`);
 
-        invariant(
-          parseInt(jws.payload.messageId, 16) ===
-            parseInt(invitationJWS.payload.messageId, 16) + 1,
-          `Expected to find a reply to ${invitationJWS.payload.messageId} to be 1 more than ${jws.payload.messageId}`
-        );
+          let isValid = false;
+          if (reply.header.from === this.thumbprint) {
+            isValid = await verifyJWS(
+              encryptedMessage,
+              this.identityKeyPair.publicKey
+            );
+          } else {
+            isValid = await verifyJWS(
+              encryptedMessage,
+              threadInfo.theirSignature
+            );
+          }
+          invariant(isValid, "Invalid message signature");
 
-        const myThumbprint = await getJWKthumbprint(invitationJWS.payload.epk);
-        threadId = await this.startThread(
-          invitation,
-          jws.payload.epk,
-          jws.header.jwk,
-          jws.payload.messageId,
-          myThumbprint
-        );
+          return this.appendThread(encryptedMessage, threadId);
+        }
       }
     }
-
+    invariant(threadId, "Thread not found");
     const message = await this.decryptMessage(threadId, encryptedMessage);
     this.storage.appendItem(`messages:${threadId}`, encryptedMessage);
     this.notifySubscribers();
@@ -600,91 +583,13 @@ export class Client {
 
   public async decryptMessage(
     threadId: ThreadID,
-    encryptedMessage: string | SignedInvitation | SignedReply
+    encryptedMessage: SignedInvitation | SignedReply | SignedReplyToInvite
   ): Promise<DecryptedMessageType> {
     const threadInfo = this.storage.getItem(`thread-info:${threadId}`);
-    const jws = await parseJWS<ReplyMessage | Invitation>(
-      encryptedMessage,
-      null
-    );
+    const jws = await parseJWS(encryptedMessage, null);
     invariant(threadInfo, "Thread not found");
-    if ("re" in jws.payload && jws.payload.re) {
-      const jwsReply = jws as ReplyMessage;
 
-      let from = jwsReply.header.jwk
-        ? await getJWKthumbprint(jwsReply.header.jwk)
-        : null;
-
-      if (!(await verifyJWS(encryptedMessage))) {
-        let pubKey: null | ECDSACryptoKey<"public"> = null;
-        if (!jwsReply.header.jwk && jwsReply.payload.re) {
-          if (jwsReply.payload.re === threadInfo.myThumbprint) {
-            pubKey = await importPublicKey("ECDSA", threadInfo.theirSignature);
-          }
-          if (
-            jwsReply.payload.re ===
-            (await getJWKthumbprint(threadInfo.theirEPK))
-          ) {
-            pubKey = this.identityKeyPair.publicKey;
-          }
-        }
-        invariant(pubKey != null, "Unable to determine public key");
-
-        if (!(await verifyJWS(encryptedMessage, pubKey))) {
-          const expected = getNickname(
-            await getJWKthumbprint(threadInfo.theirSignature)
-          );
-          throw new Error(
-            `expected message addressed to ${getNickname(
-              jwsReply.payload.re
-            )} to be signed with ${expected}`
-          );
-        }
-        from = await getJWKthumbprint(await exportKey(pubKey));
-      }
-      invariant(from, "Unable to determine sender");
-
-      const { secret } = await this.readThreadSecret(threadId);
-      const iv = b64uToBuffer(jwsReply.payload.iv);
-
-      let messageBuffer;
-      let nicknameBuffer;
-      try {
-        messageBuffer = await window.crypto.subtle.decrypt(
-          {
-            name: "AES-GCM",
-            iv: Uint8Array.from(iv),
-          },
-          secret,
-          b64uToBuffer(jwsReply.payload.message)
-        );
-        const nickname = jwsReply.payload.nickname;
-        nicknameBuffer = nickname
-          ? await window.crypto.subtle.decrypt(
-              {
-                name: "AES-GCM",
-                iv: Uint8Array.from(iv),
-              },
-              secret,
-              b64uToBuffer(nickname)
-            )
-          : undefined;
-      } catch (e: any) {
-        throw new Error(`Error appending thread ${e?.message ?? e}`);
-      }
-      const message = new TextDecoder().decode(messageBuffer);
-      if (nicknameBuffer) {
-        setNickname(from, new TextDecoder().decode(nicknameBuffer));
-      }
-
-      return {
-        from: getNickname(from),
-        fromThumbprint: from,
-        message,
-        type: "message",
-        iat: jws.header.iat!,
-      };
-    } else {
+    if (jws.header.sub === "grid-invitation") {
       // Looks like an Invite
       invariant(await verifyJWS(encryptedMessage), "Invalid message signature");
       const jwsInvite: Invitation = jws as Invitation;
@@ -702,9 +607,25 @@ export class Client {
         fromThumbprint: from,
         message,
         type: "invite",
-        iat: jwsInvite.header.iat!,
+        iat: jwsInvite.header.iat,
       };
     }
+    const reply = jws as ReplyMessage | ReplyToInvite;
+    const { secret } = await this.readThreadSecret(threadId);
+    const payload = await decryptData<ReplyToInvitePayload | ReplyPayload>(
+      secret,
+      jws.header.iv,
+      reply.payload
+    );
+    const from = reply.header.from;
+
+    return {
+      from: getNickname(from),
+      fromThumbprint: from,
+      message: payload.message,
+      type: "invite",
+      iat: reply.header.iat,
+    };
   }
 
   public getEncryptedThread(thumbprint: ThreadID) {
@@ -794,4 +715,12 @@ export class Client {
       this.subscriptions.delete(onChange);
     };
   }
+}
+
+function incMessageId(messageId: string) {
+  let nextId = parseInt(messageId, 16) + 1;
+  if (nextId >= MAX_MESSAGE_ID) {
+    nextId = 1;
+  }
+  return nextId.toString(16);
 }

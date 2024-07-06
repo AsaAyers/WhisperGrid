@@ -1,6 +1,12 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { SignedInvitation, SignedReply, TaggedString } from "./types";
-import { EncryptedPrivateKey, JWK, Thumbprint } from "./utils";
+import {
+  SignedInvitation,
+  SignedReply,
+  SignedReplyToInvite,
+  SignedSelfEncrypted,
+  TaggedString,
+} from "./types";
+import { EncryptedPrivateKey, invariant, JWK, Thumbprint } from "./utils";
 
 export type ThreadID = TaggedString<"ThreadID">;
 
@@ -11,9 +17,12 @@ type Key<Type extends StoredDataTypes["type"]> = `${Type}:${Extract<
 export type GridStorage = {
   hasItem<Type extends StoredDataTypes["type"]>(key: Key<Type>): boolean;
   removeItem: <Type extends StoredDataTypes["type"]>(key: Key<Type>) => null;
-  getItem: <Type extends StoredDataTypes["type"]>(
+  queryItem: <Type extends StoredDataTypes["type"]>(
     key: Key<Type>
   ) => Extract<StoredDataTypes, { type: Type }>["data"] | null;
+  getItem: <Type extends StoredDataTypes["type"]>(
+    key: Key<Type>
+  ) => Extract<StoredDataTypes, { type: Type }>["data"];
   setItem: <Type extends StoredDataTypes["type"]>(
     key: Key<Type>,
     value: Extract<StoredDataTypes, { type: Type }>["data"]
@@ -58,12 +67,16 @@ type StoredDataTypes =
   | {
       type: "messages";
       keyType: string;
-      data: Array<SignedInvitation | SignedReply>;
+      data: Array<SignedInvitation | SignedReply | SignedReplyToInvite>;
     }
-  | { type: "encrypted-thread-key"; keyType: string; data: string }
+  | {
+      type: "encrypted-thread-key";
+      keyType: Thumbprint<"ECDH">;
+      data: SignedSelfEncrypted;
+    }
   | {
       type: "public-key";
-      keyType: string;
+      keyType: Thumbprint;
       data: JWK<"ECDSA" | "ECDH", "public">;
     }
   | { type: "message-id"; keyType: ThreadID; data: string }
@@ -85,7 +98,12 @@ export class TestStorage implements GridStorage {
     return null;
   };
 
+  queryItem: GridStorage["queryItem"] = (key) => {
+    return this.data.get(key);
+  };
+
   getItem: GridStorage["getItem"] = (key) => {
+    invariant(this.hasItem(key), `Key ${key} not found in storage.`);
     return this.data.get(key);
   };
 
@@ -94,7 +112,7 @@ export class TestStorage implements GridStorage {
   };
 
   appendItem: GridStorage["appendItem"] = (key, value) => {
-    let arr: any = this.getItem(key);
+    let arr: any = this.queryItem(key);
     if (!Array.isArray(arr)) {
       arr = [];
     }

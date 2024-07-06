@@ -9,17 +9,25 @@ export type TaggedString<T extends string | object> = string & {
 
 export type SignedInvitation = TaggedString<Invitation>;
 export type SignedReply = TaggedString<ReplyMessage>;
+export type SignedReplyToInvite = TaggedString<ReplyToInvite>;
 export type SignedSelfEncrypted = TaggedString<SelfEncrypted>;
 export type SignedBackup = TaggedString<BackupJWS>;
+export type Encrypted<T extends string | object> = TaggedString<T>;
+export type Decrypted<T extends object> = T extends {
+  header: infer H;
+  payload: Encrypted<infer U>;
+}
+  ? { payload: U; header: H }
+  : void;
 
 export type Invitation = {
   header: {
     alg: "ES384";
     iat: number;
     jwk: JWK<"ECDSA", "public">;
+    sub: "grid-invitation";
   };
   payload: {
-    sub: "grid-invitation";
     messageId: string;
     epk: JWK<"ECDH", "public">;
     note?: string;
@@ -27,36 +35,52 @@ export type Invitation = {
   };
 };
 
-export type SelfEncrypted = {
+export type SelfEncrypted<P extends string | object = string> = {
   header: {
     alg: "ES384";
     iat: number;
     jwk: JWK<"ECDSA", "public">;
-  };
-  payload: {
     sub: "self-encrypted";
-    message: string;
     iv: string;
     epk: JWK<"ECDH", "public">;
   };
+  payload: Encrypted<P>;
+};
+
+export type ReplyToInvitePayload = {
+  nickname: string;
+  messageId: string;
+  message: string;
+};
+
+export type ReplyToInvite = {
+  header: Omit<ReplyMessage["header"], "sub" | "re"> & {
+    jwk: JWK<"ECDSA", "public">;
+    invite: Thumbprint<"ECDH">;
+    epk: JWK<"ECDH", "public">;
+    iv: string;
+    sub: "reply-to-invite";
+    re?: undefined;
+  };
+  payload: Encrypted<ReplyToInvitePayload>;
+};
+export type ReplyPayload = {
+  nickname?: string;
+  messageId: string;
+  epk?: JWK<"ECDH", "public">;
+  message: string;
 };
 
 export type ReplyMessage = {
   header: {
     alg: "ES384";
-    jwk?: JWK<"ECDSA", "public">;
     iat: number;
-    invite?: Thumbprint<"ECDH">;
-  };
-  payload: {
     sub: "grid-reply";
     re: ThreadID;
-    nickname?: string;
-    messageId: string;
-    epk?: JWK<"ECDH", "public">;
-    message: string;
     iv: string;
+    from: Thumbprint<"ECDSA">;
   };
+  payload: Encrypted<ReplyPayload>;
 };
 
 export type BackupJWS = {
@@ -68,7 +92,7 @@ export type BackupJWS = {
   payload: BackupPayload;
 };
 export type BackupPayload = {
-  thumbprint: Thumbprint;
+  thumbprint: Thumbprint<"ECDSA">;
   encryptedIdentity: EncryptedPrivateKey<"ECDSA">;
   encryptedStorageKey: EncryptedPrivateKey<"ECDH">;
   idJWK: JWK<"ECDSA", "public">;
