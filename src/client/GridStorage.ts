@@ -53,7 +53,7 @@ type StoredDataTypes =
         theirSignature: JWK<"ECDSA", "public">;
       };
     }
-  | { type: "invitation"; keyType: string; data: SignedInvitation }
+  | { type: "invitation"; keyType: Thumbprint<"ECDH">; data: SignedInvitation }
   | { type: "invitations"; keyType: string; data: Thumbprint<"ECDH">[] }
   | {
       type: "messages";

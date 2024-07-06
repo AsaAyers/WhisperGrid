@@ -42,7 +42,12 @@ export type SelfEncrypted = {
 };
 
 export type ReplyMessage = {
-  header: { alg: "ES384"; jwk?: JWK<"ECDSA", "public">; iat: number };
+  header: {
+    alg: "ES384";
+    jwk?: JWK<"ECDSA", "public">;
+    iat: number;
+    invite?: Thumbprint<"ECDH">;
+  };
   payload: {
     sub: "grid-reply";
     re: ThreadID;

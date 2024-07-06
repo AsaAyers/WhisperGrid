@@ -16,7 +16,7 @@ type Props = {
 
 export function InviteRoute() {
   const client = useClient()
-  const { thumbprint } = useParams()
+  const { thumbprint } = useParams<{ thumbprint: Thumbprint<'ECDH'> }>()
   invariant(thumbprint, "Thumbprint is required")
 
   const [invitation, setInvitation] = React.useState<Invitation | null>(null)

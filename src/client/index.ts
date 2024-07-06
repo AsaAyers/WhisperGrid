@@ -400,7 +400,7 @@ export class Client {
       (t) => this.storage.getItem(`invitation:${t}`)!
     );
 
-  getInvitation(thumbprint: string) {
+  getInvitation(thumbprint: Thumbprint<"ECDH">) {
     return this.storage.getItem(`invitation:${thumbprint}`);
   }
 
@@ -508,6 +508,7 @@ export class Client {
         await exportKeyPair(this.identityKeyPair)
       ).publicKeyJWK;
       replyMessage.payload.epk = epk;
+      replyMessage.header.invite = await getJWKthumbprint(threadInfo.theirEPK);
     }
 
     const encryptedJWS = (await signJWS(
@@ -560,7 +561,11 @@ export class Client {
         return this.appendThread(encryptedMessage, jws.payload.re);
       } else {
         invariant(jws.payload.epk, "First message must have an epk");
-        const invitationThumbprint = jws.payload.re;
+        invariant(
+          jws.header.invite,
+          'First message must have an "invite" header'
+        );
+        const invitationThumbprint = jws.header.invite;
         const invitation = this.storage.getItem(
           `invitation:${invitationThumbprint}`
         );
