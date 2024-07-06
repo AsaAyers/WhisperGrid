@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { GridStorage } from "./GridStorage";
+import { GridStorage, ThreadID } from "./GridStorage";
 import {
   SignedInvitation,
   Invitation,
@@ -32,6 +32,7 @@ import {
   importPublicKey,
   ECDSACryptoKey,
 } from "./utils";
+import { ArrayBuffertohex } from "jsrsasign";
 const bufferToB64u = (src: Uint8Array | ArrayBuffer) =>
   Buffer.from(src)
     .toString("base64")
@@ -168,17 +169,14 @@ export class Client {
       storage.appendItem(`invitations:${backup.thumbprint}`, thumbprint);
     }
 
-    for (const [
-      threadThumbprint,
-      { messages, ...threadInfo },
-    ] of Object.entries(backup.threads)) {
-      storage.setItem(`thread-info:${threadThumbprint}`, threadInfo);
-      storage.appendItem(
-        `threads:${backup.thumbprint}`,
-        threadThumbprint as Thumbprint<"ECDH">
-      );
+    for (const [t, { messages, ...threadInfo }] of Object.entries(
+      backup.threads
+    )) {
+      const threadId = t as ThreadID;
+      storage.setItem(`thread-info:${threadId}`, threadInfo);
+      storage.appendItem(`threads:${backup.thumbprint}`, threadId);
       for (const message of messages) {
-        storage.appendItem(`messages:${threadThumbprint}`, message);
+        storage.appendItem(`messages:${threadId}`, message);
       }
     }
     const client = new Client(
@@ -357,7 +355,7 @@ export class Client {
     theirSignature: JWK<"ECDSA", "public">,
     messageId: string,
     myThumbprint?: Thumbprint<"ECDH">
-  ): Promise<Thumbprint> {
+  ): Promise<ThreadID> {
     if (!myThumbprint) {
       const { thumbprint } = await this.makeThreadKeys();
       myThumbprint = thumbprint;
@@ -368,22 +366,34 @@ export class Client {
     invariant(keyBackup, `Thread key not found ${myThumbprint}`);
 
     const signatureThumbprint = await getJWKthumbprint(theirSignature);
+    const thumbprints: Thumbprint<"ECDH">[] = [
+      await getJWKthumbprint(theirEPKJWK),
+      myThumbprint,
+    ].sort();
+
+    const threadId = ArrayBuffertohex(
+      await window.crypto.subtle.digest(
+        "SHA-256",
+        Buffer.from(thumbprints.join(":"))
+      )
+    ) as ThreadID;
+
     this.storage.setItem(`public-key:${signatureThumbprint}`, theirSignature);
-    this.storage.setItem(`thread-info:${myThumbprint}`, {
+    this.storage.setItem(`thread-info:${threadId}`, {
       myThumbprint,
       theirEPK: theirEPKJWK,
       signedInvite,
       theirSignature,
     });
-    this.storage.appendItem(`threads:${this.thumbprint}`, myThumbprint);
+    this.storage.appendItem(`threads:${this.thumbprint}`, threadId);
     this.storage.appendItem(`messages:${myThumbprint}`, signedInvite);
-    this.storage.setItem(`message-id:${myThumbprint}`, messageId);
+    this.storage.setItem(`message-id:${threadId}`, messageId);
     this.notifySubscribers();
 
-    return myThumbprint;
+    return threadId;
   }
 
-  getThreads = (): Thumbprint[] =>
+  getThreads = (): ThreadID[] =>
     this.storage.getItem(`threads:${this.thumbprint}`) ?? [];
   getInvitations = () =>
     (this.storage.getItem(`invitations:${this.thumbprint}`) ?? []).map(
@@ -405,7 +415,7 @@ export class Client {
     return { thumbprint, jwks };
   }
 
-  private async readThreadSecret(threadThumbprint: string): Promise<{
+  private async readThreadSecret(threadThumbprint: ThreadID): Promise<{
     secret: SymmetricKey;
     epk: JWK<"ECDH", "public">;
   }> {
@@ -440,14 +450,14 @@ export class Client {
   }
 
   public async replyToThread(
-    threadThumbprint: Thumbprint,
+    threadId: ThreadID,
     message: string,
     options?: {
       selfSign?: boolean;
       nickname?: string;
     }
   ) {
-    const { secret, epk } = await this.readThreadSecret(threadThumbprint);
+    const { secret, epk } = await this.readThreadSecret(threadId);
     const iv = window.crypto.getRandomValues(new Uint8Array(12));
     const encryptedMessage = await window.crypto.subtle.encrypt(
       {
@@ -468,27 +478,23 @@ export class Client {
         )
       : null;
 
-    const messageId = this.storage.getItem(`message-id:${threadThumbprint}`);
+    const messageId = this.storage.getItem(`message-id:${threadId}`);
     invariant(typeof messageId === "string", `Invalid message id ${messageId}`);
 
     const nextId = parseInt(messageId, 16) + 1;
     // if (nextId >= MAX_MESSAGE_ID) {
     //   nextId = 1;
     // }
-    this.storage.setItem(
-      `message-id:${threadThumbprint}`,
-      Number(nextId).toString(16)
-    );
+    this.storage.setItem(`message-id:${threadId}`, Number(nextId).toString(16));
 
-    const threadInfo = this.storage.getItem(`thread-info:${threadThumbprint}`);
+    const threadInfo = this.storage.getItem(`thread-info:${threadId}`);
     invariant(threadInfo, "Thread not found");
 
-    const re = await getJWKthumbprint(threadInfo.theirEPK);
     const replyMessage: ReplyMessage = {
       header: { alg: "ES384", iat: 0 },
       payload: {
         sub: "grid-reply",
-        re,
+        re: threadId,
         messageId: Number(nextId).toString(16),
         message: bufferToB64u(encryptedMessage),
         nickname: encryptedNickname
@@ -528,21 +534,21 @@ export class Client {
       "Decrypted message mismatch"
     );
 
-    await this.appendThread(encryptedJWS, threadThumbprint);
+    await this.appendThread(encryptedJWS, threadId);
     return encryptedJWS;
   }
 
   public async appendThread(
     encryptedMessage: SignedInvitation | SignedReply,
-    threadThumbprint?: Thumbprint
+    threadId?: ThreadID
   ): Promise<{
-    threadThumbprint: Thumbprint;
+    threadId: ThreadID;
     message: {
       message: string;
       type: "invite" | "message";
     };
   }> {
-    if (!threadThumbprint) {
+    if (!threadId) {
       const jws = await parseJWS<ReplyMessage>(encryptedMessage, null);
 
       // invariant(jws.header.jwk, "First message must be self-signed");
@@ -568,7 +574,7 @@ export class Client {
         );
 
         const myThumbprint = await getJWKthumbprint(invitationJWS.payload.epk);
-        threadThumbprint = await this.startThread(
+        threadId = await this.startThread(
           invitation,
           jws.payload.epk,
           jws.header.jwk,
@@ -578,23 +584,20 @@ export class Client {
       }
     }
 
-    const message = await this.decryptMessage(
-      threadThumbprint,
-      encryptedMessage
-    );
-    this.storage.appendItem(`messages:${threadThumbprint}`, encryptedMessage);
+    const message = await this.decryptMessage(threadId, encryptedMessage);
+    this.storage.appendItem(`messages:${threadId}`, encryptedMessage);
     this.notifySubscribers();
     return {
-      threadThumbprint,
+      threadId: threadId,
       message,
     };
   }
 
   public async decryptMessage(
-    threadThumbprint: Thumbprint,
+    threadId: ThreadID,
     encryptedMessage: string | SignedInvitation | SignedReply
   ): Promise<DecryptedMessageType> {
-    const threadInfo = this.storage.getItem(`thread-info:${threadThumbprint}`);
+    const threadInfo = this.storage.getItem(`thread-info:${threadId}`);
     const jws = await parseJWS<ReplyMessage | Invitation>(
       encryptedMessage,
       null
@@ -636,7 +639,7 @@ export class Client {
       }
       invariant(from, "Unable to determine sender");
 
-      const { secret } = await this.readThreadSecret(threadThumbprint);
+      const { secret } = await this.readThreadSecret(threadId);
       const iv = b64uToBuffer(jwsReply.payload.iv);
 
       let messageBuffer;
@@ -699,11 +702,11 @@ export class Client {
     }
   }
 
-  public getEncryptedThread(thumbprint: Thumbprint) {
+  public getEncryptedThread(thumbprint: ThreadID) {
     return this.storage.getItem(`messages:${thumbprint}`);
   }
 
-  public async getThreadInfo(thread: Thumbprint) {
+  public async getThreadInfo(thread: ThreadID) {
     const threadInfo = this.storage.getItem(`thread-info:${thread}`);
     invariant(threadInfo, "Thread not found");
 

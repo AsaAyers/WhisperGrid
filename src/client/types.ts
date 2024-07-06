@@ -1,4 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
+import { ThreadID } from "./GridStorage";
 import { EncryptedPrivateKey, JWK, Thumbprint } from "./utils";
 
 const objectType = Symbol("objectType");
@@ -44,7 +45,7 @@ export type ReplyMessage = {
   header: { alg: "ES384"; jwk?: JWK<"ECDSA", "public">; iat: number };
   payload: {
     sub: "grid-reply";
-    re: Thumbprint;
+    re: ThreadID;
     nickname?: string;
     messageId: string;
     epk?: JWK<"ECDH", "public">;

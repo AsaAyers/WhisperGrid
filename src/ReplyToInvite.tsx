@@ -7,6 +7,7 @@ import { useClient } from "./ClientProvider";
 import { SendOutlined } from "@ant-design/icons";
 import { MessageCard } from "./ThreadView";
 import { useLocation } from "react-router-dom";
+import { ThreadID } from "./client/GridStorage";
 
 export function ReplyToInvite(): React.ReactNode {
   const client = useClient();
@@ -19,6 +20,7 @@ export function ReplyToInvite(): React.ReactNode {
   const invitationString = Form.useWatch('invitationString', form);
   const [invitation, setInvitation] = React.useState<Invitation | null>(null);
   const [thumbprint, setThumbprint] = React.useState<Thumbprint | null>(null);
+  const [threadId, setThreadId] = React.useState<ThreadID | null>(null);
   const location = useLocation();
   const hash = location.hash
 
@@ -39,6 +41,8 @@ export function ReplyToInvite(): React.ReactNode {
   const [reply, setReply] = React.useState<SignedReply | null>(null);
   const onFinish: FormProps<FieldType>['onFinish'] = async (values) => {
     const reply = await client.replyToInvitation(values.invitationString!, values.message!, values.nickname!);
+    const r = await parseJWS(reply, null)
+    setThreadId(r.payload.re)
     setReply(reply);
   };
   return (
@@ -86,16 +90,16 @@ export function ReplyToInvite(): React.ReactNode {
 
           )} />
 
-        {reply && thumbprint && (
+        {reply && threadId && (
           <>
-            <MessageCard message={reply} thumbprint={thumbprint} decrypt={false} />
+            <MessageCard message={reply} threadId={threadId} decrypt={false} />
             <Alert message="Message encrypted, copy it from above" type="success" />
 
             <Typography.Link
               ellipsis
-              href={`web+grid:/invitation/${thumbprint}#${reply}`}
+              href={`web+grid:/invitation/${threadId}#${reply}`}
             >
-              {`web+grid:/invitation/${thumbprint}#${reply}`}
+              {`web+grid:/invitation/${threadId}#${reply}`}
             </Typography.Link>
           </>
         )}

@@ -1,11 +1,12 @@
-import React, { useDeferredValue } from "react";
+import React from "react";
 import { Alert, Avatar, Button, Card, Flex, Form, FormProps, Input, Popover, Space, Timeline, Typography } from "antd";
 import { DecryptedMessageType } from "./client";
 import { MessageOutlined, SendOutlined, ShareAltOutlined, UserOutlined } from "@ant-design/icons";
-import { Thumbprint, invariant } from "./client/utils";
+import { invariant } from "./client/utils";
 import { useParams } from "react-router-dom";
 import { useClient } from "./ClientProvider";
 import { SignedInvitation, SignedReply } from "./client/types";
+import { ThreadID } from "./client/GridStorage";
 
 const matchJWS = /^([a-zA-Z0-9-_]+)(\.[a-zA-Z0-9-_]+){2}$/;
 const myColor = '#87d068';
@@ -18,8 +19,8 @@ type ThreadMessage = DecryptedMessageType & {
 export function ThreadView(): React.ReactNode {
   const [form] = Form.useForm()
   const client = useClient();
-  const { thumbprint } = useParams<{ thumbprint: Thumbprint; }>();
-  invariant(thumbprint, "Thumbprint is required");
+  const threadId = useParams<{ thumbprint: ThreadID; }>().thumbprint
+  invariant(threadId, "ThreadID is required");
   const [threadInfo, setThreadInfo] = React.useState<{
     myNickname: string,
     theirNickname: string,
@@ -27,12 +28,12 @@ export function ThreadView(): React.ReactNode {
 
   const [thread, setThread] = React.useState<Array<ThreadMessage>>([]);
   React.useEffect(() => {
-    const originalMessages = client.getEncryptedThread(thumbprint) ?? []
+    const originalMessages = client.getEncryptedThread(threadId) ?? []
     let cancel = false
 
     const promises = Promise.all(originalMessages.map(async (original) => {
       invariant(!cancel, "Cancelled")
-      const decrypted = await client.decryptMessage(thumbprint, original)
+      const decrypted = await client.decryptMessage(threadId, original)
       return {
         ...decrypted,
         original
@@ -40,7 +41,7 @@ export function ThreadView(): React.ReactNode {
     }))
 
     promises.then(async (decryptedMessages) => {
-      const threadInfo = await client.getThreadInfo(thumbprint)
+      const threadInfo = await client.getThreadInfo(threadId)
       if (!cancel) {
         setThreadInfo(threadInfo)
       }
@@ -52,7 +53,7 @@ export function ThreadView(): React.ReactNode {
     return () => {
       cancel = true
     }
-  }, [thumbprint])
+  }, [threadId])
 
   type FieldType = {
     message: string;
@@ -63,13 +64,13 @@ export function ThreadView(): React.ReactNode {
   const onFinish: FormProps<FieldType>['onFinish'] = async (values) => {
     let reply: SignedReply | void = undefined
     if (matchJWS.test(values.message)) {
-      await client.appendThread(values.message as SignedReply, thumbprint).catch(e => {
+      await client.appendThread(values.message as SignedReply, threadId).catch(e => {
         console.error(e)
       })
       reply = values.message as SignedReply
     }
     if (!reply) {
-      reply = await client.replyToThread(thumbprint, values.message, { selfSign: false }).catch(
+      reply = await client.replyToThread(threadId, values.message, { selfSign: false }).catch(
         e => console.error(e)
       )
       if (reply) {
@@ -78,8 +79,8 @@ export function ThreadView(): React.ReactNode {
     }
     if (reply) {
       form.resetFields()
-      const originalMessages = client.getEncryptedThread(thumbprint) ?? []
-      const decrypted = await client.decryptMessage(thumbprint, originalMessages[originalMessages.length - 1])
+      const originalMessages = client.getEncryptedThread(threadId) ?? []
+      const decrypted = await client.decryptMessage(threadId, originalMessages[originalMessages.length - 1])
       setThread((thread) => thread.concat({
         ...decrypted,
         original: reply
@@ -120,9 +121,9 @@ export function ThreadView(): React.ReactNode {
 
                   <Typography.Link
                     ellipsis
-                    href={`web+grid:/invitation/${thumbprint}#${message.original}`}
+                    href={`web+grid:/invitation/${threadId}#${message.original}`}
                   >
-                    {`web+grid:/invitation/${thumbprint}#${message.original}`}
+                    {`web+grid:/invitation/${threadId}#${message.original}`}
                   </Typography.Link>
                 </Flex>
               )}
@@ -151,9 +152,9 @@ export function ThreadView(): React.ReactNode {
           </Typography.Paragraph>
           <Typography.Link
             ellipsis
-            href={`web+grid:/invitation/${thumbprint}#${newReply}`}
+            href={`web+grid:/invitation/${threadId}#${newReply}`}
           >
-            {`web+grid:/invitation/${thumbprint}#${newReply}`}
+            {`web+grid:/invitation/${threadId}#${newReply}`}
           </Typography.Link>
           <Alert message="Message encrypted, copy it from above" type="success" />
         </>
@@ -187,9 +188,9 @@ export function ThreadView(): React.ReactNode {
     </Flex >
   );
 }
-export function MessageCard({ message, thumbprint, decrypt = true, onCopy }: {
+export function MessageCard({ message, threadId, decrypt = true, onCopy }: {
   message: SignedInvitation | SignedReply
-  thumbprint: Thumbprint;
+  threadId: ThreadID;
   decrypt?: boolean
   onCopy?: () => void
 }): React.ReactNode {
@@ -199,11 +200,11 @@ export function MessageCard({ message, thumbprint, decrypt = true, onCopy }: {
 
   React.useEffect(() => {
     if (decrypt) {
-      client.decryptMessage(thumbprint, message).then((decrypted) => {
+      client.decryptMessage(threadId, message).then((decrypted) => {
         setDecryptedMessage(decrypted);
       });
     }
-  }, [decrypt, thumbprint, message]);
+  }, [decrypt, threadId, message]);
 
 
   return (

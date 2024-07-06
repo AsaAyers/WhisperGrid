@@ -1,23 +1,28 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { SignedInvitation, SignedReply } from "./types";
+import { SignedInvitation, SignedReply, TaggedString } from "./types";
 import { EncryptedPrivateKey, JWK, Thumbprint } from "./utils";
 
-type Key = `${StoredDataTypes["type"]}:${string}`;
+export type ThreadID = TaggedString<"ThreadID">;
+
+type Key<Type extends StoredDataTypes["type"]> = `${Type}:${Extract<
+  StoredDataTypes,
+  { type: Type }
+>["keyType"]}`;
 export type GridStorage = {
-  hasItem(key: Key): boolean;
-  removeItem: (key: Key) => null;
+  hasItem<Type extends StoredDataTypes["type"]>(key: Key<Type>): boolean;
+  removeItem: <Type extends StoredDataTypes["type"]>(key: Key<Type>) => null;
   getItem: <Type extends StoredDataTypes["type"]>(
-    key: `${Type}:${string}`
+    key: Key<Type>
   ) => Extract<StoredDataTypes, { type: Type }>["data"] | null;
   setItem: <Type extends StoredDataTypes["type"]>(
-    key: `${Type}:${string}`,
+    key: Key<Type>,
     value: Extract<StoredDataTypes, { type: Type }>["data"]
   ) => void;
   appendItem: <
     Type extends StoredDataTypes["type"],
     V extends Extract<StoredDataTypes, { type: Type }>["data"]
   >(
-    key: `${Type}:${string}`,
+    key: Key<Type>,
     value: V extends Array<any> ? V[number] : never
   ) => void;
 };
@@ -35,10 +40,12 @@ export type StoredIdentity = {
 type StoredDataTypes =
   | {
       type: "identity";
+      keyType: string;
       data: StoredIdentity;
     }
   | {
       type: "thread-info";
+      keyType: ThreadID;
       data: {
         signedInvite: SignedInvitation;
         myThumbprint: Thumbprint<"ECDH">;
@@ -46,13 +53,21 @@ type StoredDataTypes =
         theirSignature: JWK<"ECDSA", "public">;
       };
     }
-  | { type: "invitation"; data: SignedInvitation }
-  | { type: "invitations"; data: Thumbprint<"ECDH">[] }
-  | { type: "messages"; data: Array<SignedInvitation | SignedReply> }
-  | { type: "encrypted-thread-key"; data: string }
-  | { type: "public-key"; data: JWK<"ECDSA" | "ECDH", "public"> }
-  | { type: "message-id"; data: string }
-  | { type: "threads"; data: Array<Thumbprint<"ECDH">> };
+  | { type: "invitation"; keyType: string; data: SignedInvitation }
+  | { type: "invitations"; keyType: string; data: Thumbprint<"ECDH">[] }
+  | {
+      type: "messages";
+      keyType: string;
+      data: Array<SignedInvitation | SignedReply>;
+    }
+  | { type: "encrypted-thread-key"; keyType: string; data: string }
+  | {
+      type: "public-key";
+      keyType: string;
+      data: JWK<"ECDSA" | "ECDH", "public">;
+    }
+  | { type: "message-id"; keyType: ThreadID; data: string }
+  | { type: "threads"; keyType: string; data: Array<ThreadID> };
 
 export class TestStorage implements GridStorage {
   private data = new Map<string, any>();
@@ -61,14 +76,14 @@ export class TestStorage implements GridStorage {
     return Object.fromEntries(this.data.entries());
   }
 
-  hasItem(key: Key): boolean {
+  hasItem: GridStorage["hasItem"] = (key) => {
     return this.data.has(key);
-  }
+  };
 
-  removeItem(key: Key) {
+  removeItem: GridStorage["removeItem"] = (key) => {
     this.data.delete(key);
     return null;
-  }
+  };
 
   getItem: GridStorage["getItem"] = (key) => {
     return this.data.get(key);

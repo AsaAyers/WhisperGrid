@@ -48,8 +48,6 @@ export function DisplayInvite({
   React.useEffect(() => {
     getJWKthumbprint(invitation.payload.epk).then(setThumbprint)
   })
-  const location = useLocation()
-  const pathname = location.pathname
   const replyHref = useHref('/reply')
 
 
@@ -185,7 +183,7 @@ function DecryptReply() {
         const result = await client.appendThread(signedReply)
         if (!cancel) {
           console.log({ result, cancel })
-          navigate(`/thread/${result.threadThumbprint}`)
+          navigate(`/thread/${result.threadId}`)
         }
       })
     }
@@ -207,7 +205,7 @@ function DecryptReply() {
           return verifyJWS(reply)
             .then(() => client.appendThread(reply))
             .then((result) => {
-              navigate(`/thread/${result.threadThumbprint}`)
+              navigate(`/thread/${result.threadId}`)
             }).catch(() => {
               // ignore errors
             })

@@ -116,7 +116,7 @@ describe("Client", () => {
     );
 
     const toBob = await Alice.replyToThread(
-      aliceView.threadThumbprint,
+      aliceView.threadId,
       "Hello Bob, this is my reply to you"
     );
 
@@ -126,7 +126,7 @@ describe("Client", () => {
     );
 
     const toAlice2 = await Bob.replyToThread(
-      bobView.threadThumbprint,
+      bobView.threadId,
       "Hello Alice, this is my second message to you"
     );
     const aliceView2 = await Alice.appendThread(toAlice2);
