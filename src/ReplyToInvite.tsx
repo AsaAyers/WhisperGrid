@@ -42,7 +42,7 @@ export function ReplyToInvite(): React.ReactNode {
   const onFinish: FormProps<FieldType>['onFinish'] = async (values) => {
     const reply = await client.replyToInvitation(values.invitationString!, values.message!, values.nickname!);
     const r = await parseJWS(reply, null)
-    setThreadId(r.payload.re)
+    setThreadId(r.header.re)
     setReply(reply);
   };
   return (

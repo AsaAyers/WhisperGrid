@@ -1,6 +1,6 @@
 import React from "react";
 import { Client } from "./client";
-import { invariant } from "./client/utils";
+import { invariant, Thumbprint } from "./client/utils";
 import { LocalGridStorage } from "./browser";
 import { useNavigate } from "react-router-dom";
 import { BackupPayload } from "./client/types";
@@ -35,7 +35,7 @@ export function ClientProvider(props: React.PropsWithChildren) {
 
   const loadClient = React.useCallback((thumbprint: string, password: string) => {
     const storage = new LocalGridStorage();
-    return Client.loadClient(storage, thumbprint, password).then(
+    return Client.loadClient(storage, thumbprint as Thumbprint<'ECDSA'>, password).then(
       (c) => {
         setClient(c)
         return c

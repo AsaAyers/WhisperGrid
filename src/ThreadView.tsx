@@ -5,7 +5,7 @@ import { MessageOutlined, SendOutlined, ShareAltOutlined, UserOutlined } from "@
 import { invariant } from "./client/utils";
 import { useParams } from "react-router-dom";
 import { useClient } from "./ClientProvider";
-import { SignedInvitation, SignedReply } from "./client/types";
+import { SignedInvitation, SignedReply, SignedReplyToInvite } from "./client/types";
 import { ThreadID } from "./client/GridStorage";
 
 const matchJWS = /^([a-zA-Z0-9-_]+)(\.[a-zA-Z0-9-_]+){2}$/;
@@ -13,7 +13,7 @@ const myColor = '#87d068';
 const theirColor = '#108ee9';
 
 type ThreadMessage = DecryptedMessageType & {
-  original: SignedInvitation | SignedReply
+  original: SignedInvitation | SignedReply | SignedReplyToInvite
 }
 
 export function ThreadView(): React.ReactNode {
@@ -31,7 +31,7 @@ export function ThreadView(): React.ReactNode {
     const originalMessages = client.getEncryptedThread(threadId) ?? []
     let cancel = false
 
-    const promises = Promise.all(originalMessages.map(async (original) => {
+    const promises = Promise.all(originalMessages.map(async (original): Promise<ThreadMessage> => {
       invariant(!cancel, "Cancelled")
       const decrypted = await client.decryptMessage(threadId, original)
       return {
