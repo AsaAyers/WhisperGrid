@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { incMessageId } from ".";
+import { SynAckState } from "./synAck";
 import {
   SignedInvitation,
   SignedSelfEncrypted,
@@ -52,10 +52,15 @@ type KeyedMessageIndex = {
   data: {
     min: string;
     max: string;
-    messages: {
-      [messageId: string]: SignedTransport;
-    };
+    messages: Array<SignedTransport>;
   };
+};
+
+type ThreadInfoData = SynAckState & {
+  signedInvite: SignedInvitation;
+  myThumbprint: Thumbprint<"ECDH">;
+  theirEPK: JWK<"ECDH", "public">;
+  theirSignature: JWK<"ECDSA", "public">;
 };
 
 type StoredDataTypes =
@@ -67,21 +72,11 @@ type StoredDataTypes =
   | {
       type: "thread-info";
       keyType: ThreadID;
-      data: {
-        signedInvite: SignedInvitation;
-        myThumbprint: Thumbprint<"ECDH">;
-        theirEPK: JWK<"ECDH", "public">;
-        theirSignature: JWK<"ECDSA", "public">;
-      };
+      data: ThreadInfoData;
     }
   | { type: "invitation"; keyType: Thumbprint<"ECDH">; data: SignedInvitation }
   | { type: "invitations"; keyType: string; data: Thumbprint<"ECDH">[] }
   | KeyedMessageIndex
-  | {
-      type: "out-of-order";
-      keyType: ThreadID;
-      data: Record<string, SignedTransport>;
-    }
   | {
       type: "encrypted-thread-key";
       keyType: Thumbprint<"ECDH">;
@@ -92,13 +87,12 @@ type StoredDataTypes =
       keyType: Thumbprint;
       data: JWK<"ECDSA" | "ECDH", "public">;
     }
-  | { type: "message-id"; keyType: ThreadID; data: string }
   | { type: "threads"; keyType: string; data: Array<ThreadID> };
 
 export class GridStorage implements GridStorageType {
   private data = new Map<string, any>();
 
-  getData() {
+  debugData() {
     return Object.fromEntries(this.data.entries());
   }
 
@@ -129,19 +123,11 @@ export class GridStorage implements GridStorageType {
     if (!Array.isArray(arr)) {
       arr = [];
     }
-    // TODO: Make this detect duplicates and out of order messages.  I think for
-    // the moment, I can de-duple the last one since the invitation seems to
-    // keep getting duplicated a bunch of times.
-    if (value[arr.length - 1] !== value) {
-      // console.log('Appending', key)
-      arr.push(value);
-    } else {
-      // console.log("Skipping duplicate", key);
-    }
+    arr.push(value);
     this.setItem(key, arr);
   };
 
-  public storeMesage(
+  public storeMessage(
     threadId: ThreadID,
     messageId: string,
     message: SignedTransport
@@ -149,34 +135,13 @@ export class GridStorage implements GridStorageType {
     const index = this.queryItem(`keyed-messages:${threadId}`) ?? {
       min: messageId,
       max: messageId,
-      messages: {},
+      messages: [],
     };
-    index.messages[messageId] = message;
-    if (messageId < index.min) {
-      index.min = messageId;
-    } else if (messageId > index.max) {
-      index.max = messageId;
-    }
+    index.messages.push(message);
     this.setItem(`keyed-messages:${threadId}`, index);
   }
   public readMessages(threadId: ThreadID) {
-    const { min, max, messages } = this.getItem(`keyed-messages:${threadId}`);
-    let id = min;
-    const messageArray: Array<
-      SignedTransport | { type: "missing"; messageId: string }
-    > = [];
-    while (id <= max) {
-      const message = messages[id];
-      if (message) {
-        messageArray.push(message);
-      } else {
-        messageArray.push({
-          type: "missing",
-          messageId: id,
-        });
-      }
-      id = incMessageId(id);
-    }
-    return messageArray;
+    const { messages } = this.getItem(`keyed-messages:${threadId}`);
+    return messages;
   }
 }

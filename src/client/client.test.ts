@@ -12,13 +12,9 @@ import { StoredIdentity, GridStorage, ThreadID } from "./GridStorage";
 import crypto from "crypto";
 
 import { debuglog } from "util";
-import {
-  ReplyToInvite,
-  SignedBackup,
-  SignedReply,
-  SignedTransport,
-} from "./types";
+import { SignedBackup, SignedReply } from "./types";
 import { ArrayBuffertohex } from "jsrsasign";
+import { synAck, SynAckState } from "./synAck";
 
 const log = debuglog("whisper-grid:test:client");
 
@@ -59,6 +55,9 @@ const aliceThumbprint =
   "id-pMj2HmW01bub4-s0XUuIyB-REcAaI7s7oIhpBlDz6hA" as Thumbprint<"ECDSA">;
 
 describe("Client", () => {
+  beforeEach(() => {
+    setMessageIdForTesting(1);
+  });
   test("createInvitation", async () => {
     const storage = new GridStorage();
     // storage.setItem(`identity:${aliceThumbprint}`, aliceIdentity);
@@ -76,7 +75,7 @@ describe("Client", () => {
     });
     log("invitation", invitation);
 
-    const { [`identity:${aliceThumbprint}`]: identity } = storage.getData();
+    const { [`identity:${aliceThumbprint}`]: identity } = storage.debugData();
 
     expect(JSON.stringify(identity)).toMatchInlineSnapshot(
       `"{"id":{"jwk":{"key_ops":["verify"],"ext":true,"kty":"EC","x":"zPRCzbz45S0Ss-Tor1KSgjouxRkpQcrmh3_7V6qHSv7bmH_s9cgDRYIT9NpHHYm6","y":"oWDGHCVEVwGAhHYVxHh83qzeS4o6PGcy6SViepmurDBhyH-BxmOno2uRRR3wDP4p","crv":"P-384"},"private":"Gazvj3GYo4qmcWhiDDTTru3Yy7o3jbEjSfOrPigF6wS/MK3IPABm+yVEPR0IJRkqrShVoG9/P+alSShjGZeoekEAHLR6qLsdtyYpMDwllnaxf28kLEbWws+wi/a9RRCA+QdWGxpqYzFiHHcoXbn7/tTqfTXJ6xmqEKe9kkH6ODV3luQYjXlDmO9vRtwesnJ+TXoCL7mRawPsoPVP51hgwQyc8DlEqtewSqKBOXRrGl0oXA+w4D9gMms+HGhIBDaJP00AQRkkXGNxOI0jHNkYmIE0XOh8IkQKGV6CQxhvJZIDY1LtX7Z7uWyEOlTd0mDnmF2pWNzX4z6q1PtkleCIz+p41CkcfCWghNAghyquTx48I6ALsXzur0bmrnQW.oMaikA/yNZYp8z2B.9+90ZdAUoJMT4Z/Eqb4f6w=="},"storage":{"jwk":{"key_ops":[],"ext":true,"kty":"EC","x":"Budxp0C-gpccv8c4FtYA4H6Ir46-8sh1zBP_FUciqP0bV8LmJe5Keb3iLYxC8w-W","y":"dwrTD0KSV3pHUVWjGEb8M-GOBn54eKR3wJflKjpgjptSZiCuhVRz0umk9TBvdJI2","crv":"P-384"},"private":"laFRExpBnfXR3+JlMSBdm648oC6P2NuyRVYp6bUydQSuEPOkouvgWcamwFa7zxR84z8BjykekyI6isGXXyI151dzhOPOuLUXv0zFpHxzVQZdq6nrdaNKet5U+OQQ9XUv1R+a4maIylrCR39V22GKlVQSL6Wgm6gDsKAz2Dd0nhDFB8UZ5pQGGX5Vngfi/9oZ+yVCbXTR7o+Wua2Fw6CTCCx+VuKLviYKXRti0QTiA/m7YG0HLcPncPb3JfwrZ4TVOQt+xH9NjQCeIquSr7HIY/UrPD17vXxlV6LZ+/Zw3u836+r4nOW+FOVo60yr9y3EvJsVs0rvAMdCQk0D/znryhAIQLMakDyZPHz37UQb74/ZuZ2gM5RO9C3eKKhBJed32ta+b2rsdn58fb9E86KS.O7h2DvDjGV8RFFXP.Xz9h7kZZm5iLXyZwv95Oyg=="}}"`
@@ -156,6 +155,15 @@ Note: Hello Bob, this first message is not encrypted, but is signed",
   "[message] Bob: 2nd message",
 ]
 `);
+    expect(b).toMatchInlineSnapshot(`
+[
+  "[invite] Alice: Invite from Alice.
+Note: Hello Bob, this first message is not encrypted, but is signed",
+  "[message] Bob: Hello Alice, 1st message",
+  "[message] Alice: Hello Bob, 1st reply",
+  "[message] Bob: 2nd message",
+]
+`);
     expect(a).toMatchObject(b);
     expect(
       ArrayBuffertohex(window.crypto.getRandomValues(new Uint8Array(64)).buffer)
@@ -199,15 +207,18 @@ Note: Hello Bob, this first message is not encrypted, but is signed",
   });
 
   test("Backup and restore", async () => {
-    let alice = await Client.generateClient(new GridStorage(), "AlicePassword");
+    const storage = new GridStorage();
+    let alice = await Client.generateClient(storage, "AlicePassword");
     alice.setClientNickname("Alice");
     const invitation = await alice.createInvitation({
       nickname: "Alice",
       note: "Hello Bob, this first message is public.",
     });
-    await alice.replyToInvitation(invitation, "Hello Alice", "Bob");
+    const bob = await Client.generateClient(new GridStorage(), "BobPassword");
+    await bob.replyToInvitation(invitation, "Hello Alice", "Bob");
 
     const invitations = alice.getInvitations();
+
     const encryptedThreads = Object.fromEntries(
       alice.getThreads().map((id) => [id, alice.getEncryptedThread(id)])
     );
@@ -230,7 +241,6 @@ Note: Hello Bob, this first message is not encrypted, but is signed",
   });
 
   test("Messages are displayed correctly even when arriving out of order", async () => {
-    setMessageIdForTesting("0");
     const alice = await Client.generateClient(
       new GridStorage(),
       "AlicePassword"
@@ -240,7 +250,7 @@ Note: Hello Bob, this first message is not encrypted, but is signed",
     bob.setClientNickname("Bob");
     const invite = await alice.createInvitation({ nickname: "Alice" });
 
-    const replies: SignedTransport[] = [];
+    const replies: SignedReply[] = [];
     let nextId = 1;
     replies.push(
       await bob.replyToInvitation(
@@ -249,8 +259,7 @@ Note: Hello Bob, this first message is not encrypted, but is signed",
         "Bob"
       )
     );
-    const threadId = (await parseJWS<ReplyToInvite>(replies[0], null)).header
-      .re;
+    const threadId = (await parseJWS(replies[0], null)).header.re;
 
     replies.push(
       await bob.replyToThread(threadId, `Hello Alice, message ${nextId++}`)
@@ -278,26 +287,29 @@ Note: Hello Bob, this first message is not encrypted, but is signed",
     );
 
     await alice.appendThread(replies[0]);
+    const toBob = await alice.replyToThread(threadId, `Hello Bob`);
+    await bob.appendThread(toBob);
     expect(await debugConverastion(alice, threadId)).toMatchInlineSnapshot(`
-    [
-      "[invite] Alice: Invite from Alice.
-    Note: (none)",
-      "[message] Bob: Hello Alice. Message 1",
-    ]
-    `);
+[
+  "[invite] Alice: Invite from Alice.
+Note: (none)",
+  "[message] Bob: Hello Alice. Message 1",
+  "[message] Alice: Hello Bob",
+]
+`);
     await alice.appendThread(replies[2]);
     await alice.appendThread(replies[2]);
     expect(await debugConverastion(alice, threadId)).toMatchInlineSnapshot(`
-    [
-      "[invite] Alice: Invite from Alice.
-    Note: (none)",
-      "[message] Bob: Hello Alice. Message 1",
-      "[missing] messageId 2",
-      "[message] Bob: Hello Alice, message 3",
-    ]
-    `);
+[
+  "[invite] Alice: Invite from Alice.
+Note: (none)",
+  "[message] Bob: Hello Alice. Message 1",
+  "[message] Alice: Hello Bob",
+  "[message] Bob: Hello Alice, message 3",
+]
+`);
 
-    await alice.appendThread(replies[0]);
+    // await alice.appendThread(replies[0]);
     await alice.appendThread(replies[1]);
     await alice.appendThread(replies[1]);
     await alice.appendThread(replies[1]);
@@ -305,25 +317,92 @@ Note: Hello Bob, this first message is not encrypted, but is signed",
     await expect(
       alice.appendThread(replies[6])
     ).rejects.toThrowErrorMatchingInlineSnapshot(
-      `"Alice Missing 5 messages between 2 and 7"`
+      `"Missing 5 messages between 100002 and 100007"`
     );
 
     expect(await debugConverastion(alice, threadId)).toMatchInlineSnapshot(`
-    [
-      "[invite] Alice: Invite from Alice.
-    Note: (none)",
-      "[message] Bob: Hello Alice. Message 1",
-      "[message] Bob: Hello Alice, message 2",
-      "[message] Bob: Hello Alice, message 3",
-    ]
-    `);
+[
+  "[invite] Alice: Invite from Alice.
+Note: (none)",
+  "[message] Bob: Hello Alice. Message 1",
+  "[message] Alice: Hello Bob",
+  "[message] Bob: Hello Alice, message 2",
+  "[message] Bob: Hello Alice, message 3",
+]
+`);
+  });
+
+  describe("synAckHandler", () => {
+    test("syn Sequential messages", async () => {
+      const state: SynAckState = {
+        syn: undefined,
+        minAck: undefined,
+        maxAck: undefined,
+        windowSize: 5,
+        missing: [],
+      };
+
+      synAck({ syn: "10" }, state);
+      synAck({ syn: "11" }, state);
+      synAck({ syn: "12" }, state);
+      synAck({ syn: "13" }, state);
+      expect(state.syn).toBe("13");
+    });
+    test('syn "out of order" messages', async () => {
+      const state: SynAckState = {
+        syn: undefined,
+        minAck: undefined,
+        maxAck: undefined,
+        windowSize: 5,
+        missing: [],
+      };
+
+      synAck({ syn: "10" }, state);
+      expect(() =>
+        synAck({ syn: "12" }, state)
+      ).toThrowErrorMatchingInlineSnapshot(
+        `"Syn out of order 12 - Expected: 11"`
+      );
+    });
+    test("ack sequential messages", () => {
+      const state: SynAckState = {
+        syn: undefined,
+        minAck: undefined,
+        maxAck: undefined,
+        windowSize: 5,
+        missing: [],
+      };
+
+      expect(synAck({ ack: "100" }, state)).toBe(true);
+      expect(synAck({ ack: "100" }, state)).toBe(false);
+      synAck({ ack: "100" }, state);
+
+      synAck({ ack: "100" }, state);
+      synAck({ ack: "101" }, state);
+      synAck({ ack: "101" }, state);
+      synAck({ ack: "101" }, state);
+      synAck({ ack: "102" }, state);
+      synAck({ ack: "103" }, state);
+      expect(state.minAck).toBe("103");
+      expect(state.maxAck).toBe("103");
+
+      synAck({ ack: "105" }, state);
+      synAck({ ack: "105" }, state);
+      synAck({ ack: "106" }, state);
+      expect(state.minAck).toBe("103");
+      expect(state.maxAck).toBe("106");
+
+      expect(() =>
+        synAck({ ack: "116" }, state)
+      ).toThrowErrorMatchingInlineSnapshot(
+        `"Missing 19 messages between 103 and 116"`
+      );
+    });
   });
 });
 async function debugConverastion(client: Client, threadId: ThreadID) {
   return (await client.decryptThread(threadId)).map((m) => {
-    return m.type !== "missing"
-      ? `[${m.type}] ${m.from.split("_")[0]}: ${m.message}`
-      : `[missing] messageId ${m.messageId}`;
+    return `[${m.type}] ${m.from.split("_")[0]}: ${m.message}`;
   });
 }
 

@@ -1,7 +1,6 @@
 import React from "react";
 import { Button, Card, Form, FormProps, Input } from "antd";
 import { getJWKthumbprint, parseJWS } from "./client/utils";
-import { Invitation } from "./client/types";
 import { useClient } from "./ClientProvider";
 import { useNavigate } from "react-router-dom";
 
@@ -19,7 +18,7 @@ export function CreateInvitation() {
       note: values.note,
       nickname: values.nickname
     });
-    const invite = await parseJWS<Invitation>(signedInvite);
+    const invite = await parseJWS(signedInvite);
     const thumbprint = await getJWKthumbprint(invite.payload.epk)
     navigate(`/invitation/${thumbprint}`)
   };

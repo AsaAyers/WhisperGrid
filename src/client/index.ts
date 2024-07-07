@@ -38,8 +38,10 @@ import {
   importPublicKey,
   decryptData,
   encryptData,
+  parseJWSSync,
 } from "./utils";
 import { ArrayBuffertohex } from "jsrsasign";
+import { synAck } from "./synAck";
 
 const keyNicknames = new Map<string, string>();
 export function setNickname(key: string, nickname: string) {
@@ -50,8 +52,8 @@ export function getNickname(key: string) {
   return keyNicknames.get(key) + "_" + key.substring(key.length - 6);
 }
 
-let messageIdForInviteTesting: string | undefined;
-export function setMessageIdForTesting(messageId: string) {
+let messageIdForInviteTesting: number | undefined;
+export function setMessageIdForTesting(messageId: number) {
   messageIdForInviteTesting = messageId;
 }
 
@@ -64,6 +66,8 @@ export type DecryptedMessageType = {
   fromThumbprint: Thumbprint<"ECDSA">;
   iat: number;
   messageId: string;
+  minAck: string | undefined;
+  epkThumbprint: Thumbprint<"ECDH">;
 };
 
 export class Client {
@@ -172,6 +176,7 @@ export class Client {
       storage.appendItem(`invitations:${backup.thumbprint}`, thumbprint);
     }
 
+    storage.setItem(`threads:${backup.thumbprint}`, []);
     for (const [t, { messages, ...threadInfo }] of Object.entries(
       backup.threads
     )) {
@@ -316,6 +321,10 @@ export class Client {
 
     this.storage.setItem(`invitation:${thumbprint}`, signedInvitation);
     this.storage.appendItem(`invitations:${this.thumbprint}`, thumbprint);
+    this.storage.setItem(
+      `threads:${this.thumbprint}`,
+      this.storage.queryItem(`threads:${this.thumbprint}`) ?? []
+    );
     this.notifySubscribers();
     return signedInvitation;
   }
@@ -326,21 +335,23 @@ export class Client {
     nickname: string
   ) {
     invariant(await verifyJWS(signedInvite), "Invalid invitation signature");
-    const invite = await parseJWS<Invitation>(signedInvite);
+    const invite = await parseJWS(signedInvite);
 
-    const threadId = await this.startThread(
-      signedInvite,
-      invite.payload.epk,
-      invite.header.jwk,
-      invite.payload.messageId
-    );
-
-    await this.appendThread(signedInvite, threadId);
+    let threadId;
+    try {
+      threadId = await this.startThread(
+        signedInvite,
+        invite.payload.epk,
+        invite.header.jwk,
+        invite.payload.messageId
+      );
+    } catch (e) {
+      throw new Error("Error replying to invitation ");
+    }
     const reply = this.replyToThread(threadId, message, {
       selfSign: true,
       nickname,
     });
-
     return reply;
   }
 
@@ -375,15 +386,19 @@ export class Client {
 
     this.storage.setItem(`public-key:${signatureThumbprint}`, theirSignature);
     this.storage.setItem(`thread-info:${threadId}`, {
+      missing: [],
+      windowSize: 5,
+      maxAck: undefined,
+      minAck: undefined,
+      syn: undefined,
       myThumbprint,
       theirEPK: theirEPKJWK,
       signedInvite,
       theirSignature,
     });
     this.storage.appendItem(`threads:${this.thumbprint}`, threadId);
-    this.storage.storeMesage(threadId, messageId, signedInvite);
+    await this.appendThread(signedInvite, threadId);
 
-    this.storage.setItem(`message-id:${threadId}`, messageId);
     this.notifySubscribers();
 
     return threadId;
@@ -454,12 +469,19 @@ export class Client {
     }
   ) {
     const { secret, epk } = await this.readThreadSecret(threadId);
-    const messageId = this.storage.getItem(`message-id:${threadId}`);
-    invariant(typeof messageId === "string", `Invalid message id ${messageId}`);
-    const nextId = incMessageId(messageId);
     const threadInfo = this.storage.getItem(`thread-info:${threadId}`);
     invariant(threadInfo, "Thread not found");
+    const messageId =
+      threadInfo.syn ??
+      Number(
+        messageIdForInviteTesting
+          ? parseInt("100000", 16) + messageIdForInviteTesting
+          : Math.floor(Math.random() * MAX_MESSAGE_ID)
+      ).toString(16);
+    invariant(typeof messageId === "string", `Invalid message id ${messageId}`);
+    const nextId = incMessageId(messageId);
 
+    invariant(threadInfo.minAck, `Missing minAck in "thread-info" ${message}`);
     let replyMessage: Decrypted<ReplyMessage | ReplyToInvite> = {
       header: {
         iat: 0,
@@ -472,9 +494,11 @@ export class Client {
       payload: {
         messageId: nextId,
         message,
+        minAck: threadInfo.minAck,
       },
     };
-    this.storage.setItem(`message-id:${threadId}`, nextId);
+    // threadInfo.syn = nextId;
+    this.storage.setItem(`thread-info:${threadId}`, threadInfo);
     if (options?.selfSign && options.nickname) {
       const ack: Decrypted<ReplyToInvite> = {
         header: {
@@ -487,6 +511,11 @@ export class Client {
         payload: {
           ...replyMessage.payload,
           nickname: options.nickname,
+          messageId: Number(
+            messageIdForInviteTesting
+              ? parseInt("100000", 16) + messageIdForInviteTesting
+              : Math.floor(Math.random() * MAX_MESSAGE_ID)
+          ).toString(16),
         },
       };
       replyMessage = ack;
@@ -519,8 +548,8 @@ export class Client {
       type: "invite" | "message";
     };
   }> {
+    const jws = parseJWSSync(encryptedMessage);
     if (!threadId) {
-      const jws = await parseJWS(encryptedMessage, null);
       switch (jws.header.sub) {
         case "grid-invitation": {
           // const invite = jws as Invitation;
@@ -539,7 +568,7 @@ export class Client {
             `invitation:${invitationThumbprint}`
           );
           invariant(invitation, "Invitation not found " + invitationThumbprint);
-          const invitationJWS = await parseJWS<Invitation>(invitation);
+          const invitationJWS = await parseJWS(invitation);
 
           const myThumbprint = await getJWKthumbprint(
             invitationJWS.payload.epk
@@ -551,7 +580,6 @@ export class Client {
             invitationJWS.payload.messageId,
             myThumbprint
           );
-          await this.appendThread(invitation, threadId);
           // FALLS THROUGH
         }
         case "grid-reply": {
@@ -579,29 +607,51 @@ export class Client {
     }
     invariant(threadId, "Thread not found");
     const message = await this.decryptMessage(threadId, encryptedMessage);
+    const threadInfo = { ...this.storage.getItem(`thread-info:${threadId}`) };
 
-    const lastId = this.storage.getItem(`message-id:${threadId}`);
+    const fromThem =
+      message.fromThumbprint ===
+      (await getJWKthumbprint(threadInfo.theirSignature));
 
-    if (incMessageId(lastId) === message.messageId) {
-      this.storage.setItem(`message-id:${threadId}`, message.messageId);
-    } else if (message.messageId < lastId) {
-      // console.error("skipping duplicate message", message.messageId, lastId);
-      throw new Error("Repeat Message");
-    } else {
-      const missing = parseInt(message.messageId, 16) - parseInt(lastId, 16);
-      const MESSAGE_WINDOW = 5;
+    // if (fromThem && jws.header.sub === "reply-to-invite") {
+    //   await this.appendThread(threadInfo.signedInvite, threadId);
+    // }
+
+    const storeMessage = synAck(
+      fromThem
+        ? {
+            ack: message.messageId,
+          }
+        : {
+            syn: message.messageId,
+          },
+      threadInfo
+    );
+
+    if (storeMessage) {
+      const m = this.storage.queryItem(`keyed-messages:${threadId}`)?.messages;
       invariant(
-        missing < MESSAGE_WINDOW,
-        `${this.clientNickname} Missing ${missing} messages between ${lastId} and ${message.messageId}`
+        m ? !m.includes(encryptedMessage) : true,
+        // m?.[0] !== encryptedMessage || lastMessage !== encryptedMessage,
+        `Message already exists in thread ${JSON.stringify(
+          {
+            nickname: this.clientNickname,
+            messageId: message.messageId,
+            sub: jws.header.sub,
+            fromThem,
+            threadId,
+            messageIndex: m?.indexOf(encryptedMessage),
+          },
+          null,
+          2
+        )}`
       );
-
-      const outOfOrder =
-        this.storage.queryItem(`out-of-order:${threadId}`) ?? {};
-      outOfOrder[message.messageId] = encryptedMessage;
-      this.storage.setItem(`out-of-order:${threadId}`, outOfOrder);
+      this.storage.setItem(`thread-info:${threadId}`, threadInfo);
+      this.storage.storeMessage(threadId, message.messageId, encryptedMessage);
+      this.notifySubscribers();
+    } else {
+      console.warn("Skipping message", message.messageId);
     }
-    this.storage.storeMesage(threadId, message.messageId, encryptedMessage);
-    this.notifySubscribers();
     return {
       threadId: threadId,
       message,
@@ -609,14 +659,32 @@ export class Client {
   }
 
   public async decryptThread(threadId: ThreadID) {
-    const messages = this.getEncryptedThread(threadId);
-    return Promise.all(
-      messages.map(async (message) => {
+    const thread = this.getEncryptedThread(threadId);
+    const messages = await Promise.all(
+      thread.map(async (message) => {
         return typeof message === "string"
           ? this.decryptMessage(threadId, message)
           : message;
       })
     );
+    messages.sort((a, b) => {
+      if (a.from !== b.from) {
+        if (a.minAck && a.minAck < b.messageId) {
+          return 1;
+        }
+        if (b.minAck && b.minAck < a.messageId) {
+          return 1;
+        }
+      }
+      const order =
+        (a.type === "invite" ? -1 : 0) ||
+        (b.type === "invite" ? 1 : 0) ||
+        b.iat - a.iat ||
+        (a.from === b.from ? a.messageId.localeCompare(b.messageId) : 0);
+
+      return order;
+    });
+    return messages;
   }
   public async decryptMessage(
     threadId: ThreadID,
@@ -642,10 +710,12 @@ export class Client {
       return {
         from: getNickname(from),
         fromThumbprint: from,
+        epkThumbprint: await getJWKthumbprint(jwsInvite.payload.epk),
         message,
         type: "invite",
         iat: jwsInvite.header.iat,
         messageId: jwsInvite.payload.messageId,
+        minAck: undefined,
       };
     }
     const reply = jws as ReplyMessage | ReplyToInvite;
@@ -657,13 +727,21 @@ export class Client {
     );
     const from = reply.header.from;
 
+    const theirThumbprint = await getJWKthumbprint(threadInfo.theirSignature);
+    const epkThumbprint =
+      from === theirThumbprint
+        ? await getJWKthumbprint(threadInfo.theirEPK)
+        : threadInfo.myThumbprint;
+
     return {
       from: getNickname(from),
       fromThumbprint: from,
+      epkThumbprint,
       message: payload.message,
       type: "message",
       iat: reply.header.iat,
       messageId: payload.messageId,
+      minAck: payload.minAck,
     };
   }
 
@@ -705,7 +783,7 @@ export class Client {
       });
 
     const threads = this.storage
-      .getItem(`threads:${this.thumbprint}`)
+      .queryItem(`threads:${this.thumbprint}`)
       ?.map((threadId) => {
         const threadInfo = this.storage.getItem(`thread-info:${threadId}`);
         const messages = this.storage.getItem(`keyed-messages:${threadId}`);

@@ -25,7 +25,7 @@ export function WhisperGridDemo() {
     if (client) {
       const invites = client.getInvitations()
       const promises = invites.map(async (signedInvite) => {
-        const invitation = await parseJWS<Invitation>(signedInvite)
+        const invitation = await parseJWS(signedInvite)
 
         const key = await getJWKthumbprint(invitation.payload.epk)
         return {

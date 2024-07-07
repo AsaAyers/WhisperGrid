@@ -27,7 +27,7 @@ export function ReplyToInvite(): React.ReactNode {
 
   React.useMemo(() => {
     if (invitationString) {
-      parseJWS<Invitation>(invitationString).catch(() => {
+      parseJWS(invitationString).catch(() => {
         // Ignore parsing errors and reset the object
         return null;
       }).then(async (i) => {

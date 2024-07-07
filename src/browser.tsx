@@ -20,7 +20,7 @@ export class LocalGridStorage extends GridStorage {
    * This is only used for debugging, so real implementations don't need to
    * return data
    */
-  getData = () => {
+  debugData = () => {
     return {}
   }
   hasItem: GridStorage["hasItem"] = (key) => {

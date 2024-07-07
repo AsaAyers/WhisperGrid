@@ -42,12 +42,12 @@ export function ThreadView(): React.ReactNode {
 
     const promises = Promise.all(originalMessages.map(async (original): Promise<ThreadMessage | MissingMessage> => {
       invariant(!cancel, "Cancelled")
-      if (typeof original === 'object') {
-        return {
-          ...original,
-          iat: 0,
-        }
-      }
+      // if (typeof original === 'object') {
+      //   return {
+      //     ...original,
+      //     iat: 0,
+      //   }
+      // }
       const decrypted = await client.decryptMessage(threadId, original)
       return {
         ...decrypted,
@@ -102,15 +102,14 @@ export function ThreadView(): React.ReactNode {
           ...decrypted,
           original: reply
         }))
-      } else {
-
-        setThread((thread) => thread.concat({
-          iat: 0,
-          message: '(missing)',
-          fromThumbprint: '(missing)',
-          messageId: m.messageId,
-          type: 'missing'
-        }))
+        // } else {
+        //   setThread((thread) => thread.concat({
+        //     iat: 0,
+        //     message: '(missing)',
+        //     fromThumbprint: '(missing)',
+        //     messageId: m.messageId,
+        //     type: 'missing'
+        //   }))
       }
     }
   }

@@ -21,6 +21,7 @@ import {
   SignedReply,
   SignedReplyToInvite,
   SignedSelfEncrypted,
+  SignedTransport,
   TaggedString,
 } from "./types";
 
@@ -315,35 +316,38 @@ export async function decryptPrivateKey<T = AlgorithmType>(
   return privateKeyJWK;
 }
 export async function parseJWS<
-  T extends { header: unknown; payload: unknown },
   J extends
     | string
-    | SignedInvitation
-    | SignedReply
-    | SignedReplyToInvite
+    | SignedTransport
     | SignedBackup
     | SignedSelfEncrypted = string
->(
-  jws: J,
-  pubKey?: ECDSACryptoKey<"public"> | null
-): Promise<
-  J extends SignedInvitation
-    ? Invitation
-    : J extends SignedReply
-    ? ReplyMessage
-    : J extends SignedReplyToInvite
-    ? ReplyToInvite
-    : J extends SignedSelfEncrypted
-    ? SelfEncrypted
-    : J extends SignedBackup
-    ? BackupJWS
-    : T
-> {
+>(jws: J, pubKey?: ECDSACryptoKey<"public"> | null) {
   if (pubKey !== null) {
     const isValid = await verifyJWS(jws, pubKey);
     invariant(isValid, `JWS verification failed`);
   }
-
+  return parseJWSSync(jws);
+}
+export function parseJWSSync<
+  T extends { header: unknown; payload: unknown },
+  J extends
+    | string
+    | SignedTransport
+    | SignedBackup
+    | SignedSelfEncrypted = string
+>(
+  jws: J
+): J extends SignedInvitation
+  ? Invitation
+  : J extends SignedReply
+  ? ReplyMessage
+  : J extends SignedReplyToInvite
+  ? ReplyToInvite
+  : J extends SignedSelfEncrypted
+  ? SelfEncrypted
+  : J extends SignedBackup
+  ? BackupJWS
+  : T {
   if (jws.startsWith('"') && jws.endsWith('"')) {
     jws = jws.slice(1, -1) as any;
   }

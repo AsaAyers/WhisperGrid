@@ -26,7 +26,7 @@ export function InviteRoute() {
 
   React.useEffect(() => {
     if (signedInvite) {
-      parseJWS<Invitation>(signedInvite).then((i) => setInvitation(i))
+      parseJWS(signedInvite).then((i) => setInvitation(i))
     }
   }, [signedInvite])
 
@@ -149,7 +149,6 @@ function DecryptReply() {
   React.useEffect(() => {
     async function validateHash() {
       if (hash) {
-        console.log('hash', hash)
         const isValid = await verifyJWS(hash.substring(1))
         if (isValid) {
           setSignedReply(hash.substring(1) as SignedReply)
@@ -182,7 +181,6 @@ function DecryptReply() {
       delay(10).then(async () => {
         const result = await client.appendThread(signedReply)
         if (!cancel) {
-          console.log({ result, cancel })
           navigate(`/thread/${result.threadId}`)
         }
       })
@@ -200,7 +198,6 @@ function DecryptReply() {
       <Form
         form={form}
         onFinish={(values) => {
-          console.log('onFinish', values)
           const reply = values.encrypted_message as SignedReply;
           return verifyJWS(reply)
             .then(() => client.appendThread(reply))

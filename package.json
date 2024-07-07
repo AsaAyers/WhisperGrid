@@ -10,9 +10,12 @@
     "predeploy": "npm run build",
     "deploy": "gh-pages -d dist",
     "lint": "eslint src cypress",
+    "prelint": "tsc --noEmit",
     "start": "parcel index.html",
+    "precy:run": "npm run test",
     "cy:run": "cypress run",
     "cy:open": "cypress open",
+    "pretest": "npm run lint",
     "test": "jest",
     "prepare": "husky"
   },

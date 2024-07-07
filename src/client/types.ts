@@ -55,6 +55,7 @@ export type SelfEncrypted<P extends string | object = string> = {
 export type ReplyToInvitePayload = {
   nickname: string;
   messageId: string;
+  minAck: string;
   message: string;
 };
 
@@ -73,6 +74,7 @@ export type ReplyPayload = {
   messageId: string;
   epk?: JWK<"ECDH", "public">;
   message: string;
+  minAck: string;
 };
 
 export type ReplyMessage = {

@@ -40,7 +40,6 @@ function Backup() {
           onFinish={async (values) => {
             invariant(values.password === values.confirmPassword, "Passwords do not match");
             setProcessing(true);
-            console.log('values', values);
 
             const backup = await client.makeBackup(values.password);
             const thumbprint = client.thumbprint;
