@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { Client } from "./index";
+import { Client, incMessageId, setMessageIdForTesting } from "./index";
 import {
   deriveSharedSecret,
   exportKeyPair,
@@ -8,11 +8,17 @@ import {
   Thumbprint,
 } from "./utils";
 import { generateECDHKeyPair } from "./utils";
-import { StoredIdentity, TestStorage } from "./GridStorage";
+import { StoredIdentity, GridStorage, ThreadID } from "./GridStorage";
 import crypto from "crypto";
 
 import { debuglog } from "util";
-import { SignedBackup } from "./types";
+import {
+  ReplyToInvite,
+  SignedBackup,
+  SignedReply,
+  SignedTransport,
+} from "./types";
+import { ArrayBuffertohex } from "jsrsasign";
 
 const log = debuglog("whisper-grid:test:client");
 
@@ -54,7 +60,7 @@ const aliceThumbprint =
 
 describe("Client", () => {
   test("createInvitation", async () => {
-    const storage = new TestStorage();
+    const storage = new GridStorage();
     // storage.setItem(`identity:${aliceThumbprint}`, aliceIdentity);
     // const Alice = await Client.generateClient(storage, "Al1c3P@ssw0rd");
     const Alice = await Client.loadFromBackup(
@@ -78,7 +84,7 @@ describe("Client", () => {
   });
 
   test("bad password", async () => {
-    const storage = new TestStorage();
+    const storage = new GridStorage();
     storage.setItem(`identity:${aliceThumbprint}`, aliceIdentity);
 
     await expect(
@@ -96,11 +102,11 @@ describe("Client", () => {
 
   test("Alice and Bob all new keys", async () => {
     const Alice = await Client.generateClient(
-      new TestStorage(),
+      new GridStorage(),
       "AliceP@ssw0rd"
     );
     Alice.setClientNickname("Alice");
-    const Bob = await Client.generateClient(new TestStorage(), "B0bP@ssw0rd");
+    const Bob = await Client.generateClient(new GridStorage(), "B0bP@ssw0rd");
     Bob.setClientNickname("Bob");
 
     const invitation = await Alice.createInvitation({
@@ -109,32 +115,51 @@ describe("Client", () => {
     });
     const toAlice = await Bob.replyToInvitation(
       invitation,
-      "Hello Alice, this is my first message to you",
+      "Hello Alice, 1st message",
       "Bob"
     );
     const aliceView = await Alice.appendThread(toAlice);
     expect(aliceView.message.message).toMatchInlineSnapshot(
-      `"Hello Alice, this is my first message to you"`
+      `"Hello Alice, 1st message"`
     );
+    expect(await debugConverastion(Alice, aliceView.threadId))
+      .toMatchInlineSnapshot(`
+[
+  "[invite] Alice: Invite from Alice.
+Note: Hello Bob, this first message is not encrypted, but is signed",
+  "[message] Bob: Hello Alice, 1st message",
+]
+`);
 
     const toBob = await Alice.replyToThread(
       aliceView.threadId,
-      "Hello Bob, this is my reply to you"
+      "Hello Bob, 1st reply"
     );
 
     const bobView = await Bob.appendThread(toBob);
     expect(bobView.message.message).toMatchInlineSnapshot(
-      `"Hello Bob, this is my reply to you"`
+      `"Hello Bob, 1st reply"`
     );
 
-    const toAlice2 = await Bob.replyToThread(
-      bobView.threadId,
-      "Hello Alice, this is my second message to you"
-    );
+    const toAlice2 = await Bob.replyToThread(bobView.threadId, "2nd message");
     const aliceView2 = await Alice.appendThread(toAlice2);
-    expect(aliceView2.message.message).toMatchInlineSnapshot(
-      `"Hello Alice, this is my second message to you"`
-    );
+    expect(aliceView2.message.message).toMatchInlineSnapshot(`"2nd message"`);
+
+    const a = await debugConverastion(Alice, bobView.threadId);
+    const b = await debugConverastion(Bob, bobView.threadId);
+    expect(a).toMatchInlineSnapshot(`
+[
+  "[invite] Alice: Invite from Alice.
+Note: Hello Bob, this first message is not encrypted, but is signed",
+  "[message] Bob: Hello Alice, 1st message",
+  "[message] Alice: Hello Bob, 1st reply",
+  "[message] Bob: 2nd message",
+]
+`);
+    expect(a).toMatchObject(b);
+    expect(
+      ArrayBuffertohex(window.crypto.getRandomValues(new Uint8Array(64)).buffer)
+    ).toHaveLength(128);
   });
 
   test("deriveSharedSecret", async () => {
@@ -174,7 +199,7 @@ describe("Client", () => {
   });
 
   test("Backup and restore", async () => {
-    let alice = await Client.generateClient(new TestStorage(), "AlicePassword");
+    let alice = await Client.generateClient(new GridStorage(), "AlicePassword");
     alice.setClientNickname("Alice");
     const invitation = await alice.createInvitation({
       nickname: "Alice",
@@ -190,7 +215,7 @@ describe("Client", () => {
     const backup = await alice.makeBackup("BackupPassword");
     const jws = await parseJWS(backup);
     alice = await Client.loadFromBackup(
-      new TestStorage(),
+      new GridStorage(),
       jws.payload,
       "BackupPassword"
     );
@@ -203,4 +228,109 @@ describe("Client", () => {
       )
     ).toMatchObject(encryptedThreads);
   });
+
+  test("Messages are displayed correctly even when arriving out of order", async () => {
+    setMessageIdForTesting("0");
+    const alice = await Client.generateClient(
+      new GridStorage(),
+      "AlicePassword"
+    );
+    alice.setClientNickname("Alice");
+    const bob = await Client.generateClient(new GridStorage(), "BobPassword");
+    bob.setClientNickname("Bob");
+    const invite = await alice.createInvitation({ nickname: "Alice" });
+
+    const replies: SignedTransport[] = [];
+    let nextId = 1;
+    replies.push(
+      await bob.replyToInvitation(
+        invite,
+        `Hello Alice. Message ${nextId++}`,
+        "Bob"
+      )
+    );
+    const threadId = (await parseJWS<ReplyToInvite>(replies[0], null)).header
+      .re;
+
+    replies.push(
+      await bob.replyToThread(threadId, `Hello Alice, message ${nextId++}`)
+    );
+    replies.push(
+      await bob.replyToThread(threadId, `Hello Alice, message ${nextId++}`)
+    );
+    replies.push(
+      await bob.replyToThread(threadId, `Hello Alice, message ${nextId++}`)
+    );
+    replies.push(
+      await bob.replyToThread(threadId, `Hello Alice, message ${nextId++}`)
+    );
+    replies.push(
+      await bob.replyToThread(threadId, `Hello Alice, message ${nextId++}`)
+    );
+    replies.push(
+      await bob.replyToThread(threadId, `Hello Alice, message ${nextId++}`)
+    );
+    replies.push(
+      await bob.replyToThread(threadId, `Hello Alice, message ${nextId++}`)
+    );
+    replies.push(
+      await bob.replyToThread(threadId, `Hello Alice, message ${nextId++}`)
+    );
+
+    await alice.appendThread(replies[0]);
+    expect(await debugConverastion(alice, threadId)).toMatchInlineSnapshot(`
+    [
+      "[invite] Alice: Invite from Alice.
+    Note: (none)",
+      "[message] Bob: Hello Alice. Message 1",
+    ]
+    `);
+    await alice.appendThread(replies[2]);
+    await alice.appendThread(replies[2]);
+    expect(await debugConverastion(alice, threadId)).toMatchInlineSnapshot(`
+    [
+      "[invite] Alice: Invite from Alice.
+    Note: (none)",
+      "[message] Bob: Hello Alice. Message 1",
+      "[missing] messageId 2",
+      "[message] Bob: Hello Alice, message 3",
+    ]
+    `);
+
+    await alice.appendThread(replies[0]);
+    await alice.appendThread(replies[1]);
+    await alice.appendThread(replies[1]);
+    await alice.appendThread(replies[1]);
+
+    await expect(
+      alice.appendThread(replies[6])
+    ).rejects.toThrowErrorMatchingInlineSnapshot(
+      `"Alice Missing 5 messages between 2 and 7"`
+    );
+
+    expect(await debugConverastion(alice, threadId)).toMatchInlineSnapshot(`
+    [
+      "[invite] Alice: Invite from Alice.
+    Note: (none)",
+      "[message] Bob: Hello Alice. Message 1",
+      "[message] Bob: Hello Alice, message 2",
+      "[message] Bob: Hello Alice, message 3",
+    ]
+    `);
+  });
+});
+async function debugConverastion(client: Client, threadId: ThreadID) {
+  return (await client.decryptThread(threadId)).map((m) => {
+    return m.type !== "missing"
+      ? `[${m.type}] ${m.from.split("_")[0]}: ${m.message}`
+      : `[missing] messageId ${m.messageId}`;
+  });
+}
+
+test("incMessageId", async () => {
+  const messageId = "9999999";
+  expect(incMessageId(messageId)).toBe("999999a");
+  expect(incMessageId(Number(99).toString(16))).toBe("64");
+  expect(parseInt("9999999", 16)).toMatchInlineSnapshot(`161061273`);
+  expect(parseInt("999999a", 16)).toMatchInlineSnapshot(`161061274`);
 });

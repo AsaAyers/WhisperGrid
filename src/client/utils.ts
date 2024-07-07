@@ -412,6 +412,7 @@ export async function importKeyPair<T = AlgorithmType>(
   };
 }
 
+const MIN_MESSAGE_SIZE = 30;
 export async function encryptData<T extends string | object>(
   secret: SymmetricKey,
   message: T
@@ -421,17 +422,25 @@ export async function encryptData<T extends string | object>(
 }> {
   try {
     const iv = window.crypto.getRandomValues(new Uint8Array(12));
+    let msg = JSON.stringify({
+      m: message,
+    });
+    if (msg.length < MIN_MESSAGE_SIZE) {
+      msg = JSON.stringify({
+        random: ArrayBuffertohex(
+          window.crypto.getRandomValues(new Uint8Array(MIN_MESSAGE_SIZE / 2))
+            .buffer
+        ),
+        m: message,
+      });
+    }
     const encrypted = await window.crypto.subtle.encrypt(
       {
         name: "AES-GCM",
         iv,
       },
       secret,
-      new TextEncoder().encode(
-        JSON.stringify({
-          m: message,
-        })
-      )
+      new TextEncoder().encode(msg)
     );
     return {
       iv: Buffer.from(iv).toString("base64"),

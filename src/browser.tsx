@@ -1,8 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import React from "react";
 import ReactDOM from "react-dom/client";
-import { GridStorage } from "./index";
-import { TestStorage } from "./client/GridStorage";
+import { GridStorage } from "./client/GridStorage";
 import { WhisperGridDemo } from "./WhisperGridDemo";
 import { RouterProvider, createBrowserRouter, createHashRouter, useRouteError } from "react-router-dom";
 import { CreateInvitation } from "./CreateInvitation";
@@ -16,7 +15,7 @@ import { HomePage } from "./HomePage";
 import { Settings } from "./Settings";
 import { GridRouter } from "./GridRouter";
 
-export class LocalGridStorage extends TestStorage {
+export class LocalGridStorage extends GridStorage {
   /**
    * This is only used for debugging, so real implementations don't need to
    * return data

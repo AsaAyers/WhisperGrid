@@ -5,15 +5,24 @@ import { MessageOutlined, SendOutlined, ShareAltOutlined, UserOutlined } from "@
 import { invariant } from "./client/utils";
 import { useParams } from "react-router-dom";
 import { useClient } from "./ClientProvider";
-import { SignedInvitation, SignedReply, SignedReplyToInvite } from "./client/types";
+import { SignedReply, SignedTransport } from "./client/types";
 import { ThreadID } from "./client/GridStorage";
 
 const matchJWS = /^([a-zA-Z0-9-_]+)(\.[a-zA-Z0-9-_]+){2}$/;
 const myColor = '#87d068';
 const theirColor = '#108ee9';
 
+type MissingMessage = {
+  type: 'missing',
+  messageId: string,
+  original?: undefined,
+  from?: undefined,
+  iat: number,
+  message?: string
+  fromThumbprint?: string
+}
 type ThreadMessage = DecryptedMessageType & {
-  original: SignedInvitation | SignedReply | SignedReplyToInvite
+  original: SignedTransport
 }
 
 export function ThreadView(): React.ReactNode {
@@ -26,13 +35,19 @@ export function ThreadView(): React.ReactNode {
     theirNickname: string,
   } | null>(null);
 
-  const [thread, setThread] = React.useState<Array<ThreadMessage>>([]);
+  const [thread, setThread] = React.useState<Array<ThreadMessage | MissingMessage>>([]);
   React.useEffect(() => {
     const originalMessages = client.getEncryptedThread(threadId) ?? []
     let cancel = false
 
-    const promises = Promise.all(originalMessages.map(async (original): Promise<ThreadMessage> => {
+    const promises = Promise.all(originalMessages.map(async (original): Promise<ThreadMessage | MissingMessage> => {
       invariant(!cancel, "Cancelled")
+      if (typeof original === 'object') {
+        return {
+          ...original,
+          iat: 0,
+        }
+      }
       const decrypted = await client.decryptMessage(threadId, original)
       return {
         ...decrypted,
@@ -80,11 +95,23 @@ export function ThreadView(): React.ReactNode {
     if (reply) {
       form.resetFields()
       const originalMessages = client.getEncryptedThread(threadId) ?? []
-      const decrypted = await client.decryptMessage(threadId, originalMessages[originalMessages.length - 1])
-      setThread((thread) => thread.concat({
-        ...decrypted,
-        original: reply
-      }))
+      const m = originalMessages[originalMessages.length - 1]
+      if (typeof m === 'string') {
+        const decrypted = await client.decryptMessage(threadId, m)
+        setThread((thread) => thread.concat({
+          ...decrypted,
+          original: reply
+        }))
+      } else {
+
+        setThread((thread) => thread.concat({
+          iat: 0,
+          message: '(missing)',
+          fromThumbprint: '(missing)',
+          messageId: m.messageId,
+          type: 'missing'
+        }))
+      }
     }
   }
 
@@ -189,7 +216,7 @@ export function ThreadView(): React.ReactNode {
   );
 }
 export function MessageCard({ message, threadId, decrypt = true, onCopy }: {
-  message: SignedInvitation | SignedReply
+  message: SignedTransport,
   threadId: ThreadID;
   decrypt?: boolean
   onCopy?: () => void

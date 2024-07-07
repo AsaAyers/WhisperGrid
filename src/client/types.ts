@@ -7,6 +7,11 @@ export type TaggedString<T extends string | object> = string & {
   [objectType]: T;
 };
 
+export type SignedTransport =
+  | SignedInvitation
+  | SignedReplyToInvite
+  | SignedReply;
+
 export type SignedInvitation = TaggedString<Invitation>;
 export type SignedReply = TaggedString<ReplyMessage>;
 export type SignedReplyToInvite = TaggedString<ReplyToInvite>;
@@ -54,13 +59,12 @@ export type ReplyToInvitePayload = {
 };
 
 export type ReplyToInvite = {
-  header: Omit<ReplyMessage["header"], "sub" | "re"> & {
+  header: Omit<ReplyMessage["header"], "sub"> & {
     jwk: JWK<"ECDSA", "public">;
     invite: Thumbprint<"ECDH">;
     epk: JWK<"ECDH", "public">;
     iv: string;
     sub: "reply-to-invite";
-    re?: undefined;
   };
   payload: Encrypted<ReplyToInvitePayload>;
 };
