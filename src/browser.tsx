@@ -68,30 +68,35 @@ const router = selectedRouter([
         <WhisperGridDemo />
       </ClientProvider>
     ),
-    errorElement: <Error />,
     children: [
       {
         path: 'create',
+        errorElement: <Error />,
         element: <CreateInvitation />
       },
       {
         path: '/settings',
+        errorElement: <Error />,
         element: <Settings />
       },
       {
         path: 'invitation/:thumbprint',
+        errorElement: <Error />,
         element: <InviteRoute />,
       },
       {
         path: 'thread/:thumbprint',
+        errorElement: <Error />,
         element: <ThreadView />
       },
       {
         path: 'reply',
+        errorElement: <Error />,
         element: <ReplyToInvite />
       },
       {
         path: '/',
+        errorElement: <Error />,
         element: <HomePage />
       },
     ]

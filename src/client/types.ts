@@ -7,6 +7,9 @@ export type TaggedString<T extends string | object> = string & {
   [objectType]: T;
 };
 
+export type UnpackTaggedString<T extends TaggedString<any>> =
+  T extends TaggedString<infer U> ? U : never;
+
 export type SignedTransport =
   | SignedInvitation
   | SignedReplyToInvite

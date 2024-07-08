@@ -1,13 +1,12 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import React from "react";
-import { Button, Card, Descriptions, Flex, Form, Modal, Space, Typography, notification } from "antd";
-import { Invitation, SignedInvitation, SignedReply } from "./client/types";
-import TextArea from "antd/es/input/TextArea";
+import { Button, Card, Descriptions, Flex, Modal, Space, Typography, notification } from "antd";
+import { Invitation, SignedInvitation, SignedTransport, UnpackTaggedString } from "./client/types";
 import { useClient } from "./ClientProvider";
 import { useParams } from "react-router";
-import { Thumbprint, getJWKthumbprint, invariant, parseJWS, verifyJWS } from "./client/utils";
+import { Thumbprint, getJWKthumbprint, invariant, parseJWS, parseJWSSync, verifyJWS } from "./client/utils";
 import { useHref, useLocation, useNavigate } from "react-router-dom";
-import { useForm } from "antd/es/form/Form";
+import { EncryptedTextInput } from "./EncryptedTextInput";
 
 type Props = {
   invitation: Invitation;
@@ -131,27 +130,43 @@ function CopyInvite({ signedInvite }: { signedInvite: SignedInvitation }): React
   </Typography.Paragraph>;
 }
 
-const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
 
 function DecryptReply() {
-  type FieldType = {
-    encrypted_message: SignedReply
-  }
-  const client = useClient()
   const [showDecryptionModal, setShowDecryptionModal] = React.useState(false);
-  const navigate = useNavigate()
-  const [form] = useForm<FieldType>()
-  const encryptedMessage = Form.useWatch('encrypted_message', form)
-  const [signedReply, setSignedReply] = React.useState<SignedReply | null>(null)
+
   const hash = useLocation().hash
   const [notifications, contextHolder] = notification.useNotification()
+  const navigate = useNavigate()
+
+
+  const onJWS = React.useCallback((jws: UnpackTaggedString<SignedTransport>) => {
+    switch (jws.header.sub) {
+      case 'reply-to-invite':
+        navigate(`/thread/${jws.header.re}`)
+        break;
+      case 'grid-invitation':
+        notification.error({
+          message: "Grid Invitation",
+          description: "This is an invitation, not a reply to this inviation"
+
+        })
+        break;
+      case 'grid-reply':
+        notification.error({
+          message: "Grid Reply",
+          description: "This is a reply, not a direct reply to this inviation"
+        })
+        break;
+    }
+  }, [])
 
   React.useEffect(() => {
     async function validateHash() {
       if (hash) {
         const isValid = await verifyJWS(hash.substring(1))
         if (isValid) {
-          setSignedReply(hash.substring(1) as SignedReply)
+          const jws = parseJWSSync(hash.substring(1) as SignedTransport)
+          onJWS(jws)
         } else {
           notifications.warning({
             message: "Invalid hash",
@@ -163,65 +178,22 @@ function DecryptReply() {
     validateHash()
   }, [hash])
 
-  React.useEffect(() => {
-    let cancel = false
-    if (encryptedMessage) {
-      delay(10).then(async () => {
-        let isValid = false
-        if (!cancel) {
-          isValid = await verifyJWS(encryptedMessage)
-        }
-        if (!cancel && isValid) {
-          setSignedReply(encryptedMessage)
-        }
-      }).catch(() => {
-        // ignore errors
-      })
-    } if (signedReply) {
-      delay(10).then(async () => {
-        const result = await client.appendThread(signedReply)
-        if (!cancel) {
-          navigate(`/thread/${result.threadId}`)
-        }
-      })
-    }
-    return () => {
-      cancel = true
-    }
-  }, [encryptedMessage, signedReply])
-
   return (
     <>
       <Button type="primary" onClick={() => setShowDecryptionModal(true)}>
         Decrypt reply
       </Button>
-      <Form
-        form={form}
-        onFinish={(values) => {
-          const reply = values.encrypted_message as SignedReply;
-          return verifyJWS(reply)
-            .then(() => client.appendThread(reply))
-            .then((result) => {
-              navigate(`/thread/${result.threadId}`)
-            }).catch(() => {
-              // ignore errors
-            })
-
-        }}
+      <Modal
+        title="Decrypt reply"
+        open={showDecryptionModal}
+        onCancel={() => setShowDecryptionModal(false)}
+        footer={[]}
       >
-        <Modal
-          title="Decrypt reply"
-          open={showDecryptionModal}
-          footer={[]}
-        >
-          <Typography.Title>
-            Paste an encrypted reply below to decrypt it.
-          </Typography.Title>
-          <Form.Item name="encrypted_message" label="Encrypted Message">
-            <TextArea cols={600} rows={10} />
-          </Form.Item>
-        </Modal>
-      </Form>
+        <Typography.Title>
+          Paste an encrypted reply below to decrypt it.
+        </Typography.Title>
+        <EncryptedTextInput onJWS={onJWS} />
+      </Modal>
       {contextHolder}
     </>
   )

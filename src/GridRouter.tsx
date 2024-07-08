@@ -8,10 +8,6 @@ export function GridRouter() {
     if (url) {
       const u = new URL(url);
       u.hostname = window.location.hostname;
-      console.log(
-        [u.hostname, window.location.hostname]
-      );
-
       return u.pathname + u.search + u.hash;
     }
     return null;
