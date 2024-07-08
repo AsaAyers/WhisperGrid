@@ -90,10 +90,15 @@ type StoredDataTypes =
   | { type: "threads"; keyType: string; data: Array<ThreadID> };
 
 export class GridStorage implements GridStorageType {
-  private data = new Map<string, any>();
+  protected data: {
+    get: (key: string) => any;
+    has: (key: string) => boolean;
+    delete: (key: string) => void;
+    set: (key: string, value: any) => void;
+  } = new Map<string, any>();
 
   debugData() {
-    return Object.fromEntries(this.data.entries());
+    return Object.fromEntries((this.data as any).entries());
   }
 
   hasItem: GridStorageType["hasItem"] = (key) => {

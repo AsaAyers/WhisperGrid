@@ -337,17 +337,12 @@ export class Client {
     invariant(await verifyJWS(signedInvite), "Invalid invitation signature");
     const invite = await parseJWS(signedInvite);
 
-    let threadId;
-    try {
-      threadId = await this.startThread(
-        signedInvite,
-        invite.payload.epk,
-        invite.header.jwk,
-        invite.payload.messageId
-      );
-    } catch (e) {
-      throw new Error("Error replying to invitation ");
-    }
+    const threadId = await this.startThread(
+      signedInvite,
+      invite.payload.epk,
+      invite.header.jwk,
+      invite.payload.messageId
+    );
     const reply = this.replyToThread(threadId, message, {
       selfSign: true,
       nickname,
@@ -372,6 +367,11 @@ export class Client {
     invariant(keyBackup, `Thread key not found ${myThumbprint}`);
 
     const signatureThumbprint = await getJWKthumbprint(theirSignature);
+    invariant(
+      !myThumbprint || signatureThumbprint !== this.thumbprint,
+      "Cannot start a thread with yourself"
+    );
+
     const thumbprints: Thumbprint<"ECDH">[] = [
       await getJWKthumbprint(theirEPKJWK),
       myThumbprint,
@@ -405,9 +405,9 @@ export class Client {
   }
 
   getThreads = (): ThreadID[] =>
-    this.storage.getItem(`threads:${this.thumbprint}`) ?? [];
+    this.storage.queryItem(`threads:${this.thumbprint}`) ?? [];
   getInvitations = () =>
-    (this.storage.getItem(`invitations:${this.thumbprint}`) ?? []).map(
+    (this.storage.queryItem(`invitations:${this.thumbprint}`) ?? []).map(
       (t) => this.storage.getItem(`invitation:${t}`)!
     );
 

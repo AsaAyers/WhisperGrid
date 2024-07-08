@@ -15,32 +15,35 @@ import { HomePage } from "./HomePage";
 import { Settings } from "./Settings";
 import { GridRouter } from "./GridRouter";
 
-export class LocalGridStorage extends GridStorage {
-  /**
-   * This is only used for debugging, so real implementations don't need to
-   * return data
-   */
-  debugData = () => {
-    return {}
-  }
-  hasItem: GridStorage["hasItem"] = (key) => {
-    return Boolean(this.getItem(key) != null)
-  }
-  getItem: GridStorage["getItem"] = (key): any => {
-    const str = localStorage.getItem(key)
-    if (str) {
-      try {
-        return JSON.parse(str)
-      } catch (e) {
-        // ignore parse error
-      }
-    }
-    return null
-  };
 
-  setItem: GridStorage["setItem"] = (key, value) => {
-    localStorage.setItem(key, JSON.stringify(value))
-  };
+export class LocalGridStorage extends GridStorage {
+  protected data = {
+    get: (key: string) => {
+      const str = localStorage.getItem(key)
+      try {
+        if (str) {
+          return JSON.parse(str);
+        }
+      } catch (e) {
+        // ignore parse errors
+      }
+      return str
+    },
+    set: (key: string, value: any) => {
+      console.log('localStorage set', key)
+      localStorage.setItem(key, JSON.stringify(value))
+    },
+    has: (key: string) => {
+      const has = (null != localStorage.getItem(key))
+      if (!has) {
+        console.warn('localStorage!has', key, localStorage.getItem(key))
+      }
+      return has
+    },
+
+    delete: (key: string) => { (localStorage.removeItem(key)) },
+  }
+
 }
 
 const basename = location.pathname.startsWith("/WhisperGrid")
@@ -117,6 +120,7 @@ root.render(
 
 function Error(): React.ReactNode {
   const error: any = useRouteError();
+  console.log('error', error)
   const message = error?.data ?? error?.message ?? "An error occurred";
   return <Flex vertical align="center">
     <Alert

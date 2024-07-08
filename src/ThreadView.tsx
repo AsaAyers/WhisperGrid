@@ -36,18 +36,9 @@ export function ThreadView(): React.ReactNode {
   } | null>(null);
 
   const [thread, setThread] = React.useState<Array<ThreadMessage | MissingMessage>>([]);
-  React.useEffect(() => {
+  const refreshThread = React.useCallback(async () => {
     const originalMessages = client.getEncryptedThread(threadId) ?? []
-    let cancel = false
-
-    const promises = Promise.all(originalMessages.map(async (original): Promise<ThreadMessage | MissingMessage> => {
-      invariant(!cancel, "Cancelled")
-      // if (typeof original === 'object') {
-      //   return {
-      //     ...original,
-      //     iat: 0,
-      //   }
-      // }
+    const decryptedMessages = await Promise.all(originalMessages.map(async (original): Promise<ThreadMessage | MissingMessage> => {
       const decrypted = await client.decryptMessage(threadId, original)
       return {
         ...decrypted,
@@ -55,20 +46,15 @@ export function ThreadView(): React.ReactNode {
       }
     }))
 
-    promises.then(async (decryptedMessages) => {
-      const threadInfo = await client.getThreadInfo(threadId)
-      if (!cancel) {
-        setThreadInfo(threadInfo)
-      }
-      if (!cancel) {
-        return setThread(decryptedMessages)
-      }
-    })
+    const threadInfo = await client.getThreadInfo(threadId)
+    setThreadInfo(threadInfo)
+    return setThread(decryptedMessages)
 
-    return () => {
-      cancel = true
-    }
   }, [threadId])
+
+  React.useEffect(() => {
+    refreshThread()
+  }, [refreshThread])
 
   type FieldType = {
     message: string;
@@ -97,19 +83,8 @@ export function ThreadView(): React.ReactNode {
       const originalMessages = client.getEncryptedThread(threadId) ?? []
       const m = originalMessages[originalMessages.length - 1]
       if (typeof m === 'string') {
-        const decrypted = await client.decryptMessage(threadId, m)
-        setThread((thread) => thread.concat({
-          ...decrypted,
-          original: reply
-        }))
-        // } else {
-        //   setThread((thread) => thread.concat({
-        //     iat: 0,
-        //     message: '(missing)',
-        //     fromThumbprint: '(missing)',
-        //     messageId: m.messageId,
-        //     type: 'missing'
-        //   }))
+        await client.decryptMessage(threadId, m)
+        await refreshThread()
       }
     }
   }
