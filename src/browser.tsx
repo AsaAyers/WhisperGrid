@@ -30,7 +30,6 @@ export class LocalGridStorage extends GridStorage {
       return str
     },
     set: (key: string, value: any) => {
-      console.log('localStorage set', key)
       localStorage.setItem(key, JSON.stringify(value))
     },
     has: (key: string) => {

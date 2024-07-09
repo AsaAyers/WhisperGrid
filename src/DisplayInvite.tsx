@@ -1,12 +1,13 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import React from "react";
 import { Button, Card, Descriptions, Flex, Modal, Space, Typography, notification } from "antd";
-import { Invitation, SignedInvitation, SignedTransport, UnpackTaggedString } from "./client/types";
+import { Invitation, SignedInvitation, SignedReplyToInvite, SignedTransport, UnpackTaggedString } from "./client/types";
 import { useClient } from "./ClientProvider";
 import { useParams } from "react-router";
 import { Thumbprint, getJWKthumbprint, invariant, parseJWS, parseJWSSync, verifyJWS } from "./client/utils";
 import { useHref, useLocation, useNavigate } from "react-router-dom";
 import { EncryptedTextInput } from "./EncryptedTextInput";
+import { NotificationInstance } from "antd/es/notification/interface";
 
 type Props = {
   invitation: Invitation;
@@ -48,8 +49,6 @@ export function DisplayInvite({
     getJWKthumbprint(invitation.payload.epk).then(setThumbprint)
   })
   const replyHref = useHref('/reply')
-
-
 
   return (
     <Space direction="vertical" size={16}>
@@ -134,21 +133,20 @@ function CopyInvite({ signedInvite }: { signedInvite: SignedInvitation }): React
 function DecryptReply() {
   const [showDecryptionModal, setShowDecryptionModal] = React.useState(false);
 
-  const hash = useLocation().hash
   const [notifications, contextHolder] = notification.useNotification()
   const navigate = useNavigate()
+  const client = useClient()
 
-
-  const onJWS = React.useCallback((jws: UnpackTaggedString<SignedTransport>) => {
+  const onJWS = React.useCallback(async (jws: UnpackTaggedString<SignedTransport>, str: string) => {
     switch (jws.header.sub) {
       case 'reply-to-invite':
+        await client.appendThread(str as SignedReplyToInvite)
         navigate(`/thread/${jws.header.re}`)
         break;
       case 'grid-invitation':
         notification.error({
           message: "Grid Invitation",
           description: "This is an invitation, not a reply to this inviation"
-
         })
         break;
       case 'grid-reply':
@@ -160,23 +158,7 @@ function DecryptReply() {
     }
   }, [])
 
-  React.useEffect(() => {
-    async function validateHash() {
-      if (hash) {
-        const isValid = await verifyJWS(hash.substring(1))
-        if (isValid) {
-          const jws = parseJWSSync(hash.substring(1) as SignedTransport)
-          onJWS(jws)
-        } else {
-          notifications.warning({
-            message: "Invalid hash",
-            description: "The hash provided is not a valid signed reply. (The part of the URL after the #)"
-          })
-        }
-      }
-    }
-    validateHash()
-  }, [hash])
+  useUrlHash(onJWS, notifications);
 
   return (
     <>
@@ -192,9 +174,38 @@ function DecryptReply() {
         <Typography.Title>
           Paste an encrypted reply below to decrypt it.
         </Typography.Title>
-        <EncryptedTextInput onJWS={onJWS} />
+        <label htmlFor="encrypted_message">Encrypted Message</label>
+        <EncryptedTextInput id="encrypted_message" onJWS={onJWS} />
       </Modal>
       {contextHolder}
     </>
   )
 }
+
+function useUrlHash(
+  onJWS: (
+    jws: UnpackTaggedString<SignedTransport>,
+    str: string) => Promise<void>,
+  notifications: NotificationInstance
+) {
+  const hash = useLocation().hash;
+  React.useEffect(() => {
+    async function validateHash() {
+      if (hash) {
+        const isValid = await verifyJWS(hash.substring(1));
+        if (isValid) {
+          const str = (hash.substring(1) as SignedTransport);
+          const jws = parseJWSSync(str);
+          await onJWS(jws, str);
+        } else {
+          notifications.warning({
+            message: "Invalid hash",
+            description: "The hash provided is not a valid signed reply. (The part of the URL after the #)"
+          });
+        }
+      }
+    }
+    validateHash();
+  }, [hash]);
+}
+

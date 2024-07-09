@@ -181,9 +181,15 @@ export class Client {
       backup.threads
     )) {
       const threadId = t as ThreadID;
-      storage.setItem(`thread-info:${threadId}`, threadInfo);
+      storage.setItem(
+        `thread-info:${backup.thumbprint}:${threadId}`,
+        threadInfo
+      );
       storage.appendItem(`threads:${backup.thumbprint}`, threadId);
-      storage.setItem(`keyed-messages:${threadId}`, messages);
+      storage.setItem(
+        `keyed-messages:${backup.thumbprint}:${threadId}`,
+        messages
+      );
     }
     const client = new Client(
       storage,
@@ -385,7 +391,7 @@ export class Client {
     ) as ThreadID;
 
     this.storage.setItem(`public-key:${signatureThumbprint}`, theirSignature);
-    this.storage.setItem(`thread-info:${threadId}`, {
+    this.storage.setItem(`thread-info:${this.thumbprint}:${threadId}`, {
       missing: [],
       windowSize: 5,
       maxAck: undefined,
@@ -430,7 +436,9 @@ export class Client {
     secret: SymmetricKey;
     epk: JWK<"ECDH", "public">;
   }> {
-    const threadInfo = this.storage.getItem(`thread-info:${threadThumbprint}`);
+    const threadInfo = this.storage.getItem(
+      `thread-info:${this.thumbprint}:${threadThumbprint}`
+    );
     invariant(threadInfo, "Thread not found");
 
     const publicJWK = threadInfo.theirEPK;
@@ -469,7 +477,9 @@ export class Client {
     }
   ) {
     const { secret, epk } = await this.readThreadSecret(threadId);
-    const threadInfo = this.storage.getItem(`thread-info:${threadId}`);
+    const threadInfo = this.storage.getItem(
+      `thread-info:${this.thumbprint}:${threadId}`
+    );
     invariant(threadInfo, "Thread not found");
     const messageId =
       threadInfo.syn ??
@@ -498,7 +508,10 @@ export class Client {
       },
     };
     // threadInfo.syn = nextId;
-    this.storage.setItem(`thread-info:${threadId}`, threadInfo);
+    this.storage.setItem(
+      `thread-info:${this.thumbprint}:${threadId}`,
+      threadInfo
+    );
     if (options?.selfSign && options.nickname) {
       const ack: Decrypted<ReplyToInvite> = {
         header: {
@@ -549,6 +562,7 @@ export class Client {
     };
   }> {
     const jws = parseJWSSync(encryptedMessage);
+    console.warn("appendThread", threadId, jws);
     if (!threadId) {
       switch (jws.header.sub) {
         case "grid-invitation": {
@@ -585,7 +599,9 @@ export class Client {
         case "grid-reply": {
           const reply = jws as ReplyMessage;
           threadId ??= reply.header.re;
-          const threadInfo = this.storage.getItem(`thread-info:${threadId}`);
+          const threadInfo = this.storage.getItem(
+            `thread-info:${this.thumbprint}:${threadId}`
+          );
 
           let isValid = false;
           if (reply.header.from === this.thumbprint) {
@@ -607,7 +623,9 @@ export class Client {
     }
     invariant(threadId, "Thread not found");
     const message = await this.decryptMessage(threadId, encryptedMessage);
-    const threadInfo = { ...this.storage.getItem(`thread-info:${threadId}`) };
+    const threadInfo = {
+      ...this.storage.getItem(`thread-info:${this.thumbprint}:${threadId}`),
+    };
 
     const fromThem =
       message.fromThumbprint ===
@@ -629,7 +647,9 @@ export class Client {
     );
 
     if (storeMessage) {
-      const m = this.storage.queryItem(`keyed-messages:${threadId}`)?.messages;
+      const m = this.storage.queryItem(
+        `keyed-messages:${this.thumbprint}:${threadId}`
+      )?.messages;
       invariant(
         m ? !m.includes(encryptedMessage) : true,
         // m?.[0] !== encryptedMessage || lastMessage !== encryptedMessage,
@@ -646,8 +666,16 @@ export class Client {
           2
         )}`
       );
-      this.storage.setItem(`thread-info:${threadId}`, threadInfo);
-      this.storage.storeMessage(threadId, message.messageId, encryptedMessage);
+      this.storage.setItem(
+        `thread-info:${this.thumbprint}:${threadId}`,
+        threadInfo
+      );
+      this.storage.storeMessage(
+        this.thumbprint,
+        threadId,
+        message.messageId,
+        encryptedMessage
+      );
       this.notifySubscribers();
     } else {
       console.warn("Skipping message", message.messageId);
@@ -690,7 +718,9 @@ export class Client {
     threadId: ThreadID,
     encryptedMessage: SignedTransport
   ): Promise<DecryptedMessageType> {
-    const threadInfo = this.storage.getItem(`thread-info:${threadId}`);
+    const threadInfo = this.storage.getItem(
+      `thread-info:${this.thumbprint}:${threadId}`
+    );
     const jws = await parseJWS(encryptedMessage, null);
     invariant(threadInfo, "Thread not found");
 
@@ -746,11 +776,13 @@ export class Client {
   }
 
   public getEncryptedThread(threadId: ThreadID) {
-    return this.storage.readMessages(threadId);
+    return this.storage.readMessages(this.thumbprint, threadId);
   }
 
   public async getThreadInfo(thread: ThreadID) {
-    const threadInfo = this.storage.getItem(`thread-info:${thread}`);
+    const threadInfo = this.storage.getItem(
+      `thread-info:${this.thumbprint}:${thread}`
+    );
     invariant(threadInfo, "Thread not found");
 
     return {
@@ -785,8 +817,12 @@ export class Client {
     const threads = this.storage
       .queryItem(`threads:${this.thumbprint}`)
       ?.map((threadId) => {
-        const threadInfo = this.storage.getItem(`thread-info:${threadId}`);
-        const messages = this.storage.getItem(`keyed-messages:${threadId}`);
+        const threadInfo = this.storage.getItem(
+          `thread-info:${this.thumbprint}:${threadId}`
+        );
+        const messages = this.storage.getItem(
+          `keyed-messages:${this.thumbprint}:${threadId}`
+        );
 
         return [
           threadId,

@@ -45,7 +45,6 @@ export function ReplyToInvite(): React.ReactNode {
     switch (jws.header.sub) {
       case 'grid-invitation':
         // reaching through jws.header.sub doesn't seem to type-narrow jws
-        console.log('jws', str)
         setInvitation(jws as Invitation)
         setInvitationString(str as SignedInvitation)
         break;

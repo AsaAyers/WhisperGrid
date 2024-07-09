@@ -48,7 +48,7 @@ export type StoredIdentity = {
 
 type KeyedMessageIndex = {
   type: "keyed-messages";
-  keyType: ThreadID;
+  keyType: `${Thumbprint<"ECDSA">}:${ThreadID}`;
   data: {
     min: string;
     max: string;
@@ -66,12 +66,12 @@ type ThreadInfoData = SynAckState & {
 type StoredDataTypes =
   | {
       type: "identity";
-      keyType: string;
+      keyType: Thumbprint<"ECDSA">;
       data: StoredIdentity;
     }
   | {
       type: "thread-info";
-      keyType: ThreadID;
+      keyType: `${Thumbprint<"ECDSA">}:${ThreadID}`;
       data: ThreadInfoData;
     }
   | { type: "invitation"; keyType: Thumbprint<"ECDH">; data: SignedInvitation }
@@ -87,7 +87,7 @@ type StoredDataTypes =
       keyType: Thumbprint;
       data: JWK<"ECDSA" | "ECDH", "public">;
     }
-  | { type: "threads"; keyType: string; data: Array<ThreadID> };
+  | { type: "threads"; keyType: Thumbprint<"ECDSA">; data: Array<ThreadID> };
 
 export class GridStorage implements GridStorageType {
   protected data: {
@@ -133,20 +133,25 @@ export class GridStorage implements GridStorageType {
   };
 
   public storeMessage(
+    thumbprint: Thumbprint<"ECDSA">,
     threadId: ThreadID,
     messageId: string,
     message: SignedTransport
   ) {
-    const index = this.queryItem(`keyed-messages:${threadId}`) ?? {
+    const index = this.queryItem(
+      `keyed-messages:${thumbprint}:${threadId}`
+    ) ?? {
       min: messageId,
       max: messageId,
       messages: [],
     };
     index.messages.push(message);
-    this.setItem(`keyed-messages:${threadId}`, index);
+    this.setItem(`keyed-messages:${thumbprint}:${threadId}`, index);
   }
-  public readMessages(threadId: ThreadID) {
-    const { messages } = this.getItem(`keyed-messages:${threadId}`);
+  public readMessages(thumbprint: Thumbprint<"ECDSA">, threadId: ThreadID) {
+    const { messages } = this.getItem(
+      `keyed-messages:${thumbprint}:${threadId}`
+    );
     return messages;
   }
 }

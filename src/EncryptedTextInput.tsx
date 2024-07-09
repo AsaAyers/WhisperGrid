@@ -4,7 +4,8 @@ import { Input, Form, notification } from "antd";
 import { SignedReply, SignedTransport, UnpackTaggedString } from "./client/types";
 import { parseJWS, parseJWSSync, verifyJWS } from "./client/utils";
 
-export function EncryptedTextInput({ onJWS }: {
+export function EncryptedTextInput({ id, onJWS }: {
+  id?: string
   onJWS: (jws: UnpackTaggedString<SignedTransport>, str: string) => void
 }) {
   type FieldType = {
@@ -39,6 +40,7 @@ export function EncryptedTextInput({ onJWS }: {
     >
       <Form.Item
         name="encrypted_message"
+        id={id}
         rules={[
           {
             required: true,
@@ -56,7 +58,6 @@ export function EncryptedTextInput({ onJWS }: {
                     // ignore parse errors
                   }
                 }
-
               }
               return Promise.reject()
             }
