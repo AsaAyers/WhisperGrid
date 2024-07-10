@@ -4,10 +4,45 @@ import { invariant, Thumbprint } from "./client/utils";
 import { LocalGridStorage } from "./browser";
 import { useNavigate } from "react-router-dom";
 import { BackupPayload } from "./client/types";
+import { atom, useAtom } from "jotai";
+
+export const clientAtom = atom(
+  undefined as Client | undefined,
+  (_get, set, newValue: Client | undefined) => {
+    set(clientAtom, newValue)
+  }
+)
+
+export const genreateClientAtom = atom(
+  (get) => get(clientAtom),
+  async (get, set, password: string) => {
+    const storage = new LocalGridStorage();
+    const client = await Client.generateClient(storage, password)
+    set(clientAtom, client)
+  }
+)
+
+export const loadClientAtom = atom(
+  (get) => get(clientAtom),
+  async (get, set, { thumbprint, password }: { thumbprint: string, password: string }) => {
+    const storage = new LocalGridStorage();
+    const client = await Client.loadClient(storage, thumbprint as Thumbprint<'ECDSA'>, password)
+    set(clientAtom, client)
+  }
+)
+
+export const loadFromBackupAtom = atom(
+  (get) => get(clientAtom),
+  async (get, set, { backup, password }: { backup: BackupPayload, password: string }) => {
+    const storage = new LocalGridStorage();
+    const client = await Client.loadFromBackup(storage, backup, password)
+    set(clientAtom, client)
+  }
+)
 
 
 export function ClientProvider(props: React.PropsWithChildren) {
-  const [client, setClient] = React.useState<undefined | Client>(undefined);
+  const [client, setClient] = useAtom(clientAtom)
   const [clientUpdateKey, setClientUpdateKey] = React.useState(0);
   const navigate = useNavigate()
 

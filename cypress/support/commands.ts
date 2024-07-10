@@ -88,7 +88,8 @@ Cypress.Commands.add("copyButtonText", (label): Cypress.Chainable<string> => {
 Cypress.Commands.add("paste", { prevSubject: "element" }, (parent, text) => {
   cy.get(parent.selector!).type(text, {
     delay: 1,
-    log: true,
+    log: false,
+    scrollBehavior: "center",
   });
 });
 

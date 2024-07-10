@@ -1,72 +1,75 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import React from "react";
-import { Input, Form, notification } from "antd";
+import { App, Input, Form } from "antd";
 import { SignedReply, SignedTransport, UnpackTaggedString } from "./client/types";
-import { parseJWS, parseJWSSync, verifyJWS } from "./client/utils";
+import { invariant, parseJWS, parseJWSSync, verifyJWS } from "./client/utils";
 
-export function EncryptedTextInput({ id, onJWS }: {
+const jwsRegex = /^[a-zA-Z0-9_-]+\.[a-zA-Z0-9_-]+\.[a-zA-Z0-9_-]+$/
+
+type FieldType = {
+  encrypted_message: SignedReply
+}
+export function EncryptedTextInput({ id, label, onJWS, }: {
   id?: string
+  label?: string,
   onJWS: (jws: UnpackTaggedString<SignedTransport>, str: string) => void
 }) {
-  type FieldType = {
-    encrypted_message: SignedReply
-  }
-  const [notifications, contextHolder] = notification.useNotification()
-  const [form] = Form.useForm<FieldType>()
+  const { notification } = App.useApp()
+  const form = Form.useFormInstance<FieldType>()
+  invariant(form, 'EncryptedTextInput needs to be rendered inside a Form')
+  const value = Form.useWatch('encrypted_message')
+  const fieldErrors = form.getFieldError('encrypted_message')
 
-  return (
-    <Form
-      form={form}
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      onChange={(_e: any) => {
-        form.submit()
-      }}
-      onFinish={async (values) => {
-        const jws = await parseJWS<SignedTransport>(values.encrypted_message, null)
-        switch (jws.header.sub) {
+  React.useEffect(() => {
+    if (fieldErrors.length === 0 && jwsRegex.test(value)) {
+      const onFinish = async () => {
+        const jws = await parseJWS<SignedTransport>(value, null).catch(() => null)
+        switch (jws?.header.sub) {
           case 'reply-to-invite':
           case 'grid-invitation':
           case 'grid-reply':
-            onJWS(jws, values.encrypted_message)
+            onJWS(jws, value)
             break;
           default:
-            notifications.error({
+            notification.error({
               message: "Unexpected Response",
               description: "This JWS does not appear to be a WhisperGrid message"
             })
         }
-        form.setFieldValue('encrypted_message', JSON.stringify(jws, null, 2))
-      }}
-    >
-      <Form.Item
-        name="encrypted_message"
-        id={id}
-        rules={[
-          {
-            required: true,
-            pattern: /^[a-zA-Z0-9_-]+\.[a-zA-Z0-9_-]+\.[a-zA-Z0-9_-]+$/,
-            message: 'Unable to validate JWS. Expected a self-signed message',
-            validator: async (rule, v) => {
-              const value = v.trim()
-              if (rule.pattern?.test(value)) {
-                const isValid = await verifyJWS(value)
-                if (isValid) {
-                  try {
-                    parseJWSSync(value)
-                    return
-                  } catch (e: any) {
-                    // ignore parse errors
-                  }
+      }
+      onFinish()
+    }
+  }, [fieldErrors, value])
+
+  return (
+    <Form.Item
+      name="encrypted_message"
+      id={id}
+      label={label}
+      rules={[
+        {
+          required: true,
+          pattern: jwsRegex,
+          message: 'Unable to validate JWS. Expected a self-signed message',
+          validator: async (rule, v) => {
+            const value = v.trim()
+            if (rule.pattern?.test(value)) {
+              const isValid = await verifyJWS(value)
+              if (isValid) {
+                try {
+                  parseJWSSync(value)
+                  return
+                } catch (e: any) {
+                  // ignore parse errors
                 }
               }
-              return Promise.reject()
             }
-          }
-        ]}
-      >
-        <Input.TextArea cols={600} rows={10} />
-      </Form.Item>
-      {contextHolder}
-    </Form>
+            return Promise.reject()
+          },
+        }
+      ]}
+    >
+      <Input.TextArea cols={600} rows={10} />
+    </Form.Item>
   )
 }

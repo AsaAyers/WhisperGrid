@@ -93,9 +93,13 @@ export function WhisperGridDemo() {
   const navigate = useNavigate()
 
   return (
-    <Layout hasSider={client != null}>
+    <Layout
+      style={{
+        height: '100dvh',
+      }}
+      hasSider={client != null}>
       {client && (
-        <Layout.Sider breakpoint="xs" collapsible >
+        <Layout.Sider breakpoint="xs" collapsible style={{ height: '100dvh' }} >
           <Flex>
             <Typography.Text style={{ color: 'white', }}>
               Whisper Grid
@@ -125,7 +129,6 @@ export function WhisperGridDemo() {
         {client && (
           <Outlet />
         )}
-
       </Layout.Content>
     </Layout>
   );

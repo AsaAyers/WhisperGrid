@@ -571,6 +571,8 @@ export class Client {
           break;
         }
         case "reply-to-invite": {
+          const isValid = verifyJWS(encryptedMessage);
+          invariant(isValid, "Expected a self-signed message");
           const reply = jws as ReplyToInvite;
           invariant(reply.header.epk, "First message must have an epk");
           invariant(
@@ -603,8 +605,9 @@ export class Client {
             `thread-info:${this.thumbprint}:${threadId}`
           );
 
+          const fromMe = reply.header.from === this.thumbprint;
           let isValid = false;
-          if (reply.header.from === this.thumbprint) {
+          if (fromMe) {
             isValid = await verifyJWS(
               encryptedMessage,
               this.identityKeyPair.publicKey
@@ -627,21 +630,25 @@ export class Client {
       ...this.storage.getItem(`thread-info:${this.thumbprint}:${threadId}`),
     };
 
-    const fromThem =
-      message.fromThumbprint ===
-      (await getJWKthumbprint(threadInfo.theirSignature));
+    const fromMe = message.fromThumbprint === this.thumbprint;
 
-    // if (fromThem && jws.header.sub === "reply-to-invite") {
-    //   await this.appendThread(threadInfo.signedInvite, threadId);
-    // }
-
+    let isValid;
+    if (fromMe) {
+      isValid = await verifyJWS(
+        encryptedMessage,
+        this.identityKeyPair.publicKey
+      );
+    } else {
+      isValid = await verifyJWS(encryptedMessage, threadInfo.theirSignature);
+    }
+    invariant(isValid, "Invalid message signature");
     const storeMessage = synAck(
-      fromThem
+      fromMe
         ? {
-            ack: message.messageId,
+            syn: message.messageId,
           }
         : {
-            syn: message.messageId,
+            ack: message.messageId,
           },
       threadInfo
     );
@@ -658,7 +665,6 @@ export class Client {
             nickname: this.clientNickname,
             messageId: message.messageId,
             sub: jws.header.sub,
-            fromThem,
             threadId,
             messageIndex: m?.indexOf(encryptedMessage),
           },

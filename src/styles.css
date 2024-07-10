@@ -2,6 +2,9 @@
   height: 100vh;
   display: flex;
 }
+#root > div {
+  flex-grow: 1;
+}
 
 body {
   margin: 0;

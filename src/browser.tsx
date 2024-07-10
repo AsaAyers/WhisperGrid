@@ -7,13 +7,14 @@ import { RouterProvider, createBrowserRouter, createHashRouter, useRouteError } 
 import { CreateInvitation } from "./CreateInvitation";
 import { ClientProvider } from "./ClientProvider";
 import { InviteRoute } from "./DisplayInvite";
-import { Alert, Flex } from "antd";
+import { Alert, App, Flex } from "antd";
 import { ReplyToInvite } from "./ReplyToInvite";
 import { ThreadView } from "./ThreadView";
 import { Logo } from "./Logo";
 import { HomePage } from "./HomePage";
 import { Settings } from "./Settings";
 import { GridRouter } from "./GridRouter";
+import { Provider } from "jotai";
 
 
 export class LocalGridStorage extends GridStorage {
@@ -63,9 +64,7 @@ const router = selectedRouter([
   {
     path: "/",
     element: (
-      <ClientProvider>
-        <WhisperGridDemo />
-      </ClientProvider>
+      <ClientProvider><WhisperGridDemo /></ClientProvider>
     ),
     children: [
       {
@@ -84,7 +83,7 @@ const router = selectedRouter([
         element: <InviteRoute />,
       },
       {
-        path: 'thread/:thumbprint',
+        path: 'thread/:threadId',
         errorElement: <Error />,
         element: <ThreadView />
       },
@@ -118,7 +117,13 @@ const root = ReactDOM.createRoot(
 
 root.render(
   <React.StrictMode>
-    <RouterProvider router={router} />
+    <App>
+      <Provider>
+        <React.Suspense>
+          <RouterProvider router={router} />
+        </React.Suspense>
+      </Provider>
+    </App>
   </React.StrictMode>
 )
 

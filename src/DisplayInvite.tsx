@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import React from "react";
-import { Button, Card, Descriptions, Flex, Modal, Space, Typography, notification } from "antd";
+import { Button, Card, Descriptions, Flex, Form, Modal, Space, Typography, notification } from "antd";
 import { Invitation, SignedInvitation, SignedReplyToInvite, SignedTransport, UnpackTaggedString } from "./client/types";
 import { useClient } from "./ClientProvider";
 import { useParams } from "react-router";
@@ -138,6 +138,9 @@ function DecryptReply() {
   const client = useClient()
 
   const onJWS = React.useCallback(async (jws: UnpackTaggedString<SignedTransport>, str: string) => {
+    if (!await verifyJWS(str)) {
+      return
+    }
     switch (jws.header.sub) {
       case 'reply-to-invite':
         await client.appendThread(str as SignedReplyToInvite)
@@ -175,7 +178,9 @@ function DecryptReply() {
           Paste an encrypted reply below to decrypt it.
         </Typography.Title>
         <label htmlFor="encrypted_message">Encrypted Message</label>
-        <EncryptedTextInput id="encrypted_message" onJWS={onJWS} />
+        <Form>
+          <EncryptedTextInput id="encrypted_message" onJWS={onJWS} />
+        </Form>
       </Modal>
       {contextHolder}
     </>

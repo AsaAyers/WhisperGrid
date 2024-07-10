@@ -348,6 +348,7 @@ export function parseJWSSync<
   : J extends SignedBackup
   ? BackupJWS
   : T {
+  invariant(typeof jws === "string", "Expected a string");
   if (jws.startsWith('"') && jws.endsWith('"')) {
     jws = jws.slice(1, -1) as any;
   }

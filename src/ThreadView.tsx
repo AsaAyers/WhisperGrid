@@ -1,9 +1,9 @@
 import React from "react";
-import { Alert, Avatar, Button, Card, Flex, Form, FormProps, Input, Popover, Space, Timeline, Typography } from "antd";
+import { Avatar, Button, Card, Flex, Form, FormProps, Input, Popover, Space, Timeline, Typography } from "antd";
 import { DecryptedMessageType } from "./client";
 import { MessageOutlined, SendOutlined, ShareAltOutlined, UserOutlined } from "@ant-design/icons";
-import { invariant } from "./client/utils";
-import { useParams } from "react-router-dom";
+import { invariant, parseJWSSync } from "./client/utils";
+import { useParams, useSearchParams } from "react-router-dom";
 import { useClient } from "./ClientProvider";
 import { SignedReply, SignedTransport } from "./client/types";
 import { ThreadID } from "./client/GridStorage";
@@ -28,8 +28,9 @@ type ThreadMessage = DecryptedMessageType & {
 export function ThreadView(): React.ReactNode {
   const [form] = Form.useForm()
   const client = useClient();
-  const threadId = useParams<{ thumbprint: ThreadID; }>().thumbprint
-  invariant(threadId, "ThreadID is required");
+  const { threadId } = useParams<{ threadId: ThreadID; }>()
+  invariant(threadId, `ThreadID is required`);
+  const [searchParams, setSearachParams] = useSearchParams()
   const [threadInfo, setThreadInfo] = React.useState<{
     myNickname: string,
     theirNickname: string,
@@ -60,7 +61,6 @@ export function ThreadView(): React.ReactNode {
     message: string;
   };
 
-  const [newReply, setNewReply] = React.useState<SignedReply | null>(null);
 
   const onFinish: FormProps<FieldType>['onFinish'] = async (values) => {
     let reply: SignedReply | void = undefined
@@ -74,11 +74,15 @@ export function ThreadView(): React.ReactNode {
       reply = await client.replyToThread(threadId, values.message, { selfSign: false }).catch(
         e => console.error(e)
       )
-      if (reply) {
-        setNewReply(reply)
-      }
     }
     if (reply) {
+      const jws = parseJWSSync(reply)
+      const msg = await client.decryptMessage(jws.header.re, reply)
+
+      setSearachParams((search) => {
+        search.set('expandMessage', msg.messageId)
+        return search
+      })
       form.resetFields()
       const originalMessages = client.getEncryptedThread(threadId) ?? []
       const m = originalMessages[originalMessages.length - 1]
@@ -89,6 +93,7 @@ export function ThreadView(): React.ReactNode {
     }
   }
 
+  const expandMessage = searchParams.get('expandMessage')
   return (
     <Flex
       vertical
@@ -99,7 +104,17 @@ export function ThreadView(): React.ReactNode {
         mode="left"
         items={thread.map((message) => ({
           dot: (
-            <Popover title="Message Info"
+            <Popover
+              title="Message Info"
+              open={message.messageId === expandMessage}
+              onOpenChange={(open) => {
+                if (!open && message.messageId === expandMessage) {
+                  setSearachParams(search => {
+                    search.delete('expandMessage')
+                    return search
+                  })
+                }
+              }}
               content={(
                 <Flex vertical gap="small" style={{ maxWidth: '90vw' }}>
                   <Typography.Text>
@@ -138,30 +153,6 @@ export function ThreadView(): React.ReactNode {
         }))}
       />
 
-      {newReply && (
-        < >
-          <Typography.Paragraph
-            code
-            copyable={{
-              format: 'text/plain',
-              onCopy: () => {
-                window.cypressCopyText = newReply
-                setNewReply(null)
-              }
-            }} >
-            {newReply}
-          </Typography.Paragraph>
-          <Typography.Link
-            ellipsis
-            href={`web+grid:/invitation/${threadId}#${newReply}`}
-          >
-            {`web+grid:/invitation/${threadId}#${newReply}`}
-          </Typography.Link>
-          <Alert message="Message encrypted, copy it from above" type="success" />
-        </>
-      )}
-
-
       <div style={{ flex: 1, flexGrow: 1 }}></div>
       <Card size="small" title={
         <Typography.Text>
@@ -188,69 +179,4 @@ export function ThreadView(): React.ReactNode {
       </Card>
     </Flex >
   );
-}
-export function MessageCard({ message, threadId, decrypt = true, onCopy }: {
-  message: SignedTransport,
-  threadId: ThreadID;
-  decrypt?: boolean
-  onCopy?: () => void
-}): React.ReactNode {
-  const client = useClient()
-  const [decryptedMessage, setDecryptedMessage] = React.useState<DecryptedMessageType | null>(null);
-  const [showDecrypted, setShowDecrypted] = React.useState<boolean>(true);
-
-  React.useEffect(() => {
-    if (decrypt) {
-      client.decryptMessage(threadId, message).then((decrypted) => {
-        setDecryptedMessage(decrypted);
-      });
-    }
-  }, [decrypt, threadId, message]);
-
-
-  return (
-    <Card
-      size="small"
-      title={
-        <>
-          <Avatar
-            icon={<UserOutlined />}
-            style={{ backgroundColor: myColor }}
-            size="small" />
-          {decryptedMessage?.from}
-        </>
-      }
-      extra={[
-        <Typography.Link key="encrypted" onClick={() => setShowDecrypted((s) => !s)}>
-          {showDecrypted && decryptedMessage ? 'Show' : 'Hide'} Encrypted
-        </Typography.Link>,
-        <Typography.Link href={`web+grid:/thread/`} key="web+grid">
-          web+grid
-        </Typography.Link>
-      ]}>
-
-
-      {showDecrypted && decryptedMessage ? (
-        <Typography.Paragraph style={{ whiteSpace: 'pre-wrap' }}>
-          {decryptedMessage.message}
-        </Typography.Paragraph>
-      ) : (
-        <>
-          <Typography.Paragraph
-            code
-            copyable={{
-              format: 'text/plain',
-              onCopy: () => {
-                window.cypressCopyText = message
-                onCopy?.()
-              }
-            }}
-            ellipsis={{
-              expandable: true, rows: 3
-            }}>
-            {message}
-          </Typography.Paragraph>
-        </>
-      )}
-    </Card>);
 }
