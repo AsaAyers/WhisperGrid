@@ -43,51 +43,49 @@ export function WhisperGridDemo() {
     }
   }, [client])
 
+  const threads = React.useMemo(() => client?.getThreads() ?? [], [client])
 
   const items: ItemType<MenuItemType>[] = React.useMemo((): ItemType<MenuItemType>[] => {
-    if (client) {
-      const options: ItemType<MenuItemType>[] = client.getThreads().map((key) => {
-        return {
-          key: `/thread/${key}`,
-          icon: React.createElement(UserOutlined),
-          label: key,
-        }
-      });
+    const options: ItemType<MenuItemType>[] = threads.map((key) => {
+      return {
+        key: `/thread/${key}`,
+        icon: React.createElement(UserOutlined),
+        label: `thread ${key}`,
+      }
+    });
 
-      invitations.map(({ key, label }) => {
-        options.push({
-          key: `/invitation/${key}`,
-          icon: React.createElement(UserAddOutlined),
-          label,
-
-        })
-      })
-      options.unshift({
-        key: '/reply',
-        icon: React.createElement(SendOutlined),
-        label: 'Reply to invite',
-      })
-
-      options.unshift({
-        key: '/create',
-        icon: React.createElement(PlusOutlined),
-        label: 'Create Invitation',
-      })
-      options.unshift({
-        key: 'logout',
-        icon: React.createElement(LogoutOutlined),
-        label: 'Logout',
-      })
-
+    invitations.map(({ key, label }) => {
       options.push({
-        key: '/settings',
-        icon: React.createElement(SettingOutlined),
-        label: 'Settings'
+        key: `/invitation/${key}`,
+        icon: React.createElement(UserAddOutlined),
+        label,
+
       })
-      return options
-    }
-    return []
-  }, [client, invitations])
+    })
+    options.unshift({
+      key: '/reply',
+      icon: React.createElement(SendOutlined),
+      label: 'Reply to invite',
+    })
+
+    options.unshift({
+      key: '/create',
+      icon: React.createElement(PlusOutlined),
+      label: 'Create Invitation',
+    })
+    options.unshift({
+      key: 'logout',
+      icon: React.createElement(LogoutOutlined),
+      label: 'Logout',
+    })
+
+    options.push({
+      key: '/settings',
+      icon: React.createElement(SettingOutlined),
+      label: 'Settings'
+    })
+    return options
+  }, [threads, invitations])
 
 
   const navigate = useNavigate()

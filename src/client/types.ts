@@ -77,6 +77,7 @@ export type ReplyPayload = {
   nickname?: string;
   messageId: string;
   epk?: JWK<"ECDH", "public">;
+  relay?: string;
   message: string;
   minAck: string;
 };
@@ -124,4 +125,5 @@ export type ThreadInfoData = SynAckState & {
   myThumbprint: Thumbprint<"ECDH">;
   theirEPK: JWK<"ECDH", "public">;
   theirSignature: JWK<"ECDSA", "public">;
+  relays: Record<Thumbprint<"ECDSA">, string>;
 };

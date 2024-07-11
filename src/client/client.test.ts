@@ -59,12 +59,12 @@ describe("Client", () => {
       "Hello Alice, 1st message",
       "Bob"
     );
-    const aliceView = await Alice.appendThread(toAlice);
+    const threadId = toAlice.threadId;
+    const aliceView = await Alice.appendThread(toAlice.reply);
     expect(aliceView.message.message).toMatchInlineSnapshot(
       `"Hello Alice, 1st message"`
     );
-    expect(await debugConverastion(Alice, aliceView.threadId))
-      .toMatchInlineSnapshot(`
+    expect(await debugConverastion(Alice, threadId)).toMatchInlineSnapshot(`
 [
   "[invite] Alice: Invite from Alice.
 Note: Hello Bob, this first message is not encrypted, but is signed",
@@ -72,22 +72,19 @@ Note: Hello Bob, this first message is not encrypted, but is signed",
 ]
 `);
 
-    const toBob = await Alice.replyToThread(
-      aliceView.threadId,
-      "Hello Bob, 1st reply"
-    );
+    const toBob = await Alice.replyToThread(threadId, "Hello Bob, 1st reply");
 
-    const bobView = await Bob.appendThread(toBob);
+    const bobView = await Bob.appendThread(toBob.reply);
     expect(bobView.message.message).toMatchInlineSnapshot(
       `"Hello Bob, 1st reply"`
     );
 
-    const toAlice2 = await Bob.replyToThread(bobView.threadId, "2nd message");
-    const aliceView2 = await Alice.appendThread(toAlice2);
+    const toAlice2 = await Bob.replyToThread(threadId, "2nd message");
+    const aliceView2 = await Alice.appendThread(toAlice2.reply);
     expect(aliceView2.message.message).toMatchInlineSnapshot(`"2nd message"`);
 
-    const a = await debugConverastion(Alice, bobView.threadId);
-    const b = await debugConverastion(Bob, bobView.threadId);
+    const a = await debugConverastion(Alice, threadId);
+    const b = await debugConverastion(Bob, threadId);
     expect(a).toMatchInlineSnapshot(`
 [
   "[invite] Alice: Invite from Alice.
@@ -182,6 +179,39 @@ Note: Hello Bob, this first message is not encrypted, but is signed",
     ).toMatchObject(encryptedThreads);
   });
 
+  test("Replies can include a relay", async () => {
+    const alice = await Client.generateClient(
+      new GridStorage(),
+      "AlicePassword"
+    );
+    alice.setClientNickname("Alice");
+    const bob = await Client.generateClient(new GridStorage(), "BobPassword");
+    bob.setClientNickname("Bob");
+    const invite = await alice.createInvitation({ nickname: "Alice" });
+
+    const messages = [];
+
+    messages.push(
+      await bob.replyToInvitation(invite, `Hello Alice. First message`, "Bob")
+    );
+    const threadId = messages[0].threadId;
+    await alice.appendThread(messages[0].reply);
+
+    messages.push(
+      await bob.replyToThread(threadId, `Hello Alice. Second message`, {
+        setMyRelay: `https://grid.example.com/conversation/${threadId}`,
+      })
+    );
+    await alice.appendThread(messages[1].reply);
+    const aliceReply = await alice.replyToThread(
+      threadId,
+      `Hello Bob. First reply`
+    );
+    expect(aliceReply.relay).toBe(
+      `https://grid.example.com/conversation/${threadId}`
+    );
+  });
+
   test("Messages are displayed correctly even when arriving out of order", async () => {
     const alice = await Client.generateClient(
       new GridStorage(),
@@ -192,7 +222,10 @@ Note: Hello Bob, this first message is not encrypted, but is signed",
     bob.setClientNickname("Bob");
     const invite = await alice.createInvitation({ nickname: "Alice" });
 
-    const replies: SignedReply[] = [];
+    const replies: {
+      reply: SignedReply;
+      threadId: ThreadID;
+    }[] = [];
     let nextId = 1;
     replies.push(
       await bob.replyToInvitation(
@@ -201,7 +234,7 @@ Note: Hello Bob, this first message is not encrypted, but is signed",
         "Bob"
       )
     );
-    const threadId = (await parseJWS(replies[0], null)).header.re;
+    const threadId = replies[0].threadId;
 
     replies.push(
       await bob.replyToThread(threadId, `Hello Alice, message ${nextId++}`)
@@ -228,9 +261,9 @@ Note: Hello Bob, this first message is not encrypted, but is signed",
       await bob.replyToThread(threadId, `Hello Alice, message ${nextId++}`)
     );
 
-    await alice.appendThread(replies[0]);
+    await alice.appendThread(replies[0].reply);
     const toBob = await alice.replyToThread(threadId, `Hello Bob`);
-    await bob.appendThread(toBob);
+    await bob.appendThread(toBob.reply);
     expect(await debugConverastion(alice, threadId)).toMatchInlineSnapshot(`
 [
   "[invite] Alice: Invite from Alice.
@@ -239,8 +272,8 @@ Note: (none)",
   "[message] Alice: Hello Bob",
 ]
 `);
-    await alice.appendThread(replies[2]);
-    await alice.appendThread(replies[2]);
+    await alice.appendThread(replies[2].reply);
+    await alice.appendThread(replies[2].reply);
     expect(await debugConverastion(alice, threadId)).toMatchInlineSnapshot(`
 [
   "[invite] Alice: Invite from Alice.
@@ -252,12 +285,12 @@ Note: (none)",
 `);
 
     // await alice.appendThread(replies[0]);
-    await alice.appendThread(replies[1]);
-    await alice.appendThread(replies[1]);
-    await alice.appendThread(replies[1]);
+    await alice.appendThread(replies[1].reply);
+    await alice.appendThread(replies[1].reply);
+    await alice.appendThread(replies[1].reply);
 
     await expect(
-      alice.appendThread(replies[6])
+      alice.appendThread(replies[6].reply)
     ).rejects.toThrowErrorMatchingInlineSnapshot(
       `"Missing 5 messages between 100002 and 100007"`
     );

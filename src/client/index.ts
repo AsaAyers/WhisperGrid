@@ -68,6 +68,7 @@ export type DecryptedMessageType = {
   messageId: string;
   minAck: string | undefined;
   epkThumbprint: Thumbprint<"ECDH">;
+  relay?: string;
 };
 
 export class Client {
@@ -368,6 +369,7 @@ export class Client {
       theirEPK: theirEPKJWK,
       signedInvite,
       theirSignature,
+      relays: {},
     });
     this.storage.appendItem(`threads:${this.thumbprint}`, threadId);
     await this.appendThread(signedInvite, threadId);
@@ -441,8 +443,13 @@ export class Client {
     options?: {
       selfSign?: boolean;
       nickname?: string;
+      setMyRelay?: string;
     }
-  ) {
+  ): Promise<{
+    reply: SignedReply;
+    threadId: ThreadID;
+    relay?: string;
+  }> {
     const { secret, epk } = await this.readThreadSecret(threadId);
     const threadInfo = this.storage.getItem(
       `thread-info:${this.thumbprint}:${threadId}`
@@ -457,6 +464,9 @@ export class Client {
       ).toString(16);
     invariant(typeof messageId === "string", `Invalid message id ${messageId}`);
     const nextId = incMessageId(messageId);
+    if (options?.setMyRelay) {
+      threadInfo.relays[this.thumbprint] = options.setMyRelay;
+    }
 
     invariant(threadInfo.minAck, `Missing minAck in "thread-info" ${message}`);
     let replyMessage: Decrypted<ReplyMessage | ReplyToInvite> = {
@@ -499,6 +509,8 @@ export class Client {
         },
       };
       replyMessage = ack;
+    } else if (options?.setMyRelay) {
+      (replyMessage.payload as ReplyPayload).relay = options.setMyRelay;
     }
 
     const { iv, encrypted } = await encryptData(secret, replyMessage.payload);
@@ -513,9 +525,15 @@ export class Client {
       verifyJWS(encryptedJWS, this.identityKeyPair.publicKey),
       "Error encrypting message"
     );
+    const theirThumbprint = await getJWKthumbprint(threadInfo.theirSignature);
+    const relay = threadInfo.relays[theirThumbprint];
 
     await this.appendThread(encryptedJWS, threadId);
-    return encryptedJWS;
+    return {
+      reply: encryptedJWS,
+      threadId,
+      relay,
+    };
   }
 
   public async appendThread(
@@ -527,9 +545,9 @@ export class Client {
       message: string;
       type: "invite" | "message";
     };
+    relay?: string;
   }> {
     const jws = parseJWSSync(encryptedMessage);
-    console.warn("appendThread", threadId, jws);
     if (!threadId) {
       switch (jws.header.sub) {
         case "grid-invitation": {
@@ -638,6 +656,17 @@ export class Client {
           2
         )}`
       );
+      if (message.relay) {
+        threadInfo.relays[await getJWKthumbprint(threadInfo.theirSignature)] =
+          message.relay;
+
+        if (
+          message.relay &&
+          message.relay.match(/^https?:\/\/ntfy.sh\/[^.]+$/)
+        ) {
+          threadInfo.relays[this.thumbprint] = message.relay;
+        }
+      }
       this.storage.setItem(
         `thread-info:${this.thumbprint}:${threadId}`,
         threadInfo
@@ -655,6 +684,7 @@ export class Client {
     return {
       threadId: threadId,
       message,
+      relay: message.relay,
     };
   }
 
@@ -744,6 +774,7 @@ export class Client {
       iat: reply.header.iat,
       messageId: payload.messageId,
       minAck: payload.minAck,
+      relay: (payload as ReplyPayload).relay,
     };
   }
 
@@ -756,8 +787,10 @@ export class Client {
       `thread-info:${this.thumbprint}:${thread}`
     );
     invariant(threadInfo, "Thread not found");
+    const myRelay = threadInfo.relays[this.thumbprint];
 
     return {
+      myRelay,
       myNickname: getNickname(this.thumbprint),
       theirNickname: getNickname(
         await getJWKthumbprint(threadInfo.theirSignature)
@@ -800,6 +833,7 @@ export class Client {
   }
   private subscriptions = new Set<() => void>();
   public subscribe(onChange: () => void) {
+    this.subscriptions ??= new Set<() => void>();
     this.subscriptions.add(onChange);
 
     return () => {

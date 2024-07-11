@@ -99,20 +99,7 @@ export function ClientProvider(props: React.PropsWithChildren) {
       logout,
       // Construct a new object on each update to make sure React hooks call
       // functions to get updates.
-      client: client ? {
-        thumbprint: client.thumbprint,
-        createInvitation: client.createInvitation.bind(client),
-        getInvitation: client.getInvitation.bind(client),
-        appendThread: client.appendThread.bind(client),
-        replyToInvitation: client.replyToInvitation.bind(client),
-        getInvitations: client.getInvitations.bind(client),
-        getThreads: client.getThreads.bind(client),
-        makeBackup: client.makeBackup.bind(client),
-        replyToThread: client.replyToThread.bind(client),
-        getThreadInfo: client.getThreadInfo.bind(client),
-        getEncryptedThread: client.getEncryptedThread.bind(client),
-        decryptMessage: client.decryptMessage.bind(client),
-      } : undefined,
+      client: client
     };
   }, [client, loadClient, generateClient, clientUpdateKey]);
 
@@ -123,19 +110,7 @@ export function ClientProvider(props: React.PropsWithChildren) {
   );
 }
 const clientContext = React.createContext<null | {
-  client?: Pick<Client,
-    | 'thumbprint'
-    | 'createInvitation'
-    | 'getInvitation'
-    | 'appendThread'
-    | 'decryptMessage'
-    | 'getInvitations'
-    | 'getThreads'
-    | 'getEncryptedThread'
-    | 'getThreadInfo'
-    | 'makeBackup'
-    | 'replyToInvitation'
-    | 'replyToThread'>;
+  client?: Client;
   loadFromBackup: (backup: BackupPayload, password: string) => Promise<Client>
   generateClient: (password: string) => Promise<Client>
   loadClient: (thumbprint: string, password: string) => Promise<Client>

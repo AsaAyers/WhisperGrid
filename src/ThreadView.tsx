@@ -1,5 +1,6 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import React from "react";
-import { Avatar, Button, Card, Flex, Form, FormProps, Input, Popover, Space, Timeline, Typography } from "antd";
+import { Alert, Avatar, Button, Card, Flex, Form, FormProps, Input, Popover, Space, Timeline, Typography, App } from "antd";
 import { DecryptedMessageType } from "./client";
 import { MessageOutlined, SendOutlined, ShareAltOutlined, UserOutlined } from "@ant-design/icons";
 import { invariant, parseJWSSync } from "./client/utils";
@@ -7,8 +8,9 @@ import { useParams, useSearchParams } from "react-router-dom";
 import { useClient } from "./ClientProvider";
 import { SignedReply, SignedTransport } from "./client/types";
 import { ThreadID } from "./client/GridStorage";
+import { RelaySetupCascader } from "./ntfy-relay";
 
-const matchJWS = /^([a-zA-Z0-9-_]+)(\.[a-zA-Z0-9-_]+){2}$/;
+export const matchJWS = /^([a-zA-Z0-9-_]+)(\.[a-zA-Z0-9-_]+){2}$/;
 const myColor = '#87d068';
 const theirColor = '#108ee9';
 
@@ -26,15 +28,15 @@ type ThreadMessage = DecryptedMessageType & {
 }
 
 export function ThreadView(): React.ReactNode {
-  const [form] = Form.useForm()
+  const [form] = Form.useForm<FieldType>()
   const client = useClient();
   const { threadId } = useParams<{ threadId: ThreadID; }>()
+  const app = App.useApp()
   invariant(threadId, `ThreadID is required`);
   const [searchParams, setSearachParams] = useSearchParams()
-  const [threadInfo, setThreadInfo] = React.useState<{
-    myNickname: string,
-    theirNickname: string,
-  } | null>(null);
+  const [threadInfo, setThreadInfo] = React.useState<
+    | Awaited<ReturnType<typeof client.getThreadInfo>>
+    | null>(null);
 
   const [thread, setThread] = React.useState<Array<ThreadMessage | MissingMessage>>([]);
   const refreshThread = React.useCallback(async () => {
@@ -55,29 +57,44 @@ export function ThreadView(): React.ReactNode {
 
   React.useEffect(() => {
     refreshThread()
+    let t: ReturnType<typeof setTimeout>
+    client.subscribe(() => {
+      if (t) {
+        clearTimeout(t)
+      }
+      t = setTimeout(() => {
+        refreshThread()
+      }, 1000)
+    })
   }, [refreshThread])
 
   type FieldType = {
     message: string;
+    relayUrl: string
   };
 
-
   const onFinish: FormProps<FieldType>['onFinish'] = async (values) => {
-    let reply: SignedReply | void = undefined
+    let reply: { reply: SignedReply, relay?: string } | void = undefined
     if (matchJWS.test(values.message)) {
       await client.appendThread(values.message as SignedReply, threadId).catch(e => {
         console.error(e)
       })
-      reply = values.message as SignedReply
+      reply = { reply: values.message as SignedReply }
     }
     if (!reply) {
-      reply = await client.replyToThread(threadId, values.message, { selfSign: false }).catch(
+      reply = await client.replyToThread(threadId, values.message, {
+        selfSign: false,
+        setMyRelay: values.relayUrl !== threadInfo?.myRelay
+          ? values.relayUrl
+          : undefined
+
+      }).catch(
         e => console.error(e)
       )
     }
     if (reply) {
-      const jws = parseJWSSync(reply)
-      const msg = await client.decryptMessage(jws.header.re, reply)
+      const jws = parseJWSSync(reply.reply)
+      const msg = await client.decryptMessage(jws.header.re, reply.reply)
 
       setSearachParams((search) => {
         search.set('expandMessage', msg.messageId)
@@ -85,9 +102,20 @@ export function ThreadView(): React.ReactNode {
       })
       form.resetFields()
       await refreshThread()
+      if (reply.relay) {
+        app.notification.info({
+          message: 'Relay',
+          description: `Sending message to relay: ${reply.relay}`
+        })
+        await fetch(reply.relay, {
+          method: 'POST',
+          body: reply.reply
+        }).catch(console.error)
+      }
     }
   }
 
+  const newRelayUrl = Form.useWatch('relayUrl', form)
   const expandMessage = searchParams.get('expandMessage')
   return (
     <Flex
@@ -101,7 +129,8 @@ export function ThreadView(): React.ReactNode {
           dot: (
             <Popover
               title="Message Info"
-              open={message.messageId === expandMessage}
+              trigger={message.messageId === expandMessage ? 'click' : 'hover'}
+              open={message.messageId === expandMessage ? true : undefined}
               onOpenChange={(open) => {
                 if (!open && message.messageId === expandMessage) {
                   setSearachParams(search => {
@@ -130,6 +159,12 @@ export function ThreadView(): React.ReactNode {
                     {message.original}
                   </Typography.Paragraph>
 
+                  {message.type === 'message' && message.relay && (
+                    <Alert message="New Relay"
+                      description={message.relay}
+                      type="info" showIcon />
+                  )}
+
                   <Typography.Link
                     ellipsis
                     href={`web+grid:/invitation/${threadId}#${message.original}`}
@@ -142,23 +177,30 @@ export function ThreadView(): React.ReactNode {
               {message.type === 'invite' ? <ShareAltOutlined style={{ fontSize: '16px' }} /> : <MessageOutlined style={{ fontSize: '16px' }} />}
             </Popover>
           ),
-          label: `${message.from} ${new Date(message.iat).toLocaleString()}`,
+          label: `${message.from} ${new Date(message.iat * 1000).toLocaleString()}`,
           color: message.from === threadInfo?.myNickname ? myColor : theirColor,
           children: message.message,
         }))}
       />
 
       <div style={{ flex: 1, flexGrow: 1 }}></div>
-      <Card size="small" title={
-        <Typography.Text>
-          <Avatar
-            icon={<UserOutlined />}
-            style={{ backgroundColor: myColor }}
-            size="small" />
-          {threadInfo?.myNickname ?? ""}
-        </Typography.Text>
-      }>
-        <Form onFinish={onFinish} form={form} >
+      {newRelayUrl && newRelayUrl !== threadInfo?.myRelay && (
+        <Alert message="Updating Relay"
+          description={`The next message will update your relay to ${newRelayUrl}`}
+          type="info" showIcon />
+      )}
+
+      <Form onFinish={onFinish} form={form} >
+        <Card
+          size="small" title={
+            <Typography.Text>
+              <Avatar
+                icon={<UserOutlined />}
+                style={{ backgroundColor: myColor }}
+                size="small" />
+              {threadInfo?.myNickname ?? ""}
+            </Typography.Text>
+          }>
           <Form.Item<FieldType>
             name="message"
             label='Message'
@@ -168,14 +210,18 @@ export function ThreadView(): React.ReactNode {
               <Input
                 name="message"
                 id="message"
+
+                addonBefore={
+                  <RelaySetupCascader relayUrl={threadInfo?.myRelay || ""} />
+                }
                 defaultValue="" />
               <Button type="primary" htmlType="submit">
                 <SendOutlined />
               </Button>
             </Space.Compact>
           </Form.Item>
-        </Form>
-      </Card>
+        </Card>
+      </Form>
     </Flex >
   );
 }

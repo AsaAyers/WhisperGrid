@@ -1,6 +1,6 @@
 import React from "react";
 import { App, Avatar, Button, Card, Descriptions, Flex, Form, FormProps, Input, Space, Typography } from "antd";
-import { getJWKthumbprint, invariant, parseJWS, parseJWSSync, verifyJWS } from "./client/utils";
+import { getJWKthumbprint, invariant, parseJWSSync, verifyJWS } from "./client/utils";
 import { SignedInvitation, SignedTransport, UnpackTaggedString } from "./client/types";
 import { clientAtom, useClient } from "./ClientProvider";
 import { SendOutlined, UserOutlined } from "@ant-design/icons";
@@ -96,8 +96,7 @@ export function ReplyToInvite(): React.ReactNode {
 
   const onFinish: FormProps<FieldType>['onFinish'] = async (values) => {
     invariant(invitationString, 'missing invitation')
-    const reply = await client.replyToInvitation(invitationString, values.message!, values.nickname!);
-    const threadId = (await parseJWS(reply, null)).header.re
+    const { reply, threadId } = await client.replyToInvitation(invitationString, values.message!, values.nickname!);
     const r = await client.decryptMessage(threadId, reply)
 
     navigate({

@@ -40,6 +40,18 @@ Cypress.Commands.add("makeInvite", (nickname, note = "") => {
     return invite;
   });
 });
+Cypress.Commands.add("downloadBackup", (filename, password) => {
+  cy.contains("Settings").click({ force: true });
+  cy.contains("Download password protected backup").click();
+  cy.labeledInput("Password").type(password);
+  cy.labeledInput("Confirm password").type(password);
+  if (filename) {
+    cy.labeledInput("Filename").clear().type(filename);
+    // cy.pause();
+  }
+  cy.contains("OK").click();
+  cy.wait(500);
+});
 Cypress.Commands.add("openBackup", (filename, password) => {
   cy.contains("Open Backup").click();
   cy.get("input[type=file]").selectFile(`cypress/downloads/${filename}`, {
@@ -88,11 +100,8 @@ Cypress.Commands.add("copyButtonText", (label): Cypress.Chainable<string> => {
 });
 
 Cypress.Commands.add("paste", { prevSubject: "element" }, (parent, text) => {
-  cy.get(parent.selector!).focus().type(text, {
+  cy.get(parent.selector!).focus().clear().type(text, {
     delay: 1,
-    log: false,
-    scrollBehavior: "bottom",
-    force: true,
     waitForAnimations: false,
   });
 });
@@ -160,6 +169,7 @@ declare global {
       ): Chainable<void>;
       createIdentity(password: string): Chainable<string>;
       openBackup(thumbprint: string, password: string): Chainable<string>;
+      downloadBackup(filename: string, password: string): Chainable<string>;
       makeInvite(nickname: string, note?: string): Chainable<string>;
       replyToInvite(
         invite: string,
