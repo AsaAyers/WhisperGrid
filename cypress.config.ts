@@ -1,4 +1,5 @@
 import { defineConfig } from "cypress";
+import { rm, rename } from "fs/promises";
 
 export default defineConfig({
   projectId: "8imswj",
@@ -14,8 +15,17 @@ export default defineConfig({
     viewportHeight: 400,
     trashAssetsBeforeRuns: true,
     screenshotOnRunFailure: true,
-    setupNodeEvents() {
-      // implement node event listeners here
+    setupNodeEvents(on, config) {
+      on("task", {
+        async deleteDownload(thumbprint: string) {
+          const path = `${config.downloadsFolder}/grid-${thumbprint}.jws.txt`;
+          const tmpName = `${config.downloadsFolder}/__grid-${thumbprint}.jws.txt`;
+          await rename(path, tmpName);
+          console.log("deleting file %s", path);
+          await rm(tmpName);
+          return path;
+        },
+      });
     },
   },
 });

@@ -104,11 +104,11 @@ export type BackupJWS = {
 export type BackupPayload = {
   thumbprint: Thumbprint<"ECDSA">;
   identity: StoredIdentity;
+  encryptedThreadKeys: Record<Thumbprint<"ECDH">, SignedSelfEncrypted>;
   threads: Record<
     ThreadID,
     {
       threadInfo: ThreadInfoData;
-      encryptedThreadKeys: Record<Thumbprint<"ECDH">, SignedSelfEncrypted>;
       messages: {
         min: string;
         max: string;

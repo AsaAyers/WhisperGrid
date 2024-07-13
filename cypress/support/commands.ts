@@ -11,13 +11,16 @@
 //
 //
 // -- This is a parent command --
-Cypress.Commands.add("login", (thumbprint, password) => {
-  cy.visit("http://localhost:1234/");
-  cy.contains("Open locally stored identity").click();
-  cy.labeledInput("Thumbprint").clear();
-  cy.contains("Thumbprint").type(thumbprint);
-  cy.contains("Password").type(password + "{enter}");
-});
+Cypress.Commands.add(
+  "login",
+  (thumbprint, password, url = "http://localhost:1234/") => {
+    cy.visit(url);
+    cy.contains("Open locally stored identity").click();
+    cy.labeledInput("Thumbprint").clear();
+    cy.contains("Thumbprint").type(thumbprint);
+    cy.contains("Password").type(password + "{enter}");
+  }
+);
 Cypress.Commands.add("logout", () => {
   cy.contains("Logout").click();
   cy.visit("http://localhost:1234/");
@@ -37,12 +40,11 @@ Cypress.Commands.add("makeInvite", (nickname, note = "") => {
     return invite;
   });
 });
-Cypress.Commands.add("openBackup", (thumbprint, password) => {
+Cypress.Commands.add("openBackup", (filename, password) => {
   cy.contains("Open Backup").click();
-  cy.get("input[type=file]").selectFile(
-    "cypress/downloads/grid-" + thumbprint + ".jws.txt",
-    { force: true }
-  );
+  cy.get("input[type=file]").selectFile(`cypress/downloads/${filename}`, {
+    force: true,
+  });
 
   cy.labeledInput("Password").type(password);
   cy.contains("Unlock").click();
@@ -86,10 +88,12 @@ Cypress.Commands.add("copyButtonText", (label): Cypress.Chainable<string> => {
 });
 
 Cypress.Commands.add("paste", { prevSubject: "element" }, (parent, text) => {
-  cy.get(parent.selector!).type(text, {
+  cy.get(parent.selector!).focus().type(text, {
     delay: 1,
     log: false,
-    scrollBehavior: "center",
+    scrollBehavior: "bottom",
+    force: true,
+    waitForAnimations: false,
   });
 });
 
@@ -149,7 +153,11 @@ declare global {
   namespace Cypress {
     interface Chainable {
       logout(): Chainable<void>;
-      login(thumbprint: string, password: string): Chainable<void>;
+      login(
+        thumbprint: string,
+        password: string,
+        url?: string
+      ): Chainable<void>;
       createIdentity(password: string): Chainable<string>;
       openBackup(thumbprint: string, password: string): Chainable<string>;
       makeInvite(nickname: string, note?: string): Chainable<string>;

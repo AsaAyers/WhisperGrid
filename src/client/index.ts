@@ -158,7 +158,7 @@ export class Client {
       "ecdh"
     );
 
-    storage.loadIdentityBackup(backup);
+    await storage.loadIdentityBackup(backup);
     const client = new Client(
       storage,
       backup.thumbprint,
@@ -294,7 +294,9 @@ export class Client {
     )) as SignedInvitation;
 
     this.storage.setItem(`invitation:${thumbprint}`, signedInvitation);
-    this.storage.appendItem(`invitations:${this.thumbprint}`, thumbprint);
+    this.storage.appendItem(`invitations:${this.thumbprint}`, thumbprint, {
+      unique: true,
+    });
     this.storage.setItem(
       `threads:${this.thumbprint}`,
       this.storage.queryItem(`threads:${this.thumbprint}`) ?? []
@@ -314,8 +316,7 @@ export class Client {
     const threadId = await this.startThread(
       signedInvite,
       invite.payload.epk,
-      invite.header.jwk,
-      invite.payload.messageId
+      invite.header.jwk
     );
     const reply = this.replyToThread(threadId, message, {
       selfSign: true,
@@ -328,7 +329,6 @@ export class Client {
     signedInvite: SignedInvitation,
     theirEPKJWK: JWK<"ECDH", "public">,
     theirSignature: JWK<"ECDSA", "public">,
-    messageId: string,
     myThumbprint?: Thumbprint<"ECDH">
   ): Promise<ThreadID> {
     if (!myThumbprint) {
@@ -560,7 +560,6 @@ export class Client {
             invitation,
             reply.header.epk,
             reply.header.jwk,
-            invitationJWS.payload.messageId,
             myThumbprint
           );
           // FALLS THROUGH

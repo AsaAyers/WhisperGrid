@@ -33,7 +33,8 @@ export type GridStorageType = {
     V extends Extract<StoredDataTypes, { type: Type }>["data"]
   >(
     key: Key<Type>,
-    value: V extends Array<any> ? V[number] : never
+    value: V extends Array<any> ? V[number] : never,
+    options?: { unique?: boolean }
   ) => void;
 };
 export type StoredIdentity = {
@@ -97,12 +98,20 @@ export class GridStorage implements GridStorageType {
     Object.entries(backup.invites ?? {}).forEach(([key, value]) => {
       this.appendItem(
         `invitations:${backup.thumbprint}`,
-        key as Thumbprint<"ECDH">
+        key as Thumbprint<"ECDH">,
+        { unique: true }
       );
       this.setItem(`invitation:${key as Thumbprint<"ECDH">}`, value);
     });
+    Object.entries(backup.encryptedThreadKeys).forEach(([thumbprint, key]) => {
+      this.setItem(
+        `encrypted-thread-key:${thumbprint as Thumbprint<"ECDH">}`,
+        key
+      );
+    });
     Object.entries(backup.threads).forEach(([id, thread]) => {
       const threadId = id as ThreadID;
+      this.appendItem(`threads:${backup.thumbprint}`, threadId);
       this.setItem(
         `thread-info:${backup.thumbprint}:${threadId}`,
         thread.threadInfo
@@ -110,14 +119,6 @@ export class GridStorage implements GridStorageType {
       this.setItem(
         `keyed-messages:${backup.thumbprint}:${threadId}`,
         thread.messages
-      );
-      Object.entries(thread.encryptedThreadKeys).forEach(
-        ([thumbprint, key]) => {
-          this.setItem(
-            `encrypted-thread-key:${thumbprint as Thumbprint<"ECDH">}`,
-            key
-          );
-        }
       );
     });
   }
@@ -128,6 +129,7 @@ export class GridStorage implements GridStorageType {
     storagePrivateKey: EncryptedPrivateKey<"ECDH">
   ): Promise<BackupPayload> {
     const identity = this.getItem(`identity:${thumbprint}`);
+    const encryptedThreadKeys: BackupPayload["encryptedThreadKeys"] = {};
 
     return {
       thumbprint,
@@ -144,27 +146,36 @@ export class GridStorage implements GridStorageType {
       invites: this.queryItem(`invitations:${thumbprint}`)?.reduce(
         (memo, key) => {
           memo[key] = this.getItem(`invitation:${key}`);
+
+          encryptedThreadKeys[key] = this.getItem(
+            `encrypted-thread-key:${key}`
+          );
           return memo;
         },
         {} as NonNullable<BackupPayload["invites"]>
       ),
       threads:
-        this.queryItem(`threads:${thumbprint}`)?.reduce((memo, key) => {
-          const threadInfo = this.getItem(`thread-info:${thumbprint}:${key}`);
-          const messages = this.getItem(`keyed-messages:${thumbprint}:${key}`);
-          const encryptedThreadKeys: BackupPayload["threads"][ThreadID]["encryptedThreadKeys"] =
-            {};
-          encryptedThreadKeys[threadInfo.myThumbprint] = this.getItem(
-            `encrypted-thread-key:${threadInfo.myThumbprint}`
-          );
+        (await this.queryItem(`threads:${thumbprint}`)?.reduce(
+          async (m, key) => {
+            const memo = await m;
+            const threadInfo = this.getItem(`thread-info:${thumbprint}:${key}`);
+            const messages = this.getItem(
+              `keyed-messages:${thumbprint}:${key}`
+            );
+            encryptedThreadKeys[threadInfo.myThumbprint] = this.getItem(
+              `encrypted-thread-key:${threadInfo.myThumbprint}`
+            );
 
-          memo[key] = {
-            threadInfo,
-            messages,
-            encryptedThreadKeys,
-          };
-          return memo;
-        }, {} as NonNullable<BackupPayload["threads"]>) ?? {},
+            memo[key] = {
+              threadInfo,
+              messages,
+            };
+            return memo;
+          },
+          Promise.resolve({} as NonNullable<BackupPayload["threads"]>)
+        )) ?? {},
+
+      encryptedThreadKeys,
     };
   }
 
@@ -190,10 +201,17 @@ export class GridStorage implements GridStorageType {
     this.data.set(key, value);
   };
 
-  appendItem: GridStorageType["appendItem"] = (key, value) => {
+  appendItem: GridStorageType["appendItem"] = (
+    key,
+    value,
+    { unique = false } = {}
+  ) => {
     let arr: any = this.queryItem(key);
     if (!Array.isArray(arr)) {
       arr = [];
+    }
+    if (unique && arr.includes(value)) {
+      return;
     }
     arr.push(value);
     this.setItem(key, arr);

@@ -9,6 +9,7 @@ function Backup() {
   type FieldType = {
     password: string;
     confirmPassword: string;
+    filename: string;
   };
   const [form] = Form.useForm<FieldType>();
   const [isBackupModalOpen, setIsBackupModalOpen] = React.useState(false);
@@ -42,13 +43,11 @@ function Backup() {
             setProcessing(true);
 
             const backup = await client.makeBackup(values.password);
-            const thumbprint = client.thumbprint;
-
             const blob = new Blob([backup], { type: 'application/json' });
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = `grid-${thumbprint}.jws.txt`;
+            a.download = values.filename
             a.click();
             setIsBackupModalOpen(false);
           }}
@@ -58,7 +57,17 @@ function Backup() {
               form.submit();
             }
           }}
+          initialValues={{
+            filename: `grid-${client.thumbprint}.jws.txt`,
+          }}
           form={form}>
+          <Form.Item<FieldType>
+            label="Filename"
+            name="filename"
+            rules={[{ required: true, pattern: /\.jws\.txt$/, message: 'Invalid filename' }]}
+          >
+            <Input disabled={processing} />
+          </Form.Item>
           <Form.Item<FieldType>
             label="Password"
             name="password"
@@ -87,7 +96,7 @@ function Backup() {
             <Input.Password disabled={processing} />
           </Form.Item>
         </Form>
-      </Modal>
+      </Modal >
     </>
   );
 }
