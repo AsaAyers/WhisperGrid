@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { ThreadID } from "./GridStorage";
-import { EncryptedPrivateKey, JWK, Thumbprint } from "./utils";
+import { ThreadID, StoredIdentity } from "./GridStorage";
+import { SynAckState } from "./synAck";
+import { JWK, Thumbprint } from "./utils";
 
 const objectType = Symbol("objectType");
 export type TaggedString<T extends string | object> = string & {
@@ -102,10 +103,25 @@ export type BackupJWS = {
 };
 export type BackupPayload = {
   thumbprint: Thumbprint<"ECDSA">;
-  encryptedIdentity: EncryptedPrivateKey<"ECDSA">;
-  encryptedStorageKey: EncryptedPrivateKey<"ECDH">;
-  idJWK: JWK<"ECDSA", "public">;
-  storageJWK: JWK<"ECDH", "public">;
-  invitations?: SignedInvitation[];
-  threads: Record<string, any>;
+  identity: StoredIdentity;
+  threads: Record<
+    ThreadID,
+    {
+      threadInfo: ThreadInfoData;
+      encryptedThreadKeys: Record<Thumbprint<"ECDH">, SignedSelfEncrypted>;
+      messages: {
+        min: string;
+        max: string;
+        messages: Array<SignedTransport>;
+      };
+    }
+  >;
+  invites?: Record<Thumbprint<"ECDH">, SignedInvitation>;
+};
+
+export type ThreadInfoData = SynAckState & {
+  signedInvite: SignedInvitation;
+  myThumbprint: Thumbprint<"ECDH">;
+  theirEPK: JWK<"ECDH", "public">;
+  theirSignature: JWK<"ECDSA", "public">;
 };

@@ -6,7 +6,6 @@ import {
   SelfEncrypted,
   ReplyMessage,
   SignedReply,
-  BackupPayload,
   SignedBackup,
   ReplyToInvite,
   Decrypted,
@@ -14,6 +13,7 @@ import {
   ReplyToInvitePayload,
   ReplyPayload,
   SignedTransport,
+  BackupPayload,
 } from "./types";
 import {
   generateECDSAKeyPair,
@@ -135,62 +135,30 @@ export class Client {
     }
 
     const identityPrivateKey = await decryptPrivateKey(
-      backup.encryptedIdentity,
+      backup.identity.id.private,
       password
     );
     const storagePrivateKey = await decryptPrivateKey(
-      backup.encryptedStorageKey,
+      backup.identity.storage.private,
       password
     );
 
     const identityKeyPair: ECDSACryptoKeyPair = await importKeyPair(
       {
         privateKeyJWK: identityPrivateKey,
-        publicKeyJWK: backup.idJWK,
+        publicKeyJWK: backup.identity.id.jwk,
       },
       "ecdsa"
     );
     const storageKeyPair: ECDHCryptoKeyPair = await importKeyPair(
       {
         privateKeyJWK: storagePrivateKey,
-        publicKeyJWK: backup.storageJWK,
+        publicKeyJWK: backup.identity.storage.jwk,
       },
       "ecdh"
     );
 
-    storage.setItem(`identity:${backup.thumbprint}`, {
-      id: {
-        jwk: await exportKey(identityKeyPair.publicKey),
-        private: backup.encryptedIdentity,
-      },
-      storage: {
-        jwk: await exportKey(storageKeyPair.publicKey),
-        private: backup.encryptedStorageKey,
-      },
-    });
-
-    for (const invitation of backup.invitations ?? []) {
-      const invite = await parseJWS(invitation);
-      const thumbprint = await getJWKthumbprint(invite.payload.epk);
-      storage.setItem(`invitation:${thumbprint}`, invitation);
-      storage.appendItem(`invitations:${backup.thumbprint}`, thumbprint);
-    }
-
-    storage.setItem(`threads:${backup.thumbprint}`, []);
-    for (const [t, { messages, ...threadInfo }] of Object.entries(
-      backup.threads
-    )) {
-      const threadId = t as ThreadID;
-      storage.setItem(
-        `thread-info:${backup.thumbprint}:${threadId}`,
-        threadInfo
-      );
-      storage.appendItem(`threads:${backup.thumbprint}`, threadId);
-      storage.setItem(
-        `keyed-messages:${backup.thumbprint}:${threadId}`,
-        messages
-      );
-    }
+    storage.loadIdentityBackup(backup);
     const client = new Client(
       storage,
       backup.thumbprint,
@@ -390,7 +358,6 @@ export class Client {
       )
     ) as ThreadID;
 
-    this.storage.setItem(`public-key:${signatureThumbprint}`, theirSignature);
     this.storage.setItem(`thread-info:${this.thumbprint}:${threadId}`, {
       missing: [],
       windowSize: 5,
@@ -811,43 +778,11 @@ export class Client {
       storageJWKs.privateKeyJWK,
       password
     );
-
-    const thumbprint = await getJWKthumbprint(idJWKs.publicKeyJWK);
-
-    const invitations = this.storage
-      .getItem(`invitations:${this.thumbprint}`)
-      ?.map((invitationThumbprint) => {
-        return this.storage.getItem(`invitation:${invitationThumbprint}`)!;
-      });
-
-    const threads = this.storage
-      .queryItem(`threads:${this.thumbprint}`)
-      ?.map((threadId) => {
-        const threadInfo = this.storage.getItem(
-          `thread-info:${this.thumbprint}:${threadId}`
-        );
-        const messages = this.storage.getItem(
-          `keyed-messages:${this.thumbprint}:${threadId}`
-        );
-
-        return [
-          threadId,
-          {
-            ...threadInfo,
-            messages,
-          },
-        ];
-      });
-
-    const payload: BackupPayload = {
-      thumbprint,
+    const payload = await this.storage.makeIdentityBackup(
+      this.thumbprint,
       encryptedIdentity,
-      idJWK: idJWKs.publicKeyJWK,
-      encryptedStorageKey,
-      storageJWK: storageJWKs.publicKeyJWK,
-      invitations,
-      threads: Object.fromEntries(threads ?? []),
-    };
+      encryptedStorageKey
+    );
 
     return signJWS(
       {

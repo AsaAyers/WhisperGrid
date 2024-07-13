@@ -1,10 +1,11 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { SynAckState } from "./synAck";
 import {
+  BackupPayload,
   SignedInvitation,
   SignedSelfEncrypted,
   SignedTransport,
   TaggedString,
+  ThreadInfoData,
 } from "./types";
 import { EncryptedPrivateKey, invariant, JWK, Thumbprint } from "./utils";
 
@@ -46,23 +47,6 @@ export type StoredIdentity = {
   };
 };
 
-type KeyedMessageIndex = {
-  type: "keyed-messages";
-  keyType: `${Thumbprint<"ECDSA">}:${ThreadID}`;
-  data: {
-    min: string;
-    max: string;
-    messages: Array<SignedTransport>;
-  };
-};
-
-type ThreadInfoData = SynAckState & {
-  signedInvite: SignedInvitation;
-  myThumbprint: Thumbprint<"ECDH">;
-  theirEPK: JWK<"ECDH", "public">;
-  theirSignature: JWK<"ECDSA", "public">;
-};
-
 type StoredDataTypes =
   | {
       type: "identity";
@@ -75,17 +59,24 @@ type StoredDataTypes =
       data: ThreadInfoData;
     }
   | { type: "invitation"; keyType: Thumbprint<"ECDH">; data: SignedInvitation }
-  | { type: "invitations"; keyType: string; data: Thumbprint<"ECDH">[] }
-  | KeyedMessageIndex
+  | {
+      type: "invitations";
+      keyType: Thumbprint<"ECDSA">;
+      data: Thumbprint<"ECDH">[];
+    }
+  | {
+      type: "keyed-messages";
+      keyType: `${Thumbprint<"ECDSA">}:${ThreadID}`;
+      data: {
+        min: string;
+        max: string;
+        messages: Array<SignedTransport>;
+      };
+    }
   | {
       type: "encrypted-thread-key";
       keyType: Thumbprint<"ECDH">;
       data: SignedSelfEncrypted;
-    }
-  | {
-      type: "public-key";
-      keyType: Thumbprint;
-      data: JWK<"ECDSA" | "ECDH", "public">;
     }
   | { type: "threads"; keyType: Thumbprint<"ECDSA">; data: Array<ThreadID> };
 
@@ -99,6 +90,82 @@ export class GridStorage implements GridStorageType {
 
   debugData() {
     return Object.fromEntries((this.data as any).entries());
+  }
+
+  async loadIdentityBackup(backup: BackupPayload) {
+    this.setItem(`identity:${backup.thumbprint}`, backup.identity);
+    Object.entries(backup.invites ?? {}).forEach(([key, value]) => {
+      this.appendItem(
+        `invitations:${backup.thumbprint}`,
+        key as Thumbprint<"ECDH">
+      );
+      this.setItem(`invitation:${key as Thumbprint<"ECDH">}`, value);
+    });
+    Object.entries(backup.threads).forEach(([id, thread]) => {
+      const threadId = id as ThreadID;
+      this.setItem(
+        `thread-info:${backup.thumbprint}:${threadId}`,
+        thread.threadInfo
+      );
+      this.setItem(
+        `keyed-messages:${backup.thumbprint}:${threadId}`,
+        thread.messages
+      );
+      Object.entries(thread.encryptedThreadKeys).forEach(
+        ([thumbprint, key]) => {
+          this.setItem(
+            `encrypted-thread-key:${thumbprint as Thumbprint<"ECDH">}`,
+            key
+          );
+        }
+      );
+    });
+  }
+
+  async makeIdentityBackup(
+    thumbprint: Thumbprint<"ECDSA">,
+    idPrivateKey: EncryptedPrivateKey<"ECDSA">,
+    storagePrivateKey: EncryptedPrivateKey<"ECDH">
+  ): Promise<BackupPayload> {
+    const identity = this.getItem(`identity:${thumbprint}`);
+
+    return {
+      thumbprint,
+      identity: {
+        id: {
+          jwk: identity.id.jwk,
+          private: idPrivateKey,
+        },
+        storage: {
+          jwk: identity.storage.jwk,
+          private: storagePrivateKey,
+        },
+      },
+      invites: this.queryItem(`invitations:${thumbprint}`)?.reduce(
+        (memo, key) => {
+          memo[key] = this.getItem(`invitation:${key}`);
+          return memo;
+        },
+        {} as NonNullable<BackupPayload["invites"]>
+      ),
+      threads:
+        this.queryItem(`threads:${thumbprint}`)?.reduce((memo, key) => {
+          const threadInfo = this.getItem(`thread-info:${thumbprint}:${key}`);
+          const messages = this.getItem(`keyed-messages:${thumbprint}:${key}`);
+          const encryptedThreadKeys: BackupPayload["threads"][ThreadID]["encryptedThreadKeys"] =
+            {};
+          encryptedThreadKeys[threadInfo.myThumbprint] = this.getItem(
+            `encrypted-thread-key:${threadInfo.myThumbprint}`
+          );
+
+          memo[key] = {
+            threadInfo,
+            messages,
+            encryptedThreadKeys,
+          };
+          return memo;
+        }, {} as NonNullable<BackupPayload["threads"]>) ?? {},
+    };
   }
 
   hasItem: GridStorageType["hasItem"] = (key) => {
@@ -143,7 +210,7 @@ export class GridStorage implements GridStorageType {
     ) ?? {
       min: messageId,
       max: messageId,
-      messages: [],
+      messages: [] as SignedTransport[],
     };
     index.messages.push(message);
     this.setItem(`keyed-messages:${thumbprint}:${threadId}`, index);

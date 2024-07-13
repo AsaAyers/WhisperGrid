@@ -84,12 +84,7 @@ export function ThreadView(): React.ReactNode {
         return search
       })
       form.resetFields()
-      const originalMessages = client.getEncryptedThread(threadId) ?? []
-      const m = originalMessages[originalMessages.length - 1]
-      if (typeof m === 'string') {
-        await client.decryptMessage(threadId, m)
-        await refreshThread()
-      }
+      await refreshThread()
     }
   }
 
@@ -166,10 +161,14 @@ export function ThreadView(): React.ReactNode {
         <Form onFinish={onFinish} form={form} >
           <Form.Item<FieldType>
             name="message"
-            rules={[{ required: true, message: 'Please input your password!' }]}
+            label='Message'
+            rules={[{ required: true }]}
           >
             <Space.Compact block>
-              <Input defaultValue="" />
+              <Input
+                name="message"
+                id="message"
+                defaultValue="" />
               <Button type="primary" htmlType="submit">
                 <SendOutlined />
               </Button>
@@ -180,3 +179,4 @@ export function ThreadView(): React.ReactNode {
     </Flex >
   );
 }
+
