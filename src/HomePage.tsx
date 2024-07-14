@@ -13,6 +13,8 @@ export function HomePage() {
   const replyHref = useHref('/reply')
   const createHref = useHref('/create')
   const threads = React.useMemo(() => client?.getThreads() ?? [], [client])
+  const threadHref = useHref('/thread/ABCDE')
+  const settingsHref = useHref('/settings')
 
   return (
     <Flex vertical>
@@ -44,7 +46,7 @@ export function HomePage() {
         <li>
           This identity is stored in your machine&apos;s local storage. If you
           clear your local storage, you will lose your identity.  You can make a
-          backup in <Typography.Link href="/settings"><SettingOutlined />
+          backup in <Typography.Link href={settingsHref}><SettingOutlined />
             Settings</Typography.Link>.
         </li>
       </ul>
@@ -53,7 +55,7 @@ export function HomePage() {
       <Typography.Text>
         Creating an invitation will give you a large block of text that you can
         send to someone else.  They&apos;ll need to paste it into the reply box
-        on the <Typography.Link href="/reply">Reply</Typography.Link> page.
+        on the <Typography.Link href={replyHref}>Reply</Typography.Link> page.
       </Typography.Text>
 
       <Button href={replyHref}><SendOutlined /> Reply to invite</Button>
@@ -70,11 +72,11 @@ export function HomePage() {
       <CopyInvite signedInvite={exampleInvite} />
 
       {threads.length > 0 ? threads.map((key) => (
-        <Button key={key} href={`/thread/${key}`}>
+        <Button key={key} href={threadHref.replace('ABCDE', key)}>
           <UserOutlined /> thread {key}
         </Button>
       )) : (
-        <Button disabled href={`/thread/...`}>
+        <Button disabled href={threadHref}>
           <UserOutlined /> thread ...
         </Button>
       )}
