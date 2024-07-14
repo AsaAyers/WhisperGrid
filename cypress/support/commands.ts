@@ -28,13 +28,13 @@ Cypress.Commands.add("logout", () => {
 Cypress.Commands.add("replyToInvite", (invitation, nickname, note = "") => {
   cy.contains("Reply to invite").click();
   cy.get("textarea").paste(invitation);
-  cy.labeledInput("Nickname").type(nickname);
+  cy.labeledInput("Set My Nickname").type(nickname);
   cy.labeledInput("Message").type(note + "{enter}");
   return cy.copyButtonText("Copy");
 });
 Cypress.Commands.add("makeInvite", (nickname, note = "") => {
   cy.contains("Create Invitation").click();
-  cy.contains("Nickname").type(nickname);
+  cy.contains("Set My Nickname").type(nickname);
   cy.contains("Note").type(note + "{enter}");
   return cy.copyButtonText("Copy").then((invite) => {
     return invite;

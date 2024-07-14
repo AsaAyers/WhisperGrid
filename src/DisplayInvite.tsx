@@ -75,7 +75,7 @@ export function DisplayInvite({
                   </Boundary>
               },
               { label: 'Public Key', children: thumbprint, key: '' },
-              { label: 'Nickname', children: invitation.payload.nickname, key: 'nickname' },
+              { label: 'Set My Nickname', children: invitation.payload.nickname, key: 'nickname' },
               { label: 'Note', children: invitation.payload.note, key: 'note' },
               {
                 label: "Grid protocol link", children: (
@@ -114,7 +114,7 @@ class Boundary extends React.Component<React.PropsWithChildren<object>> {
   }
 }
 
-function CopyInvite({ signedInvite }: { signedInvite: SignedInvitation }): React.ReactNode {
+export function CopyInvite({ signedInvite }: { signedInvite: SignedInvitation }): React.ReactNode {
   return <Typography.Paragraph code
     copyable={{
       format: 'text/plain',

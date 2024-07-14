@@ -145,21 +145,12 @@ export function ReplyToInvite(): React.ReactNode {
           {invitation ? (
             <Descriptions title="Invitation Data" layout="vertical" items={[
               { label: 'Public Key', children: thumbprint, key: '' },
-              { label: 'Nickname', children: invitation.payload.nickname, key: 'nickname' },
+              { label: 'Set My Nickname', children: invitation.payload.nickname, key: 'nickname' },
               { label: 'Note', children: invitation.payload.note, key: 'note' },
             ]} />
           ) : (
             <EncryptedTextInput onJWS={onJWS} />
           )}
-          <Form.Item<FieldType>
-            label="Nickname"
-            name="nickname"
-            rules={[{ required: true, message: 'What nickname would like to use in your conversation?' }]}
-          >
-            <Input
-              onChange={(e) => setNickname(e.target.value)}
-              disabled={invitation == null} />
-          </Form.Item>
         </Card>
 
 
@@ -174,6 +165,15 @@ export function ReplyToInvite(): React.ReactNode {
           </Typography.Text>
         }>
           <Form.Item<FieldType>
+            label="Set My Nickname"
+            name="nickname"
+            rules={[{ required: true, message: 'What nickname would like to use in your conversation?' }]}
+          >
+            <Input
+              onChange={(e) => setNickname(e.target.value)}
+              disabled={invitation == null} />
+          </Form.Item>
+          <Form.Item<FieldType>
             name="message"
             label="Message"
             labelAlign="left"
@@ -181,6 +181,7 @@ export function ReplyToInvite(): React.ReactNode {
           >
             <Space.Compact block>
               <Input
+                disabled={invitation == null}
                 defaultValue="" />
               <Button type="primary" htmlType="submit">
                 <SendOutlined />

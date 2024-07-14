@@ -6,7 +6,7 @@ import { ItemType, MenuItemType } from "antd/es/menu/interface";
 import { LogoutOutlined, PlusOutlined, SendOutlined, SettingOutlined, UserAddOutlined, UserOutlined } from "@ant-design/icons";
 import { getJWKthumbprint, parseJWS } from "./client/utils";
 import { Invitation, SignedInvitation } from "./client/types";
-import { Outlet, useLocation, useNavigate } from "react-router-dom";
+import { Outlet, useHref, useLocation, useNavigate } from "react-router-dom";
 import { useClientSetup } from "./ClientProvider";
 
 export function WhisperGridDemo() {
@@ -46,13 +46,12 @@ export function WhisperGridDemo() {
   const threads = React.useMemo(() => client?.getThreads() ?? [], [client])
 
   const items: ItemType<MenuItemType>[] = React.useMemo((): ItemType<MenuItemType>[] => {
-    const options: ItemType<MenuItemType>[] = threads.map((key) => {
-      return {
-        key: `/thread/${key}`,
-        icon: React.createElement(UserOutlined),
-        label: `thread ${key}`,
-      }
-    });
+    const options: ItemType<MenuItemType>[] = []
+    options.push({
+      key: '/create',
+      icon: React.createElement(PlusOutlined),
+      label: 'Create Invitation',
+    })
 
     invitations.map(({ key, label }) => {
       options.push({
@@ -62,33 +61,37 @@ export function WhisperGridDemo() {
 
       })
     })
-    options.unshift({
+
+    options.push({
       key: '/reply',
       icon: React.createElement(SendOutlined),
       label: 'Reply to invite',
     })
 
-    options.unshift({
-      key: '/create',
-      icon: React.createElement(PlusOutlined),
-      label: 'Create Invitation',
-    })
-    options.unshift({
-      key: 'logout',
-      icon: React.createElement(LogoutOutlined),
-      label: 'Logout',
-    })
+    threads.map((key) => {
+      options.push({
+        key: `/thread/${key}`,
+        icon: React.createElement(UserOutlined),
+        label: `thread ${key}`,
+      })
+    });
 
     options.push({
       key: '/settings',
       icon: React.createElement(SettingOutlined),
       label: 'Settings'
     })
+    options.push({
+      key: 'logout',
+      icon: React.createElement(LogoutOutlined),
+      label: 'Logout',
+    })
     return options
   }, [threads, invitations])
 
 
   const navigate = useNavigate()
+  const home = useHref('/')
 
   return (
     <Layout
@@ -99,9 +102,9 @@ export function WhisperGridDemo() {
       {client && (
         <Layout.Sider breakpoint="xs" collapsible style={{ height: '100dvh' }} >
           <Flex>
-            <Typography.Text style={{ color: 'white', }}>
+            <Typography.Link href={home} style={{ color: 'white', }}>
               Whisper Grid
-            </Typography.Text>
+            </Typography.Link>
           </Flex>
           <Menu
             theme="dark"

@@ -32,7 +32,7 @@ export function CreateInvitation() {
         ]}
       >
         <Form.Item<FieldType>
-          label="Nickname"
+          label="Set My Nickname"
           name="nickname"
           rules={[{ required: true, message: 'Your nickname in this conversation' }]}
         >
