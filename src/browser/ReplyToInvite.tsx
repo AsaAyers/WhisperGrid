@@ -7,6 +7,7 @@ import { SendOutlined, UserOutlined } from "@ant-design/icons";
 import { EncryptedTextInput } from "./EncryptedTextInput";
 import { atom, useAtom } from "jotai";
 import { useNavigate } from "react-router-dom";
+import { RelaySetupCascader } from "./ntfy-relay";
 
 
 const jwsPattern = /^[a-zA-Z0-9_-]+\.[a-zA-Z0-9_-]+\.[a-zA-Z0-9_-]+$/
@@ -82,6 +83,7 @@ export function ReplyToInvite(): React.ReactNode {
   type FieldType = {
     nickname?: string;
     message?: string;
+    relayUrl?: string;
   };
   const [inviteValue, setInvitationString] = useAtom(inviteAtom)
   React.useEffect(() => {
@@ -96,7 +98,9 @@ export function ReplyToInvite(): React.ReactNode {
 
   const onFinish: FormProps<FieldType>['onFinish'] = async (values) => {
     invariant(invitationString, 'missing invitation')
-    const { reply, threadId } = await client.replyToInvitation(invitationString, values.message!, values.nickname!);
+    const { reply, threadId } = await client.replyToInvitation(invitationString, values.message!, values.nickname!, {
+      setMyRelay: values.relayUrl ? values.relayUrl : undefined
+    });
     const r = await client.decryptMessage(threadId, reply)
 
     navigate({
@@ -174,6 +178,21 @@ export function ReplyToInvite(): React.ReactNode {
               disabled={invitation == null} />
           </Form.Item>
           <Form.Item<FieldType>
+            label="Relay"
+
+          >
+            <Flex vertical={false} gap="small" >
+              <span>
+                <RelaySetupCascader relayUrl={null} disabled={invitation == null} />
+              </span>
+              <Typography.Paragraph style={{ flexGrow: 1 }} >
+                All messages are encrypted locally and you can always copy the encrypted messages back and forth.
+                As a convenience, you can also have the encrypted messages posted to a relay.
+              </Typography.Paragraph>
+            </Flex>
+
+          </Form.Item>
+          <Form.Item<FieldType>
             name="message"
             label="Message"
             labelAlign="left"
@@ -192,6 +211,6 @@ export function ReplyToInvite(): React.ReactNode {
         </Card>
 
       </Flex>
-    </Form>
+    </Form >
   );
 }

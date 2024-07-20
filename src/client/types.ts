@@ -61,6 +61,7 @@ export type ReplyToInvitePayload = {
   messageId: string;
   minAck: string;
   message: string;
+  relay?: string;
 };
 
 export type ReplyToInvite = {

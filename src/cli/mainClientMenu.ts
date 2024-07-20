@@ -5,6 +5,7 @@ import { ThreadID } from "../client/GridStorage";
 import { SignedInvitation, SignedTransport } from "../client/types";
 import { viewEncryptedThread } from "./viewEncryptedThread";
 import { verifyJWS, parseJWSSync, getJWKthumbprint } from "../client/utils";
+import { ArrayBuffertohex } from "jsrsasign";
 
 export async function mainClientMenu(client: Client) {
   const invitations = client.getInvitationIds();
@@ -16,6 +17,7 @@ export async function mainClientMenu(client: Client) {
     | "replyToInvitation"
     | ThreadID
     | Thumbprint<"ECDH">;
+  console.clear();
   const selection = await rawlist<Selection>({
     message: "What would you like to do?",
     choices: [
@@ -102,6 +104,14 @@ async function replyToInvitationMenu(client: Client) {
     message: "What would you like your nickname to be in this conversation?",
     required: true,
   });
+  let setMyRelay = undefined;
+  const topicArray = window.crypto.getRandomValues(new Uint8Array(16));
+  const newRelayUrl = `https://ntfy.sh/${ArrayBuffertohex(topicArray.buffer)}`;
+  const message = `Use ${newRelayUrl} to send future messages?`;
+  if (await confirm({ message })) {
+    setMyRelay = newRelayUrl;
+  }
+
   const reply = await input({
     required: false,
     message: "Enter your reply, or leave empty to cancel",
@@ -114,7 +124,8 @@ async function replyToInvitationMenu(client: Client) {
     } = await client.replyToInvitation(
       invite as SignedInvitation,
       reply,
-      nickname
+      nickname,
+      { setMyRelay }
     );
     await displayRawMessage(message, relay);
     return viewEncryptedThread(client, threadId);

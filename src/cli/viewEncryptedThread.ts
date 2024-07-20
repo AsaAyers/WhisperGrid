@@ -11,12 +11,28 @@ export async function viewEncryptedThread(client: Client, threadId: ThreadID) {
   const threadInfo = await client.getThreadInfo(threadId);
 
   if (threadInfo.myRelay) {
-    const response = await fetch(`${threadInfo.myRelay}/json?since=0&poll=1`);
-    const json = await response.json();
-    console.log(json);
+    let json;
+    try {
+      console.log(`fetching updates from... ${threadInfo.myRelay}`);
+      const response = await fetch(
+        `${threadInfo.myRelay}/json?since=all&poll=1`
+      );
+      const text = await response.text();
 
-    if (json.message) {
-      await client.appendThread(json.message, threadId);
+      await text
+        .trim()
+        .split("\n")
+        .reduce(async (p, line) => {
+          await p;
+          json = JSON.parse(line);
+          if (json?.message) {
+            await client.appendThread(json.message, threadId).catch(() => {
+              // Ignore errors about duplicate messages. This is expected.
+            });
+          }
+        }, Promise.resolve());
+    } catch (e) {
+      console.error(e);
     }
   }
 

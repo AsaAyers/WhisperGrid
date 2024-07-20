@@ -179,6 +179,47 @@ Note: Hello Bob, this first message is not encrypted, but is signed",
     ).toMatchObject(encryptedThreads);
   });
 
+  test("ReplyToInvite can include a relay", async () => {
+    const alice = await Client.generateClient(
+      new GridStorage(),
+      "AlicePassword"
+    );
+    alice.setClientNickname("Alice");
+    const bob = await Client.generateClient(new GridStorage(), "BobPassword");
+    bob.setClientNickname("Bob");
+    const invite = await alice.createInvitation({ nickname: "Alice" });
+
+    const messages = [];
+
+    const topicArray = window.crypto.getRandomValues(new Uint8Array(16));
+
+    const relayURL = `https://grid.example.com/conversation/${ArrayBuffertohex(
+      topicArray.buffer
+    )}`;
+    messages.push(
+      await bob.replyToInvitation(
+        invite,
+        `Hello Alice. First message with relay`,
+        "Bob",
+        {
+          setMyRelay: relayURL,
+        }
+      )
+    );
+    const threadId = messages[0].threadId;
+    await alice.appendThread(messages[0].reply);
+
+    messages.push(
+      await bob.replyToThread(threadId, `Hello Alice. Second message`)
+    );
+    await alice.appendThread(messages[1].reply);
+    const aliceReply = await alice.replyToThread(
+      threadId,
+      `Hello Bob. First reply`
+    );
+    expect(aliceReply.relay).toBe(relayURL);
+  });
+
   test("Replies can include a relay", async () => {
     const alice = await Client.generateClient(
       new GridStorage(),

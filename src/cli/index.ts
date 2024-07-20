@@ -14,6 +14,7 @@ global.window ??= {} as any;
 window.crypto = crypto;
 
 async function main() {
+  console.clear();
   const files = await fs.readdir(".");
   const jwsTxtFiles = files.filter((file) => file.endsWith(".jws.txt"));
 

@@ -43,9 +43,11 @@ const ntfyTopic = atom(
 
 type Props = {
   relayUrl: string | null
+  disabled?: boolean
 }
 export function RelaySetupCascader({
   relayUrl,
+  disabled,
 }: Props) {
   const [, setTopic] = useAtom(ntfyTopic)
   const [modal, setModal] = React.useState<null | 'https://ntfy.sh' | 'remove'>(null)
@@ -97,6 +99,7 @@ export function RelaySetupCascader({
     <>
       <Cascader
         title="Relay Mode"
+        disabled={disabled}
         value={relayHostname ? [relayHostname] : []}
         onChange={(value) => {
           if (value.includes("") && relayUrl) {

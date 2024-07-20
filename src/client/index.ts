@@ -309,7 +309,8 @@ export class Client {
   async replyToInvitation(
     signedInvite: SignedInvitation,
     message: string,
-    nickname: string
+    nickname: string,
+    { setMyRelay }: { setMyRelay?: string } = {}
   ) {
     invariant(await verifyJWS(signedInvite), "Invalid invitation signature");
     const invite = await parseJWS(signedInvite);
@@ -322,6 +323,7 @@ export class Client {
     const reply = this.replyToThread(threadId, message, {
       selfSign: true,
       nickname,
+      setMyRelay,
     });
     return reply;
   }
@@ -511,8 +513,9 @@ export class Client {
         },
       };
       replyMessage = ack;
-    } else if (options?.setMyRelay) {
-      (replyMessage.payload as ReplyPayload).relay = options.setMyRelay;
+    }
+    if (options?.setMyRelay) {
+      replyMessage.payload.relay = options.setMyRelay;
     }
 
     const { iv, encrypted } = await encryptData(secret, replyMessage.payload);
@@ -776,7 +779,7 @@ export class Client {
       iat: reply.header.iat,
       messageId: payload.messageId,
       minAck: payload.minAck,
-      relay: (payload as ReplyPayload).relay,
+      relay: payload.relay,
     };
   }
 
