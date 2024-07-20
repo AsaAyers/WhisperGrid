@@ -19,7 +19,7 @@ forth.
 
 Here is a video from one of the automated tests.
 
-https://github.com/AsaAyers/WhisperGrid/assets/324999/0ebeb15e-6016-4f55-b84a-2a7909840787
+https://github.com/user-attachments/assets/5125c76e-a158-405a-b966-57c83a24898c
 
 1. Alice creates a new identity protected with a password
 2. Then creates an `invitation`, copies it, and expands it.
