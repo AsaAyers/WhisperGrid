@@ -1,1 +1,0 @@
-{"version":3,"sources":["src/styles.css"],"names":[],"mappings":"AAAA;AACA;AACA;AACA;AACA;AACA;AACA;AACA;AACA;AACA;AACA;AACA","file":"styles.1ba0729b.css","sourceRoot":"..","sourcesContent":["#root {\n  height: 100vh;\n  display: flex;\n}\n#root > div {\n  flex-grow: 1;\n}\n\nbody {\n  margin: 0;\n}\n"]}
