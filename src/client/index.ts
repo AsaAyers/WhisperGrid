@@ -381,8 +381,10 @@ export class Client {
 
   getThreads = (): ThreadID[] =>
     this.storage.queryItem(`threads:${this.thumbprint}`) ?? [];
+  getInvitationIds = () =>
+    this.storage.queryItem(`invitations:${this.thumbprint}`) ?? [];
   getInvitations = () =>
-    (this.storage.queryItem(`invitations:${this.thumbprint}`) ?? []).map(
+    this.getInvitationIds().map(
       (t) => this.storage.getItem(`invitation:${t}`)!
     );
 
@@ -855,3 +857,5 @@ export function incMessageId(messageId: string) {
   );
   return n;
 }
+
+export { Thumbprint };

@@ -145,7 +145,7 @@ export function ReplyToInvite(): React.ReactNode {
           {invitation ? (
             <Descriptions title="Invitation Data" layout="vertical" items={[
               { label: 'Public Key', children: thumbprint, key: '' },
-              { label: 'Set My Nickname', children: invitation.payload.nickname, key: 'nickname' },
+              { label: 'Nickname', children: invitation.payload.nickname, key: 'nickname' },
               { label: 'Note', children: invitation.payload.note, key: 'note' },
             ]} />
           ) : (
@@ -180,6 +180,7 @@ export function ReplyToInvite(): React.ReactNode {
             rules={[{ required: true }]}
           >
             <Space.Compact block>
+
               <Input
                 disabled={invitation == null}
                 defaultValue="" />

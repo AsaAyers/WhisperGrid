@@ -4,6 +4,9 @@
   "description": "",
   "main": "dist/index.js",
   "module": "dist/index.js",
+  "bin": {
+    "whispergrid": "bin.js"
+  },
   "scripts": {
     "start": "parcel index.html",
     "cy:open": "cypress open",
@@ -14,7 +17,7 @@
     "lint": "eslint src cypress",
     "prelint": "tsc --noEmit",
     "prebuild": "rm -rf dist",
-    "build": "parcel build --no-minify index.html 404.html --public-url /WhisperGrid",
+    "build": "parcel build --no-minify index.html 404.html --public-url /WhisperGrid && parcel build src/cli/index.ts --target node -o cli",
     "predeploy": "npm run build",
     "deploy": "gh-pages -d dist",
     "prepare": "husky"
@@ -23,6 +26,8 @@
   "license": "ISC",
   "dependencies": {
     "@ant-design/icons": "^5.3.7",
+    "@inquirer/prompts": "^5.2.1",
+    "@types/lodash.debounce": "^4.0.9",
     "antd": "^5.18.3",
     "cypress": "^13.12.0",
     "gh-pages": "^6.1.1",
@@ -32,6 +37,7 @@
     "jotai": "^2.9.0",
     "jsrsasign": "^11.1.0",
     "jsrsasign-util": "^1.0.5",
+    "lodash.debounce": "^4.0.8",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-router-dom": "^6.23.1",

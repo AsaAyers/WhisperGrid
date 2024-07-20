@@ -5,3 +5,4 @@ dist/
 chrome/
 cypress/downloads/
 cypress/videos/
+*.jws.txt
