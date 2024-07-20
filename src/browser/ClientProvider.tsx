@@ -1,9 +1,9 @@
 import React from "react";
-import { Client } from "./client";
-import { invariant, Thumbprint } from "./client/utils";
-import { LocalGridStorage } from "./browser";
+import { Client } from "../client";
+import { invariant, Thumbprint } from "../client/utils";
+import { LocalGridStorage } from ".";
 import { useNavigate } from "react-router-dom";
-import { BackupPayload } from "./client/types";
+import { BackupPayload } from "../client/types";
 import { atom, useAtom } from "jotai";
 
 export const clientAtom = atom(

@@ -1,10 +1,10 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import React from "react";
 import { Button, Card, Descriptions, Flex, Form, Modal, Space, Typography, notification } from "antd";
-import { Invitation, SignedInvitation, SignedReplyToInvite, SignedTransport, UnpackTaggedString } from "./client/types";
+import { Invitation, SignedInvitation, SignedReplyToInvite, SignedTransport, UnpackTaggedString } from "../client/types";
 import { useClient } from "./ClientProvider";
 import { useParams } from "react-router";
-import { Thumbprint, getJWKthumbprint, invariant, parseJWS, parseJWSSync, verifyJWS } from "./client/utils";
+import { Thumbprint, getJWKthumbprint, invariant, parseJWS, parseJWSSync, verifyJWS } from "../client/utils";
 import { useHref, useLocation, useNavigate } from "react-router-dom";
 import { EncryptedTextInput } from "./EncryptedTextInput";
 import { NotificationInstance } from "antd/es/notification/interface";

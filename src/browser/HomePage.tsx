@@ -4,7 +4,7 @@ import { Button, Flex, Typography } from "antd";
 import { Navigate, useHref, useSearchParams } from "react-router-dom";
 import { PlusOutlined, SendOutlined, SettingOutlined, UserOutlined } from "@ant-design/icons";
 import { CopyInvite } from "./DisplayInvite";
-import { SignedInvitation } from "./client/types";
+import { SignedInvitation } from "../client/types";
 
 export function HomePage() {
   const client = useClient();

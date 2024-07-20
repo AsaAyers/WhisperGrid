@@ -1,7 +1,7 @@
 import React from "react";
 import { App, Avatar, Button, Card, Descriptions, Flex, Form, FormProps, Input, Space, Typography } from "antd";
-import { getJWKthumbprint, invariant, parseJWSSync, verifyJWS } from "./client/utils";
-import { SignedInvitation, SignedTransport, UnpackTaggedString } from "./client/types";
+import { getJWKthumbprint, invariant, parseJWSSync, verifyJWS } from "../client/utils";
+import { SignedInvitation, SignedTransport, UnpackTaggedString } from "../client/types";
 import { clientAtom, useClient } from "./ClientProvider";
 import { SendOutlined, UserOutlined } from "@ant-design/icons";
 import { EncryptedTextInput } from "./EncryptedTextInput";

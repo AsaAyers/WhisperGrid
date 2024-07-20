@@ -2,10 +2,10 @@ import React from "react";
 import { Alert, Button, Flex, Form, FormProps, Input, Radio, Typography, Upload } from "antd";
 import { useClientSetup } from "./ClientProvider";
 import Link from "antd/es/typography/Link";
-import { invariant, parseJWS, verifyJWS } from "./client/utils";
+import { invariant, parseJWS, verifyJWS } from "../client/utils";
 import { UploadOutlined } from "@ant-design/icons";
 import { UploadChangeParam } from "antd/es/upload";
-import { BackupPayload } from "./client/types";
+import { BackupPayload } from "../client/types";
 
 const unsupportedBrowser = !window?.crypto?.subtle
 
