@@ -12,7 +12,7 @@ const port = 3000 + Math.floor(Math.random() * 1000);
 
 export async function runWebserver(client: Client) {
   const app = fastify({
-    logger: true,
+    logger: false,
   });
   app.register(fsocket);
   app.register(async (fastify) => {
