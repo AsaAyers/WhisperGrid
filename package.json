@@ -1,6 +1,6 @@
 {
   "name": "whispergrid",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "description": "",
   "source": "src/client/index.ts",
   "main": "dist/client/index.js",
@@ -39,6 +39,7 @@
     "build": "parcel build",
     "predeploy": "npm run build",
     "deploy": "gh-pages -d dist",
+    "prepublish": "npm run build",
     "prepare": "husky"
   },
   "author": "",
