@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import React from "react";
 import ReactDOM from "react-dom/client";
-import { GridStorage } from "../client/GridStorage";
+import { GridStorage } from "../client";
 import { WhisperGridDemo } from "./WhisperGridDemo";
 import { RouterProvider, createBrowserRouter, createHashRouter, useRouteError } from "react-router-dom";
 import { CreateInvitation } from "./CreateInvitation";

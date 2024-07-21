@@ -14,6 +14,8 @@ import {
   ReplyPayload,
   SignedTransport,
   BackupPayload,
+  UnpackTaggedString,
+  SignedReplyToInvite,
 } from "./types";
 import {
   generateECDSAKeyPair,
@@ -861,4 +863,15 @@ export function incMessageId(messageId: string) {
   return n;
 }
 
-export { Thumbprint };
+export type {
+  BackupPayload,
+  Invitation,
+  SignedInvitation,
+  SignedReply,
+  SignedReplyToInvite,
+  SignedTransport,
+  Thumbprint,
+  ThreadID,
+  UnpackTaggedString,
+};
+export { GridStorage };

@@ -6,3 +6,4 @@ chrome/
 cypress/downloads/
 cypress/videos/
 *.jws.txt
+.parcel-cache

@@ -2,8 +2,27 @@
   "name": "whispergrid",
   "version": "1.0.2",
   "description": "",
-  "main": "dist/index.js",
-  "module": "dist/index.js",
+  "source": "src/client/index.ts",
+  "main": "dist/client/index.js",
+  "module": "dist/module.js",
+  "types": "dist/types.d.ts",
+  "targets": {
+    "WhisperGrid": {
+      "context": "browser",
+      "publicUrl": "/WhisperGrid",
+      "distDir": "dist",
+      "source": [
+        "index.html",
+        "404.html"
+      ]
+    },
+    "cli": {
+      "context": "node",
+      "source": "src/cli/index.ts"
+    },
+    "main": {},
+    "module": {}
+  },
   "bin": {
     "whispergrid": "bin.js"
   },
@@ -17,31 +36,38 @@
     "lint": "eslint src cypress",
     "prelint": "tsc --noEmit",
     "prebuild": "rm -rf dist",
-    "build": "parcel build --no-minify index.html 404.html --public-url /WhisperGrid && parcel build src/cli/index.ts --target node -o cli",
+    "build": "parcel build",
     "predeploy": "npm run build",
-    "deploy": "gh-pages -d dist",
+    "deploy": "gh-pages -d dist/browser",
     "prepare": "husky"
   },
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@ant-design/icons": "^5.3.7",
     "@inquirer/prompts": "^5.2.1",
+    "antd": "^5.18.3",
     "jose": "^5.4.0",
+    "jotai": "^2.9.0",
     "jsrsasign": "^11.1.0",
     "jsrsasign-util": "^1.0.5",
-    "lodash.debounce": "^4.0.8"
+    "lodash.debounce": "^4.0.8",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-router": "6.3",
+    "react-router-dom": "^6.23.1"
   },
   "devDependencies": {
-    "@ant-design/icons": "^5.3.7",
     "@eslint/compat": "^1.1.0",
     "@eslint/js": "^9.5.0",
+    "@parcel/packager-ts": "^2.12.0",
+    "@parcel/transformer-typescript-types": "^2.12.0",
     "@rollup/plugin-image": "^3.0.3",
     "@types/jest": "^29.5.12",
     "@types/jsrsasign": "^10.5.14",
     "@types/lodash.debounce": "^4.0.9",
     "@types/react": "^18.3.3",
     "@types/react-dom": "^18.3.0",
-    "antd": "^5.18.3",
     "cypress": "^13.12.0",
     "eslint": "^8.57.0",
     "eslint-plugin-react": "^7.34.3",
@@ -50,11 +76,7 @@
     "husky": "^9.0.11",
     "jest": "^29.7.0",
     "jest-environment-jsdom": "^29.7.0",
-    "jotai": "^2.9.0",
-    "parcel-bundler": "^1.12.5",
-    "react": "^18.3.1",
-    "react-dom": "^18.3.1",
-    "react-router-dom": "^6.23.1",
+    "parcel": "^2.12.0",
     "ts-jest": "^29.1.4",
     "ts-node": "^10.9.2",
     "typescript": "^5.4.5",

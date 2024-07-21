@@ -2,8 +2,8 @@
 import React from "react";
 import { useClient, useClientSetup } from "./ClientProvider";
 import { Button, Flex, Form, Input, Modal } from "antd";
-import { invariant } from "../client/utils";
 import { useHref } from "react-router-dom";
+import { invariant } from "./invariant";
 
 function Backup() {
   type FieldType = {

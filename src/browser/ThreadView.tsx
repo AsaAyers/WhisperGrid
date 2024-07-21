@@ -1,13 +1,11 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import React from "react";
 import { Alert, Avatar, Button, Card, Flex, Form, FormProps, Input, Popover, Space, Timeline, Typography, App } from "antd";
-import { DecryptedMessageType } from "../client";
+import { ThreadID, SignedReply, SignedTransport, DecryptedMessageType } from "../client";
 import { MessageOutlined, SendOutlined, ShareAltOutlined, UserOutlined } from "@ant-design/icons";
 import { invariant, parseJWSSync } from "../client/utils";
 import { useParams, useSearchParams } from "react-router-dom";
 import { useClient } from "./ClientProvider";
-import { SignedReply, SignedTransport } from "../client/types";
-import { ThreadID } from "../client/GridStorage";
 import { RelaySetupCascader } from "./ntfy-relay";
 
 export const matchJWS = /^([a-zA-Z0-9-_]+)(\.[a-zA-Z0-9-_]+){2}$/;
