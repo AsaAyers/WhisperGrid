@@ -4,6 +4,7 @@ import { useClient, useClientSetup } from "./ClientProvider";
 import { Button, Flex, Form, Input, Modal } from "antd";
 import { useHref } from "react-router-dom";
 import { invariant } from "./invariant";
+import { useResolved } from "./useResolved";
 
 function Backup() {
   type FieldType = {
@@ -14,6 +15,7 @@ function Backup() {
   const [form] = Form.useForm<FieldType>();
   const [isBackupModalOpen, setIsBackupModalOpen] = React.useState(false);
   const client = useClient();
+  const thumbprint = useResolved(React.useMemo(() => client?.getThumbprint(), [client]));
   const [processing, setProcessing] = React.useState(false);
 
 
@@ -58,7 +60,7 @@ function Backup() {
             }
           }}
           initialValues={{
-            filename: `grid-${client.thumbprint}.jws.txt`,
+            filename: `grid-${thumbprint}.jws.txt`,
           }}
           form={form}>
           <Form.Item<FieldType>

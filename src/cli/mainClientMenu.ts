@@ -6,21 +6,24 @@ import { SignedInvitation, SignedTransport } from "../client/types";
 import { viewEncryptedThread } from "./viewEncryptedThread";
 import { verifyJWS, parseJWSSync, getJWKthumbprint } from "../client/utils";
 import { ArrayBuffertohex } from "jsrsasign";
+import { runWebserver } from "./runWebserver";
 
 export async function mainClientMenu(client: Client) {
-  const invitations = client.getInvitationIds();
-  const threads = client.getThreads();
+  const invitations = await client.getInvitationIds();
+  const threads = await client.getThreads();
 
   type Selection =
     | "exit"
     | "createInvitation"
     | "replyToInvitation"
+    | "webserver"
     | ThreadID
     | Thumbprint<"ECDH">;
   console.clear();
   const selection = await rawlist<Selection>({
     message: "What would you like to do?",
     choices: [
+      { name: "Run local Webserver", value: "webserver" },
       { name: "Create Invitation", value: "createInvitation" },
       ...invitations.map((value) => ({
         name: `View Invitation: ${value}`,
@@ -44,6 +47,8 @@ export async function mainClientMenu(client: Client) {
     await createInvitationMenu(client);
   } else if (selection === "replyToInvitation") {
     await replyToInvitationMenu(client);
+  } else if (selection === "webserver") {
+    return runWebserver(client);
   }
 
   if (threads.includes(selection as ThreadID)) {

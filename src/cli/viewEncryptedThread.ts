@@ -122,8 +122,8 @@ export async function viewEncryptedThread(client: Client, threadId: ThreadID) {
 
       if (index >= 0) {
         console.log(thread[index]);
-        const encrypted = client.getEncryptedThread(threadId)[index];
-        console.log(encrypted);
+        const encrypted = await client.getEncryptedThread(threadId);
+        console.log(encrypted[index]);
       }
     }
   }

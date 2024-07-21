@@ -4,6 +4,7 @@ import { LocalGridStorage } from ".";
 import { useNavigate } from "react-router-dom";
 import { atom, useAtom } from "jotai";
 import { invariant } from "./invariant";
+import { useSocketClient } from "./useSocketClient";
 
 export const clientAtom = atom(
   undefined as Client | undefined,
@@ -44,6 +45,12 @@ export function ClientProvider(props: React.PropsWithChildren) {
   const [client, setClient] = useAtom(clientAtom)
   const [clientUpdateKey, setClientUpdateKey] = React.useState(0);
   const navigate = useNavigate()
+  const socketClient = useSocketClient(`ws://${location.host}/client-socket`)
+  React.useEffect(() => {
+    if (socketClient) {
+      setClient(socketClient)
+    }
+  }, [socketClient])
 
   React.useEffect(() => {
     if (client) {

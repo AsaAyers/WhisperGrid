@@ -8,6 +8,7 @@ import { getJWKthumbprint, parseJWS } from "../client/utils";
 import { Invitation, SignedInvitation } from "../client";
 import { Outlet, useHref, useLocation, useNavigate } from "react-router-dom";
 import { useClientSetup } from "./ClientProvider";
+import { useResolved } from "./useResolved";
 
 export function WhisperGridDemo() {
   const { client, logout } = useClientSetup()
@@ -22,28 +23,28 @@ export function WhisperGridDemo() {
 
 
   React.useEffect(() => {
-    if (client) {
-      const invites = client.getInvitations()
-      const promises = invites.map(async (signedInvite) => {
-        const invitation = await parseJWS(signedInvite)
+    async function run() {
+      if (client) {
+        const invites = await client.getInvitations()
+        const promises = invites.map(async (signedInvite) => {
+          const invitation = await parseJWS(signedInvite)
 
-        const key = await getJWKthumbprint(invitation.payload.epk)
-        return {
-          key,
-          signedInvite,
-          invitation,
-          label: `(${invitation.payload.nickname}) ${invitation.payload.note
-            ?? key}`
-        }
-      })
-
-      Promise.all(promises).then((invites) => {
-        setInvitations(invites)
-      })
+          const key = await getJWKthumbprint(invitation.payload.epk)
+          return {
+            key,
+            signedInvite,
+            invitation,
+            label: `(${invitation.payload.nickname}) ${invitation.payload.note
+              ?? key}`
+          }
+        })
+        setInvitations(await Promise.all(promises))
+      }
     }
+    run()
   }, [client])
 
-  const threads = React.useMemo(() => client?.getThreads() ?? [], [client])
+  const threads = useResolved(React.useMemo(() => client?.getThreads() ?? [], [client]))
 
   const items: ItemType<MenuItemType>[] = React.useMemo((): ItemType<MenuItemType>[] => {
     const options: ItemType<MenuItemType>[] = []
@@ -68,7 +69,7 @@ export function WhisperGridDemo() {
       label: 'Reply to invite',
     })
 
-    threads.map((key) => {
+    threads?.map((key) => {
       options.push({
         key: `/thread/${key}`,
         icon: React.createElement(UserOutlined),

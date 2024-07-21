@@ -90,7 +90,7 @@ async function makeNewIdentity() {
   }
 
   const client = await Client.generateClient(new GridStorage(), pass1);
-  const filename = `grid-${client.thumbprint}.jws.txt`;
+  const filename = `grid-${await client.getThumbprint()}.jws.txt`;
   client.subscribe(
     debounce(async () => {
       const backup = await client.makeBackup(pass1);

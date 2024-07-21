@@ -88,10 +88,14 @@ export class Client {
 
   constructor(
     private storage: GridStorage,
-    public readonly thumbprint: Thumbprint<"ECDSA">,
+    private readonly thumbprint: Thumbprint<"ECDSA">,
     private readonly identityKeyPair: ECDSACryptoKeyPair,
     private readonly storageKeyPair: ECDHCryptoKeyPair
   ) {}
+
+  async getThumbprint() {
+    return this.thumbprint;
+  }
 
   static async generateClient(
     storage: GridStorage,
@@ -383,16 +387,19 @@ export class Client {
     return threadId;
   }
 
-  getThreads = (): ThreadID[] =>
-    this.storage.queryItem(`threads:${this.thumbprint}`) ?? [];
-  getInvitationIds = () =>
-    this.storage.queryItem(`invitations:${this.thumbprint}`) ?? [];
-  getInvitations = () =>
-    this.getInvitationIds().map(
+  async getThreads(): Promise<ThreadID[]> {
+    return this.storage.queryItem(`threads:${this.thumbprint}`) ?? [];
+  }
+  async getInvitationIds() {
+    return this.storage.queryItem(`invitations:${this.thumbprint}`) ?? [];
+  }
+  async getInvitations() {
+    return (await this.getInvitationIds()).map(
       (t) => this.storage.getItem(`invitation:${t}`)!
     );
+  }
 
-  getInvitation(thumbprint: Thumbprint<"ECDH">) {
+  async getInvitation(thumbprint: Thumbprint<"ECDH">) {
     return this.storage.getItem(`invitation:${thumbprint}`);
   }
 
@@ -696,7 +703,7 @@ export class Client {
   }
 
   public async decryptThread(threadId: ThreadID) {
-    const thread = this.getEncryptedThread(threadId);
+    const thread = await this.getEncryptedThread(threadId);
     const messages = await Promise.all(
       thread.map(async (message) => {
         return typeof message === "string"
@@ -785,7 +792,7 @@ export class Client {
     };
   }
 
-  public getEncryptedThread(threadId: ThreadID) {
+  public async getEncryptedThread(threadId: ThreadID) {
     return this.storage.readMessages(this.thumbprint, threadId);
   }
 
@@ -835,7 +842,11 @@ export class Client {
 
   private notifySubscribers() {
     for (const sub of this.subscriptions) {
-      sub();
+      try {
+        sub?.();
+      } catch (e) {
+        // Ignore
+      }
     }
   }
   private subscriptions = new Set<() => void>();

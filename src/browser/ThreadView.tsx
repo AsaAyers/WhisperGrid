@@ -38,7 +38,7 @@ export function ThreadView(): React.ReactNode {
 
   const [thread, setThread] = React.useState<Array<ThreadMessage | MissingMessage>>([]);
   const refreshThread = React.useCallback(async () => {
-    const originalMessages = client.getEncryptedThread(threadId) ?? []
+    const originalMessages = await client.getEncryptedThread(threadId) ?? []
     const decryptedMessages = await Promise.all(originalMessages.map(async (original): Promise<ThreadMessage | MissingMessage> => {
       const decrypted = await client.decryptMessage(threadId, original)
       return {

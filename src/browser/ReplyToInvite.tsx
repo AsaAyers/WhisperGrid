@@ -64,10 +64,10 @@ const inviteAtom = atom(
 
 const nicknameAtom = atom(
   null as null | string,
-  (get, set, newValue: string | null) => {
+  async (get, set, newValue: string | null) => {
     const client = get(clientAtom)
     if (client) {
-      const key = client.thumbprint
+      const key = await client.getThumbprint()
       const keySuffix = "_" + key.substring(key.length - 6);
       set(nicknameAtom, newValue + keySuffix)
     } else {

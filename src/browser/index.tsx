@@ -3,7 +3,7 @@ import React from "react";
 import ReactDOM from "react-dom/client";
 import { GridStorage } from "../client";
 import { WhisperGridDemo } from "./WhisperGridDemo";
-import { RouterProvider, createBrowserRouter, createHashRouter, useRouteError } from "react-router-dom";
+import { Navigate, RouterProvider, createBrowserRouter, createHashRouter, useRouteError, useSearchParams } from "react-router-dom";
 import { CreateInvitation } from "./CreateInvitation";
 import { ClientProvider } from "./ClientProvider";
 import { InviteRoute } from "./DisplayInvite";
@@ -46,9 +46,13 @@ export class LocalGridStorage extends GridStorage {
 
 }
 
-const basename = location.pathname.startsWith("/WhisperGrid")
+let basename = location.pathname.startsWith("/WhisperGrid")
   ? '/WhisperGrid'
   : undefined;
+
+if (location.pathname.includes('index.html')) {
+  basename = location.pathname.substring(0, location.pathname.indexOf('index.html') + 'index.html'.length)
+}
 
 const selectedRouter = location.protocol === 'file:' ? createHashRouter : createBrowserRouter;
 
@@ -64,7 +68,9 @@ const router = selectedRouter([
   {
     path: "/",
     element: (
-      <ClientProvider><WhisperGridDemo /></ClientProvider>
+      <SPARedirect>
+        <ClientProvider><WhisperGridDemo /></ClientProvider>
+      </SPARedirect>
     ),
     children: [
       {
@@ -110,6 +116,18 @@ declare global {
   }
 }
 
+function SPARedirect(props: React.PropsWithChildren<object>) {
+  const [searchParams] = useSearchParams()
+  const path = searchParams.get('path')
+
+
+  return path ? (
+    <Navigate to={path}
+      replace
+      relative="route"
+    />
+  ) : props.children
+}
 
 const root = ReactDOM.createRoot(
   document.getElementById("root")!

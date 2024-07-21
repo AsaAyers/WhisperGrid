@@ -7,6 +7,7 @@ import { Thumbprint, getJWKthumbprint, invariant, parseJWS, parseJWSSync, verify
 import { useHref, useLocation, useNavigate, useParams } from "react-router-dom";
 import { EncryptedTextInput } from "./EncryptedTextInput";
 import { NotificationInstance } from "antd/es/notification/interface";
+import { useResolved } from "./useResolved";
 
 type Props = {
   invitation: Invitation;
@@ -19,9 +20,9 @@ export function InviteRoute() {
   invariant(thumbprint, "Thumbprint is required")
 
   const [invitation, setInvitation] = React.useState<Invitation | null>(null)
-  const signedInvite = React.useMemo(() =>
+  const signedInvite = useResolved(React.useMemo(() =>
     client.getInvitation(thumbprint), []
-  )
+  ))
 
   React.useEffect(() => {
     if (signedInvite) {

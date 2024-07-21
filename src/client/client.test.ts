@@ -27,7 +27,7 @@ describe("Client", () => {
     const storage = new GridStorage();
 
     const alice = await Client.generateClient(storage, "AlicePassword");
-    const aliceThumbprint = alice.thumbprint;
+    const aliceThumbprint = await alice.getThumbprint();
     const aliceBackup = await alice.makeBackup("AlicePassword");
 
     await expect(
@@ -159,7 +159,7 @@ Note: Hello Bob, this first message is not encrypted, but is signed",
     const invitations = alice.getInvitations();
 
     const encryptedThreads = Object.fromEntries(
-      alice.getThreads().map((id) => [id, alice.getEncryptedThread(id)])
+      (await alice.getThreads()).map((id) => [id, alice.getEncryptedThread(id)])
     );
 
     const backup = await alice.makeBackup("BackupPassword");
@@ -174,7 +174,10 @@ Note: Hello Bob, this first message is not encrypted, but is signed",
 
     expect(
       Object.fromEntries(
-        alice.getThreads().map((id) => [id, alice.getEncryptedThread(id)])
+        (await alice.getThreads()).map((id) => [
+          id,
+          alice.getEncryptedThread(id),
+        ])
       )
     ).toMatchObject(encryptedThreads);
   });

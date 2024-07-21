@@ -48,13 +48,15 @@ export function LoginForm() {
   const onFinish: FormProps<FieldType>['onFinish'] = async (values) => {
     if (values.mode === 'create') {
       const client = await generateClient(values.password)
-      localStorage.setItem("thumbprint", client.thumbprint)
+      const thumbprint = await client.getThumbprint()
+      localStorage.setItem("thumbprint", thumbprint)
     } else if (values.mode === 'open') {
       await loadClient(values.thumbprint, values.password)
     } else if (values.mode === 'backup') {
       invariant(backupPayload, "No backup file")
       const client = await loadFromBackup(backupPayload, values.password)
-      localStorage.setItem("thumbprint", client.thumbprint)
+      const thumbprint = await client.getThumbprint()
+      localStorage.setItem("thumbprint", thumbprint)
     }
   };
   const initialValues = React.useMemo(() => {

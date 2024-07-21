@@ -1,29 +1,24 @@
 import React from "react";
 import { useClient } from "./ClientProvider";
 import { Button, Flex, Typography } from "antd";
-import { Navigate, useHref, useSearchParams } from "react-router-dom";
+import { useHref } from "react-router-dom";
 import { PlusOutlined, SendOutlined, SettingOutlined, UserOutlined } from "@ant-design/icons";
 import { CopyInvite } from "./DisplayInvite";
 import { SignedInvitation } from "../client";
+import { useResolved } from "./useResolved";
 
 export function HomePage() {
   const client = useClient();
-  const [searchParams] = useSearchParams()
-  const path = searchParams.get('path')
   const replyHref = useHref('/reply')
   const createHref = useHref('/create')
-  const threads = React.useMemo(() => client?.getThreads() ?? [], [client])
+  const threads = useResolved(React.useMemo(() => client?.getThreads() ?? [], [client]))
   const threadHref = useHref('/thread/ABCDE')
   const settingsHref = useHref('/settings')
 
+  const thumbprint = useResolved(React.useMemo(() => client?.getThumbprint(), [client]))
+
   return (
     <Flex vertical>
-      {path && (
-        <Navigate to={path}
-          replace
-          relative="route"
-        />
-      )}
       <p>
         Whisper Grid is a decentralized messaging system.
       </p>
@@ -35,12 +30,12 @@ export function HomePage() {
             copyable={{
               format: 'text/plain',
               onCopy() {
-                window.cypressCopyText = client.thumbprint;
+                window.cypressCopyText = thumbprint;
               }
             }}
             code
           >
-            {client.thumbprint}
+            {thumbprint}
           </Typography.Text>
         </li>
         <li>
@@ -71,7 +66,7 @@ export function HomePage() {
       </Typography.Text>
       <CopyInvite signedInvite={exampleInvite} />
 
-      {threads.length > 0 ? threads.map((key) => (
+      {threads && threads.length > 0 ? threads.map((key) => (
         <Button key={key} href={threadHref.replace('ABCDE', key)}>
           <UserOutlined /> thread {key}
         </Button>
