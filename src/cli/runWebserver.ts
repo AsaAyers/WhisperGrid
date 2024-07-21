@@ -37,6 +37,7 @@ export async function runWebserver(client: Client) {
           }
         }
       });
+      socket.send(JSON.stringify({ requestId: "init", result: null }));
     });
   });
 
