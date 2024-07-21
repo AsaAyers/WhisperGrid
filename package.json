@@ -38,7 +38,7 @@
     "prebuild": "rm -rf dist",
     "build": "parcel build",
     "predeploy": "npm run build",
-    "deploy": "gh-pages -d dist/browser",
+    "deploy": "gh-pages -d dist",
     "prepare": "husky"
   },
   "author": "",
