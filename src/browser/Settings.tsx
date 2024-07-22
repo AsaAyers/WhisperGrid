@@ -1,10 +1,11 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import React from "react";
-import { useClient, useClientSetup } from "./ClientProvider";
+import { clientAtom, useClient, useClientSetup } from "./ClientProvider";
 import { Button, Flex, Form, Input, Modal } from "antd";
 import { useHref } from "react-router-dom";
 import { invariant } from "./invariant";
 import { useResolved } from "./useResolved";
+import { useAtomValue } from "jotai";
 
 function Backup() {
   type FieldType = {
@@ -18,6 +19,9 @@ function Backup() {
   const thumbprint = useResolved(React.useMemo(() => client?.getThumbprint(), [client]));
   const [processing, setProcessing] = React.useState(false);
 
+  if (!client.isLocalClient) {
+    return null
+  }
 
   return (
     <>
@@ -106,7 +110,11 @@ function Backup() {
 function DeleteAll() {
   const [modals, modalContext] = Modal.useModal();
   const { logout } = useClientSetup()
+  const client = useAtomValue(clientAtom)
 
+  if (!client?.isLocalClient) {
+    return null
+  }
 
   return (
     <>
@@ -150,7 +158,7 @@ function RegisterHandler() {
             });
           }
         }}>
-        RegisterHandler
+        Register web+grid:// handler
       </Button>
     </>
   );

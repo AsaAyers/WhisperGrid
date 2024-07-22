@@ -41,26 +41,31 @@ export function useSocketClient(url: string): Client | null {
     new Promise((resolve) => {
       openRequests.set("init", resolve);
     }).then(() => {
-      const newClient = new Proxy<Client>({} as Client, {
-        get(target, prop, receiver) {
-          const fnValue = Client.prototype[prop as keyof Client];
-          console.log("get", prop, Client.prototype, typeof fnValue);
-          if (typeof fnValue === "function") {
-            return (...args: any[]) =>
-              new Promise((resolve) => {
-                const requestId = Math.random().toString(36).substring(7);
-                openRequests.set(requestId, resolve);
-                if (ws.current) {
-                  ws.current.send(
-                    JSON.stringify({ requestId, method: prop, args })
-                  );
-                }
-              });
-          }
+      const newClient = new Proxy<Client>(
+        {
+          isLocalClient: false,
+        } as Client,
+        {
+          get(target, prop, receiver) {
+            const fnValue = Client.prototype[prop as keyof Client];
+            console.log("get", prop, Client.prototype, typeof fnValue);
+            if (typeof fnValue === "function") {
+              return (...args: any[]) =>
+                new Promise((resolve) => {
+                  const requestId = Math.random().toString(36).substring(7);
+                  openRequests.set(requestId, resolve);
+                  if (ws.current) {
+                    ws.current.send(
+                      JSON.stringify({ requestId, method: prop, args })
+                    );
+                  }
+                });
+            }
 
-          return Reflect.get(target, prop, receiver);
-        },
-      });
+            return Reflect.get(target, prop, receiver);
+          },
+        }
+      );
       setClient(newClient);
     });
 

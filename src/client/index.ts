@@ -73,7 +73,14 @@ export type DecryptedMessageType = {
   relay?: string;
 };
 
+/**
+ * In order to use the client over a websocket connection, everything on it
+ * should be async functions. They also can't be arrow functions, because the
+ * proxy is looking at the prototype to figure out if there is a function to
+ * call.
+ */
 export class Client {
+  public isLocalClient = true; // The proxy will override this
   private clientNickname: string = Math.random().toString(36).slice(2);
   async setClientNickname(nickname: string) {
     this.clientNickname = nickname;

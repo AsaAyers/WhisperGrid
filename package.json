@@ -27,7 +27,7 @@
     "whispergrid": "bin.js"
   },
   "scripts": {
-    "start": "parcel index.html",
+    "start": "parcel serve --public-url / index.html",
     "cy:open": "cypress open",
     "cy:run": "cypress run -b electron --e2e",
     "precy:run": "npm run test",
@@ -36,7 +36,7 @@
     "lint": "eslint src cypress",
     "prelint": "tsc --noEmit",
     "prebuild": "rm -rf dist",
-    "build": "parcel build",
+    "build": "parcel build --public-url /WhisperGrid",
     "predeploy": "npm run build",
     "deploy": "gh-pages -d dist",
     "prepublish": "npm run build",
