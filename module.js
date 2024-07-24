@@ -428,6 +428,7 @@ class $2a29acee125cb879$export$1f2bb630327ac4b6 {
         this.thumbprint = thumbprint;
         this.identityKeyPair = identityKeyPair;
         this.storageKeyPair = storageKeyPair;
+        this.isLocalClient = true;
         this.clientNickname = Math.random().toString(36).slice(2);
         this.subscriptions = new Set();
     }

@@ -229,7 +229,14 @@ export type DecryptedMessageType = {
     epkThumbprint: Thumbprint<"ECDH">;
     relay?: string;
 };
+/**
+ * In order to use the client over a websocket connection, everything on it
+ * should be async functions. They also can't be arrow functions, because the
+ * proxy is looking at the prototype to figure out if there is a function to
+ * call.
+ */
 export class Client {
+    isLocalClient: boolean;
     setClientNickname(nickname: string): Promise<void>;
     constructor(storage: GridStorage, thumbprint: Thumbprint<"ECDSA">, identityKeyPair: ECDSACryptoKeyPair, storageKeyPair: ECDHCryptoKeyPair);
     getThumbprint(): Promise<Thumbprint<"ECDSA">>;
