@@ -1,8 +1,8 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import React from "react";
-import { Alert, Avatar, Button, Card, Flex, Form, FormProps, Input, Popover, Space, Timeline, Typography, App } from "antd";
-import { ThreadID, SignedReply, SignedTransport, DecryptedMessageType } from "../client";
-import { MessageOutlined, SendOutlined, ShareAltOutlined, UserOutlined } from "@ant-design/icons";
+import { Alert, Avatar, Button, Card, Flex, Form, FormProps, Input, Space, Typography, App, Switch } from "antd";
+import { ThreadID, SignedReply, SignedTransport, DecryptedMessageType, Client } from "../client";
+import { SendOutlined, UserOutlined } from "@ant-design/icons";
 import { invariant, parseJWSSync } from "../client/utils";
 import { useParams, useSearchParams } from "react-router-dom";
 import { useClient } from "./ClientProvider";
@@ -25,15 +25,17 @@ type ThreadMessage = DecryptedMessageType & {
   original: SignedTransport
 }
 
+type ThreadInfo = Awaited<ReturnType<Client['getThreadInfo']>>;
 export function ThreadView(): React.ReactNode {
+  const [, setSearachParams] = useSearchParams()
   const [form] = Form.useForm<FieldType>()
   const client = useClient();
   const { threadId } = useParams<{ threadId: ThreadID; }>()
   const app = App.useApp()
   invariant(threadId, `ThreadID is required`);
-  const [searchParams, setSearachParams] = useSearchParams()
+
   const [threadInfo, setThreadInfo] = React.useState<
-    | Awaited<ReturnType<typeof client.getThreadInfo>>
+    | ThreadInfo
     | null>(null);
 
   const [thread, setThread] = React.useState<Array<ThreadMessage | MissingMessage>>([]);
@@ -113,73 +115,41 @@ export function ThreadView(): React.ReactNode {
     }
   }
 
+  const messageView = React.useRef<HTMLDivElement>(null)
+
+  const numMessages = thread.length
+  React.useEffect(() => {
+    // Scroll to the bottom on the first render, and when the number of messages changes.
+    if (numMessages) {
+      messageView.current?.scrollTo({
+        top: messageView.current.scrollHeight,
+        behavior: 'smooth'
+      })
+    }
+  }, [numMessages])
+
   const newRelayUrl = Form.useWatch('relayUrl', form)
-  const expandMessage = searchParams.get('expandMessage')
   return (
     <Flex
       vertical
       align="stretch"
       gap="small"
       style={{ width: '100%', height: '100%' }}>
-      <Timeline
-        mode="left"
-        items={thread.map((message) => ({
-          dot: (
-            <Popover
-              title="Message Info"
-              trigger={message.messageId === expandMessage ? 'click' : 'hover'}
-              open={message.messageId === expandMessage ? true : undefined}
-              onOpenChange={(open) => {
-                if (!open && message.messageId === expandMessage) {
-                  setSearachParams(search => {
-                    search.delete('expandMessage')
-                    return search
-                  })
-                }
-              }}
-              content={(
-                <Flex vertical gap="small" style={{ maxWidth: '90vw' }}>
-                  <Typography.Text>
-                    From {message.fromThumbprint}
-                  </Typography.Text>
 
-                  <Typography.Paragraph
-                    code
-                    copyable={{
-                      format: 'text/plain',
-                      onCopy: () => {
-                        window.cypressCopyText = message.original
-                      }
-                    }}
-                    ellipsis={{
-                      expandable: true, rows: 3
-                    }}>
-                    {message.original}
-                  </Typography.Paragraph>
+      <Flex
+        vertical
+        ref={messageView}
+        align="stretch"
+        gap="xsmall"
+        style={{ width: '100%', height: '100%', overflowY: 'auto' }}>
 
-                  {message.type === 'message' && message.relay && (
-                    <Alert message="New Relay"
-                      description={message.relay}
-                      type="info" showIcon />
-                  )}
-
-                  <Typography.Link
-                    ellipsis
-                    href={`web+grid:/invitation/${threadId}#${message.original}`}
-                  >
-                    {`web+grid:/invitation/${threadId}#${message.original}`}
-                  </Typography.Link>
-                </Flex>
-              )}
-            >
-              {message.type === 'invite' ? <ShareAltOutlined style={{ fontSize: '16px' }} /> : <MessageOutlined style={{ fontSize: '16px' }} />}
-            </Popover>
-          ),
-          label: `${message.from} ${new Date(message.iat * 1000).toLocaleString()}`,
-          color: message.from === threadInfo?.myNickname ? myColor : theirColor,
-          children: message.message,
-        }))}
-      />
+        {threadInfo && thread.map((message) => (
+          <MessageCard
+            threadInfo={threadInfo}
+            key={message.messageId}
+            message={message} />
+        ))}
+      </Flex>
 
       <div style={{ flex: 1, flexGrow: 1 }}></div>
       {newRelayUrl && newRelayUrl !== threadInfo?.myRelay && (
@@ -224,3 +194,62 @@ export function ThreadView(): React.ReactNode {
   );
 }
 
+
+function MessageCard({ message, threadInfo }: {
+  message: ThreadMessage | MissingMessage,
+  threadInfo: ThreadInfo
+}) {
+  const [searchParams, setSearachParams] = useSearchParams()
+  const expandMessage = searchParams.get('expandMessage') === message.messageId
+  const color = message.from === threadInfo?.myNickname ? myColor : theirColor
+
+  return (
+    <Card
+      key={message.messageId}
+      title={
+        <>
+          <Avatar
+            icon={<UserOutlined />}
+            style={{ backgroundColor: color }}
+            size="small" />{' '}
+          {expandMessage ? message.fromThumbprint : message.from}
+        </>
+      }
+      extra={
+        <>
+          <label>
+            <Switch
+              checked={expandMessage}
+              onChange={(v) => setSearachParams((search) => {
+                if (v) {
+                  search.set('expandMessage', message.messageId)
+                } else {
+                  search.delete('expandMessage')
+                }
+                return search
+              })}
+            />{' '}
+            Show Details
+          </label>
+        </>
+      }
+      size="small">
+      {new Date(message.iat * 1000).toLocaleString()}:{' '}
+      {!expandMessage && message.message}
+      {expandMessage && (
+        <Typography.Paragraph
+          code
+          copyable={{
+            format: 'text/plain',
+            onCopy: () => {
+              window.cypressCopyText = message.original
+            }
+          }}
+        >
+          {message.original}
+        </Typography.Paragraph>
+      )}
+
+    </Card>
+  )
+}

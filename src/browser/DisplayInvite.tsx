@@ -122,9 +122,7 @@ export function CopyInvite({ signedInvite }: { signedInvite: SignedInvitation })
         window.cypressCopyText = signedInvite;
       }
     }}
-    ellipsis={{
-      expandable: true, rows: 3,
-    }} style={{ maxWidth: '20rem' }}>
+  >
     {signedInvite}
   </Typography.Paragraph>;
 }
