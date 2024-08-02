@@ -40,10 +40,11 @@ export function useSocketClient(url: string): Client | null {
 
     new Promise((resolve) => {
       openRequests.set("init", resolve);
-    }).then(() => {
+    }).then((isLoggedIn) => {
       const newClient = new Proxy<Client>(
         {
           isLocalClient: false,
+          isLoggedIn,
         } as Client,
         {
           get(target, prop, receiver) {

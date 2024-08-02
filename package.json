@@ -39,7 +39,6 @@
     "build": "parcel build --public-url /WhisperGrid",
     "predeploy": "npm run build",
     "deploy": "gh-pages -d dist",
-    "prepublish": "npm run build",
     "prepare": "husky"
   },
   "author": "",

@@ -81,6 +81,7 @@ export type DecryptedMessageType = {
  */
 export class Client {
   public isLocalClient = true; // The proxy will override this
+  public isLoggedIn = true; // The proxy will override this
   private clientNickname: string = Math.random().toString(36).slice(2);
   async setClientNickname(nickname: string) {
     this.clientNickname = nickname;

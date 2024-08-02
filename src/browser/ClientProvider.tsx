@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import React from "react";
 import { Client, Thumbprint, BackupPayload } from "../client";
 import { LocalGridStorage } from ".";
@@ -13,39 +14,18 @@ export const clientAtom = atom(
   }
 )
 
-export const genreateClientAtom = atom(
-  (get) => get(clientAtom),
-  async (get, set, password: string) => {
-    const storage = new LocalGridStorage();
-    const client = await Client.generateClient(storage, password)
-    set(clientAtom, client)
-  }
-)
-
-export const loadClientAtom = atom(
-  (get) => get(clientAtom),
-  async (get, set, { thumbprint, password }: { thumbprint: string, password: string }) => {
-    const storage = new LocalGridStorage();
-    const client = await Client.loadClient(storage, thumbprint as Thumbprint<'ECDSA'>, password)
-    set(clientAtom, client)
-  }
-)
-
-export const loadFromBackupAtom = atom(
-  (get) => get(clientAtom),
-  async (get, set, { backup, password }: { backup: BackupPayload, password: string }) => {
-    const storage = new LocalGridStorage();
-    const client = await Client.loadFromBackup(storage, backup, password)
-    set(clientAtom, client)
-  }
-)
-
-
 export function ClientProvider(props: React.PropsWithChildren) {
   const [client, setClient] = useAtom(clientAtom)
   const [clientUpdateKey, setClientUpdateKey] = React.useState(0);
   const navigate = useNavigate()
-  const socketClient = useSocketClient(`ws://${location.host}/client-socket`)
+
+  const socketUrl = React.useMemo(() => {
+    const url = new URL('/client-socket', window.location as any)
+    url.protocol = 'wss:'
+    return String(url)
+  }, [])
+
+  const socketClient = useSocketClient(socketUrl)
   React.useEffect(() => {
     if (socketClient) {
       setClient(socketClient)

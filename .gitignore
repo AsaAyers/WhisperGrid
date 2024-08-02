@@ -7,3 +7,4 @@ cypress/downloads/
 cypress/videos/
 *.jws.txt
 .parcel-cache
+local.env

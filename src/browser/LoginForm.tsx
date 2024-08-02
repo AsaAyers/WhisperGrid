@@ -43,7 +43,7 @@ export function LoginForm() {
     readBackup()
   }, [backup])
 
-  const { generateClient, loadClient, loadFromBackup } = useClientSetup()
+  const { generateClient, loadClient, loadFromBackup, client } = useClientSetup()
 
   const onFinish: FormProps<FieldType>['onFinish'] = async (values) => {
     if (values.mode === 'create') {
@@ -120,9 +120,14 @@ encrypted messaging. This demo only stores data in your own browser (localStorag
 
           <Form.Item<FieldType> name="mode" label="Radio">
             <Radio.Group>
-              <Radio value="create">Create Identity</Radio>
-              <Radio value="open">Open locally stored identity</Radio>
-              <Radio value="backup">Open Backup</Radio>
+              <Radio value="create" disabled={client != null}>Create Identity</Radio>
+              <Radio value="open">
+                {client == null
+                  ? "Open locally stored identity"
+                  : "Login"
+                }
+              </Radio>
+              <Radio value="backup" disabled={client != null}>Open Backup</Radio>
             </Radio.Group>
           </Form.Item>
 

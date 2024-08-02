@@ -19,12 +19,12 @@ export function WhisperGridDemo() {
     signedInvite: SignedInvitation
     label: string,
   }>>([])
-
+  const isLoggedIn = client?.isLoggedIn
 
 
   React.useEffect(() => {
     async function run() {
-      if (client) {
+      if (isLoggedIn && client) {
         const invites = await client.getInvitations()
         const promises = invites.map(async (signedInvite) => {
           const invitation = await parseJWS(signedInvite)
@@ -44,7 +44,7 @@ export function WhisperGridDemo() {
     run()
   }, [client])
 
-  const threads = useResolved(React.useMemo(() => client?.getThreads() ?? [], [client]))
+  const threads = useResolved(React.useMemo(() => isLoggedIn ? client.getThreads() : [], [client]))
 
   const items: ItemType<MenuItemType>[] = React.useMemo((): ItemType<MenuItemType>[] => {
     const options: ItemType<MenuItemType>[] = []
@@ -99,8 +99,8 @@ export function WhisperGridDemo() {
       style={{
         height: '100dvh',
       }}
-      hasSider={client != null}>
-      {client && (
+      hasSider={isLoggedIn}>
+      {isLoggedIn && (
         <Layout.Sider breakpoint="xs" collapsible style={{ height: '100dvh' }} >
           <Flex>
             <Typography.Link href={home} style={{ color: 'white', }}>
@@ -125,10 +125,10 @@ export function WhisperGridDemo() {
         padding: '1em',
         overflow: 'auto',
       }}>
-        {!client && (
+        {!isLoggedIn && (
           <LoginForm />
         )}
-        {client && (
+        {client && isLoggedIn && (
           <Outlet />
         )}
       </Layout.Content>

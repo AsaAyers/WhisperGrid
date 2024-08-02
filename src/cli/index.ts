@@ -8,12 +8,13 @@ import { SignedBackup } from "../client/types";
 import crypto from "crypto";
 import debounce from "lodash.debounce";
 import { mainClientMenu } from "./mainClientMenu";
+import { runWebserver } from "./runWebserver";
 
 global.window ??= {} as any;
 // @ts-expect-error The main target of the project is browsers, so it relies on window.crypto
 window.crypto = crypto;
 
-async function main() {
+async function mainMenu() {
   console.clear();
   const files = await fs.readdir(".");
   const jwsTxtFiles = files.filter((file) => file.endsWith(".jws.txt"));
@@ -104,4 +105,8 @@ async function makeNewIdentity() {
   }
 }
 
-main();
+if (process.env.PORT && Number(process.env.PORT)) {
+  runWebserver(null);
+} else {
+  mainMenu();
+}
