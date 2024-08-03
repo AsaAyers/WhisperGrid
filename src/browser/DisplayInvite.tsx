@@ -8,6 +8,122 @@ import { useHref, useLocation, useNavigate, useParams } from "react-router-dom";
 import { EncryptedTextInput } from "./EncryptedTextInput";
 import { NotificationInstance } from "antd/es/notification/interface";
 import { useResolved } from "./useResolved";
+import { atom, useAtom } from "jotai";
+
+const hashMessage = (signedInvite: SignedInvitation) => {
+  return window.crypto.subtle.digest(
+    "SHA-256",
+    Buffer.from(signedInvite, "utf-8")
+  ).then((hash) => {
+    return Buffer.from(hash).toString('hex')
+  });
+}
+
+type DisplayInviteInfo = {
+  inviteHash: string,
+  signedInvitation?: SignedInvitation,
+  expires?: number,
+  unsubscribe: () => void,
+  send: (message: string) => Promise<void>
+}
+
+export const inviteHashAtom = (
+  inviteAtom = atom(null as DisplayInviteInfo | null)
+) => atom(
+  (get) => get(inviteAtom),
+  (get, set, inviteHash: string | null) => {
+    get(inviteAtom)?.unsubscribe()
+    if (inviteHash) {
+      const socket = new WebSocket(`wss://ntfy.sh/${inviteHash}/ws?since=0&sched=1`);
+      async function onMessage(event: { data: string }) {
+        const data = JSON.parse(event.data)
+        const message = data.message
+        if (message) {
+          const expires = data.expires
+          const hex = await hashMessage(message)
+          if (hex === inviteHash && await verifyJWS(message)) {
+            set(inviteAtom, (v) => (v ? {
+              ...v,
+              signedInvitation: message,
+              expires: Math.max(v.expires ?? 0, expires ?? 0)
+            } : v))
+          }
+        }
+      }
+      socket.addEventListener('message', onMessage);
+      const unsubscribe = () => {
+        socket.removeEventListener('message', onMessage);
+        socket.close();
+      }
+      const send = async (message: string) => {
+        const hex = await hashMessage(message as SignedInvitation)
+        invariant(hex === inviteHash, "Hash mismatch")
+        await fetch(`https://ntfy.sh/${inviteHash}`, {
+          method: 'POST',
+          body: message,
+          headers: { At: '3 days' }
+        })
+      }
+
+      const value = { unsubscribe, send, inviteHash }
+      set(inviteAtom, value)
+    }
+  }
+)
+
+
+function SharableLink({ signedInvite }: { signedInvite: SignedInvitation }) {
+  const inviteAtom = React.useMemo(() => inviteHashAtom(), [])
+  const [ntfyInvite, setInviteHash] = useAtom(inviteAtom)
+  const inviteHash = ntfyInvite?.inviteHash
+  const href = useHref({
+    pathname: `/reply`,
+    hash: inviteHash ?? ''
+  }, {
+    relative: 'route'
+  })
+
+  const url = React.useMemo(() => {
+    return String(
+      new URL(href, String(location))
+    )
+  }, [href, location])
+
+  React.useEffect(() => {
+    hashMessage(signedInvite).then((hex) => {
+      setInviteHash(hex)
+    });
+  }, [signedInvite])
+
+  if (!ntfyInvite) {
+    return null
+  }
+  if (!ntfyInvite?.signedInvitation) {
+    return (
+      <Button onClick={() => ntfyInvite.send(signedInvite)}>
+        Create Link
+      </Button>
+    )
+
+  }
+  const expires = (ntfyInvite?.expires ?? 0) * 1000
+  const hours = Math.round((expires - Date.now()) / 1000 / 60 / 60)
+
+  return <Flex vertical>
+    <Typography.Paragraph copyable>{url}</Typography.Paragraph>
+    <div>
+      Expires: {new Date(expires).toLocaleString()}
+    </div>
+    <div>
+      (About {hours} hours)
+    </div>
+    {hours < 48 && (
+      <Button>
+        Extend invite to 84 hours
+      </Button>
+    )}
+  </Flex>
+}
 
 type Props = {
   invitation: Invitation;
@@ -48,7 +164,6 @@ export function DisplayInvite({
   React.useEffect(() => {
     getJWKthumbprint(invitation.payload.epk).then(setThumbprint)
   })
-  const replyHref = useHref('/reply')
 
   return (
     <Space direction="vertical" size={16}>
@@ -74,22 +189,10 @@ export function DisplayInvite({
                     <CopyInvite signedInvite={signedInvite} />
                   </Boundary>
               },
+              { label: 'Sharable Link', children: <SharableLink signedInvite={signedInvite} />, key: 'link' },
               { label: 'Public Key', children: thumbprint, key: '' },
               { label: 'Set My Nickname', children: invitation.payload.nickname, key: 'nickname' },
               { label: 'Note', children: invitation.payload.note, key: 'note' },
-              {
-                label: "Grid protocol link", children: (
-                  <Flex vertical>
-                    <Typography.Link href={`web+grid:${replyHref}#${signedInvite}`}>
-                      {`web+grid:${replyHref}#${signedInvite.substring(0, 10)}...`}
-                    </Typography.Link>
-                    <Typography.Paragraph>
-                      A reply can be added to the hash portion of the URL to get
-                      decoded automatically by its recipient.
-                    </Typography.Paragraph>
-                  </Flex>
-                ), key: 'web+grid'
-              }
             ]} />
           <DecryptReply />
         </Flex>

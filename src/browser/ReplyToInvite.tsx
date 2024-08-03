@@ -6,8 +6,9 @@ import { clientAtom, useClient } from "./ClientProvider";
 import { SendOutlined, UserOutlined } from "@ant-design/icons";
 import { EncryptedTextInput } from "./EncryptedTextInput";
 import { atom, useAtom } from "jotai";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { RelaySetupCascader } from "./ntfy-relay";
+import { inviteHashAtom } from "./DisplayInvite";
 
 
 const jwsPattern = /^[a-zA-Z0-9_-]+\.[a-zA-Z0-9_-]+\.[a-zA-Z0-9_-]+$/
@@ -94,7 +95,25 @@ export function ReplyToInvite(): React.ReactNode {
   const { thumbprint, jws: invitation, invite: invitationString } = inviteValue ?? {}
   const [myNickname, setNickname] = useAtom(nicknameAtom)
   const navigate = useNavigate()
+  const location = useLocation()
   const app = App.useApp()
+
+  const hash = location.hash
+  const ntfyAtom = React.useMemo(() => {
+    return inviteHashAtom()
+  }, [])
+  const [ntfyInvite, setInviteHash] = useAtom(ntfyAtom)
+
+  React.useEffect(() => {
+    if (hash.length === 65) {
+      setInviteHash(hash.substring(1))
+    }
+  }, [hash])
+  React.useEffect(() => {
+    if (ntfyInvite?.signedInvitation) {
+      form.setFieldValue('encrypted_message', ntfyInvite.signedInvitation)
+    }
+  })
 
   const onFinish: FormProps<FieldType>['onFinish'] = async (values) => {
     invariant(invitationString, 'missing invitation')
