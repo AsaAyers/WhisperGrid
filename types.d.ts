@@ -237,6 +237,11 @@ export type DecryptedMessageType = {
  */
 export class Client {
     isLocalClient: boolean;
+    /**
+     * The proxy uses this to distinguish between a complete Client object and a
+     * RemoteSetup object.
+     */
+    isLoggedIn: true;
     setClientNickname(nickname: string): Promise<void>;
     constructor(storage: GridStorage, thumbprint: Thumbprint<"ECDSA">, identityKeyPair: ECDSACryptoKeyPair, storageKeyPair: ECDHCryptoKeyPair);
     getThumbprint(): Promise<Thumbprint<"ECDSA">>;
