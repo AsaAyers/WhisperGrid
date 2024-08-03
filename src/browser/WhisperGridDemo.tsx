@@ -19,8 +19,7 @@ export function WhisperGridDemo() {
     signedInvite: SignedInvitation
     label: string,
   }>>([])
-  const isLoggedIn = client?.isLoggedIn
-
+  const isLoggedIn = client != null
 
   React.useEffect(() => {
     async function run() {
@@ -44,7 +43,7 @@ export function WhisperGridDemo() {
     run()
   }, [client])
 
-  const threads = useResolved(React.useMemo(() => isLoggedIn ? client.getThreads() : [], [client]))
+  const threads = useResolved(React.useMemo(() => client ? client.getThreads() : [], [client]))
 
   const items: ItemType<MenuItemType>[] = React.useMemo((): ItemType<MenuItemType>[] => {
     const options: ItemType<MenuItemType>[] = []

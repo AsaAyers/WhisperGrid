@@ -2,9 +2,14 @@
 import { Client } from "../client";
 import React from "react";
 
-export function useSocketClient(url: string): Client | null {
+export type RemoteSetup = {
+  isLoggedIn: false;
+  login: (username: string, password: string) => Promise<boolean>;
+};
+export function useSocketClient(url: string): RemoteSetup | Client | null {
   const ws = React.useRef<WebSocket | null>(null);
-  const [client, setClient] = React.useState<Client | null>(null);
+  const [client, setClient] = React.useState<Client | RemoteSetup | null>(null);
+  const [, forceUpdate] = React.useState(0);
 
   React.useEffect(() => {
     ws.current = new WebSocket(url);
@@ -34,6 +39,8 @@ export function useSocketClient(url: string): Client | null {
           }
           resolve(data.result);
           openRequests.delete(data.requestId);
+        } else if (data.requestId !== "init") {
+          throw new Error("Missing requestId " + data.requestId);
         }
       }
     };
@@ -41,7 +48,7 @@ export function useSocketClient(url: string): Client | null {
     new Promise((resolve) => {
       openRequests.set("init", resolve);
     }).then((isLoggedIn) => {
-      const newClient = new Proxy<Client>(
+      const newClient = new Proxy<Client | RemoteSetup>(
         {
           isLocalClient: false,
           isLoggedIn,
@@ -49,8 +56,9 @@ export function useSocketClient(url: string): Client | null {
         {
           get(target, prop, receiver) {
             const fnValue = Client.prototype[prop as keyof Client];
-            console.log("get", prop, Client.prototype, typeof fnValue);
-            if (typeof fnValue === "function") {
+            const isLogin =
+              prop === "login" && !Reflect.get(target, "isLoggedIn", receiver);
+            if (typeof fnValue === "function" || isLogin) {
               return (...args: any[]) =>
                 new Promise((resolve) => {
                   const requestId = Math.random().toString(36).substring(7);
@@ -60,6 +68,13 @@ export function useSocketClient(url: string): Client | null {
                       JSON.stringify({ requestId, method: prop, args })
                     );
                   }
+                }).then((r) => {
+                  if (!isLoggedIn && prop === "login" && r) {
+                    Reflect.set(target, "isLoggedIn", true);
+                    setClient(newClient);
+                    forceUpdate((n) => n + 1);
+                  }
+                  return r;
                 });
             }
 

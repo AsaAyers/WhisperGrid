@@ -4,8 +4,10 @@ import fstatic from "@fastify/static";
 import fsocket from "@fastify/websocket";
 import path from "path";
 import fs from "fs/promises";
-import { Client } from "../client";
+import { Client, GridStorage } from "../client";
 import { invariant } from "../browser/invariant";
+import debounce from "lodash.debounce";
+import { SignedBackup } from "client/types";
 
 const host = "localhost";
 let port = 3000 + Math.floor(Math.random() * 1000);
@@ -26,25 +28,36 @@ export async function runWebserver(c: Client | null) {
         const data = JSON.parse(message.toString());
         if (data.requestId && data.method && Array.isArray(data.args)) {
           let method;
-          let ctx: Client | typeof Client;
+          let ctx: Client | null;
           if (!client) {
-            const methodName:
-              | "generateClient"
-              | "loadFromBackup"
-              | "loadClient" = data.method;
-            invariant(
-              ["generateClient", "loadFromBackup", "loadClient"].includes(
-                methodName as keyof typeof Client
-              ),
-              `Invalid method: ${methodName}`
-            );
+            invariant(data.method === "login", "Invalid method");
 
-            const fn = Client[methodName];
-            ctx = Client;
-            method = async (...args: Parameters<typeof fn>) => {
-              // @ts-expect-error This complains about the number of parameters for some reason
-              client = await fn.apply(ctx, args);
-              return client;
+            ctx = null;
+            method = async (username: string, password: string) => {
+              const filename = path.join(process.cwd(), username + ".jws.txt");
+              try {
+                await fs.access(filename);
+                const backup = (
+                  await fs.readFile(filename, "utf-8")
+                ).trim() as SignedBackup;
+
+                const c = await Client.loadFromBackup(
+                  new GridStorage(),
+                  backup,
+                  password
+                );
+                c.subscribe(
+                  debounce(async () => {
+                    const backup = await c.makeBackup(password);
+                    await fs.writeFile(filename, backup);
+                  }, 500)
+                );
+                client = c;
+                return c;
+              } catch (e) {
+                console.error("Error loading backup", e);
+                throw new Error("Invalid username or password");
+              }
             };
           } else {
             method = client[data.method as keyof Client];

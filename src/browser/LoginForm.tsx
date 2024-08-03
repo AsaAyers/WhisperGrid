@@ -43,7 +43,7 @@ export function LoginForm() {
     readBackup()
   }, [backup])
 
-  const { generateClient, loadClient, loadFromBackup, client } = useClientSetup()
+  const { generateClient, loadClient, loadFromBackup, socketClient } = useClientSetup()
 
   const onFinish: FormProps<FieldType>['onFinish'] = async (values) => {
     if (values.mode === 'create') {
@@ -67,10 +67,20 @@ export function LoginForm() {
         thumbprint,
       }
     }
+    if (socketClient) {
+      return {
+        mode: 'open',
+      }
+    }
     return {
       mode: 'create',
     }
-  }, [])
+  }, [socketClient])
+  React.useEffect(() => {
+    if (socketClient) {
+      form.setFieldValue('mode', 'open')
+    }
+  }, [socketClient])
 
   React.useEffect(() => {
     const password = localStorage.getItem("unprotected-password-for-testing")
@@ -95,21 +105,23 @@ export function LoginForm() {
       }}
       gap="small">
 
-      <Alert
-        type="info"
-        message={`Whisper grid is an experimental system for decentralized, end-to-end
+      {!socketClient && (
+        <>
+          <Alert
+            type="info"
+            message={`Whisper grid is an experimental system for decentralized, end-to-end
 encrypted messaging. This demo only stores data in your own browser (localStorage).
 `.trim()}
-      />
-      <p>
-      </p>
-      <p>
-        You can create a new identity, or unlock an existing one from a previous session.
-      </p>
-
+          />
+          <p>
+            You can create a new identity, or unlock an existing one from a previous session.
+          </p>
+        </>
+      )}
       <Form
         form={form}
         name="login"
+        key={initialValues.mode}
         initialValues={initialValues}
         disabled={unsupportedBrowser}
         onFinish={onFinish}
@@ -120,14 +132,14 @@ encrypted messaging. This demo only stores data in your own browser (localStorag
 
           <Form.Item<FieldType> name="mode" label="Radio">
             <Radio.Group>
-              <Radio value="create" disabled={client != null}>Create Identity</Radio>
+              <Radio value="create" disabled={socketClient != null}>Create Identity</Radio>
               <Radio value="open">
-                {client == null
+                {socketClient == null
                   ? "Open locally stored identity"
                   : "Login"
                 }
               </Radio>
-              <Radio value="backup" disabled={client != null}>Open Backup</Radio>
+              <Radio value="backup" disabled={socketClient != null}>Open Backup</Radio>
             </Radio.Group>
           </Form.Item>
 
