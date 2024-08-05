@@ -249,6 +249,13 @@ function MessageCard({ message, threadInfo }: {
           {message.original}
         </Typography.Paragraph>
       )}
+      {expandMessage && message.original && (
+        <Typography.Text code style={{ whiteSpace: 'pre' }}>
+          {JSON.stringify(
+            ({ ...message, original: undefined }), null, 2
+          )}
+        </Typography.Text>
+      )}
 
     </Card>
   )

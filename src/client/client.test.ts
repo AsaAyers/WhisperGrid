@@ -351,6 +351,31 @@ Note: (none)",
 `);
   });
 
+  test("Accepting the same reply-to-invite should not produce multiple threads", async () => {
+    const alice = await Client.generateClient(
+      new GridStorage(),
+      "AlicePassword"
+    );
+    alice.setClientNickname("Alice");
+    const bob = await Client.generateClient(new GridStorage(), "BobPassword");
+    bob.setClientNickname("Bob");
+    const invite = await alice.createInvitation({ nickname: "Alice" });
+
+    const reply = await bob.replyToInvitation(
+      invite,
+      `Hello Alice. First message`,
+      "Bob"
+    );
+
+    expect(await alice.getThreads()).toHaveLength(0);
+    await alice.appendThread(reply.reply).catch(() => {});
+    expect(await alice.getThreads()).toHaveLength(1);
+    await alice.appendThread(reply.reply).catch(() => {});
+    expect(await alice.getThreads()).toHaveLength(1);
+    await alice.appendThread(reply.reply).catch(() => {});
+    expect(await alice.getThreads()).toHaveLength(1);
+  });
+
   describe("synAckHandler", () => {
     test("syn Sequential messages", async () => {
       const state: SynAckState = {

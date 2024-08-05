@@ -379,6 +379,10 @@ export class Client {
       )
     ) as ThreadID;
 
+    if (this.storage.queryItem(`thread-info:${this.thumbprint}:${threadId}`)) {
+      return threadId;
+    }
+
     this.storage.setItem(`thread-info:${this.thumbprint}:${threadId}`, {
       missing: [],
       windowSize: 5,
@@ -507,6 +511,7 @@ export class Client {
         messageId: nextId,
         message,
         minAck: threadInfo.minAck,
+        relay: options?.setMyRelay,
       },
     };
     // threadInfo.syn = nextId;
@@ -534,9 +539,6 @@ export class Client {
         },
       };
       replyMessage = ack;
-    }
-    if (options?.setMyRelay) {
-      replyMessage.payload.relay = options.setMyRelay;
     }
 
     const { iv, encrypted } = await encryptData(secret, replyMessage.payload);

@@ -2,7 +2,7 @@
 import React from "react";
 import { Button, Card, Descriptions, Flex, Form, Modal, Space, Typography, notification } from "antd";
 import { Invitation, SignedInvitation, SignedReplyToInvite, SignedTransport, UnpackTaggedString } from "../client";
-import { useClient } from "./ClientProvider";
+import { clientAtom, useClient } from "./ClientProvider";
 import { Thumbprint, getJWKthumbprint, invariant, parseJWS, parseJWSSync, verifyJWS } from "../client/utils";
 import { useHref, useLocation, useNavigate, useParams } from "react-router-dom";
 import { EncryptedTextInput } from "./EncryptedTextInput";
@@ -10,13 +10,11 @@ import { NotificationInstance } from "antd/es/notification/interface";
 import { useResolved } from "./useResolved";
 import { atom, useAtom } from "jotai";
 
-const hashMessage = (signedInvite: SignedInvitation) => {
-  return window.crypto.subtle.digest(
-    "SHA-256",
-    Buffer.from(signedInvite, "utf-8")
-  ).then((hash) => {
-    return Buffer.from(hash).toString('hex')
-  });
+const getInviteId = async (signedInvite: SignedInvitation) => {
+  invariant(await verifyJWS(signedInvite), 'Invalid JWS')
+  const jws = parseJWSSync(signedInvite)
+
+  return getJWKthumbprint(jws.payload.epk)
 }
 
 type DisplayInviteInfo = {
@@ -24,29 +22,48 @@ type DisplayInviteInfo = {
   signedInvitation?: SignedInvitation,
   expires?: number,
   unsubscribe: () => void,
-  send: (message: string) => Promise<void>
+  send: (message: SignedInvitation | SignedReplyToInvite) => Promise<void>
 }
 
 export const inviteHashAtom = (
   inviteAtom = atom(null as DisplayInviteInfo | null)
 ) => atom(
   (get) => get(inviteAtom),
-  (get, set, inviteHash: string | null) => {
+  (get, set, thumbprint: Thumbprint<'ECDH'> | null,
+    ntfy = 'ntfy.sh/'
+  ) => {
     get(inviteAtom)?.unsubscribe()
-    if (inviteHash) {
-      const socket = new WebSocket(`wss://ntfy.sh/${inviteHash}/ws?since=0&sched=1`);
+    if (thumbprint) {
+      const socket = new WebSocket(`wss://${ntfy}${thumbprint}/ws?since=0&sched=1`);
       async function onMessage(event: { data: string }) {
         const data = JSON.parse(event.data)
-        const message = data.message
-        if (message) {
+        if (data.message && await verifyJWS(data.message)) {
           const expires = data.expires
-          const hex = await hashMessage(message)
-          if (hex === inviteHash && await verifyJWS(message)) {
+          const jws = parseJWSSync(data.message as SignedTransport)
+
+          if (jws.header.sub === 'grid-invitation') {
+            const message = data.message as SignedInvitation
+            const id = await getInviteId(message)
+            invariant(id === thumbprint,
+              'Invalid JWS - hash mismatch'
+            )
             set(inviteAtom, (v) => (v ? {
               ...v,
               signedInvitation: message,
               expires: Math.max(v.expires ?? 0, expires ?? 0)
             } : v))
+          } else {
+            const message = data.message as SignedReplyToInvite
+            const jws = await parseJWS(message)
+            invariant(jws.header.sub === 'reply-to-invite', 'Invalid JWS - Expected a reply to invite')
+            invariant(jws.header.invite === thumbprint, 'Invalid JWS - hash mismatch')
+
+            const client = get(clientAtom)
+            invariant(client, 'Client is required')
+            const invite = await client.getInvitation(thumbprint).catch(() => null)
+            if (invite) {
+              await client.appendThread(message).catch(() => { })
+            }
           }
         }
       }
@@ -55,17 +72,41 @@ export const inviteHashAtom = (
         socket.removeEventListener('message', onMessage);
         socket.close();
       }
-      const send = async (message: string) => {
-        const hex = await hashMessage(message as SignedInvitation)
-        invariant(hex === inviteHash, "Hash mismatch")
-        await fetch(`https://ntfy.sh/${inviteHash}`, {
+      const send = async (message: SignedInvitation | SignedReplyToInvite) => {
+        invariant(await verifyJWS(message),
+          'Invalid JWS - only self-signed allowed')
+        const jws = await parseJWS(message)
+
+        invariant(jws.header.sub === 'reply-to-invite' || jws.header.sub === 'grid-invitation',
+          'Invalid JWS - Expected an invite or a reply to invite'
+        )
+        let headers = {}
+        if (jws.header.sub === 'grid-invitation') {
+          const hex = await getInviteId(message as SignedInvitation)
+          invariant(hex === thumbprint, "Invalid JWS - hash mismatch")
+
+          // Messages expire after 12 hours, but can be scheduled to be
+          // delivered up to 3 days in the future.
+          headers = { At: '3 days' }
+        }
+
+        const result = await fetch(`https://${ntfy}${thumbprint}`, {
           method: 'POST',
           body: message,
-          headers: { At: '3 days' }
+          headers,
         })
+
+        if (jws.header.sub === 'grid-invitation') {
+          const { expires } = await result.json()
+          set(inviteAtom, (v) => (v ? {
+            ...v,
+            signedInvitation: message as SignedInvitation,
+            expires,
+          } : v))
+        }
       }
 
-      const value = { unsubscribe, send, inviteHash }
+      const value = { unsubscribe, send, inviteHash: thumbprint }
       set(inviteAtom, value)
     }
   }
@@ -78,7 +119,7 @@ function SharableLink({ signedInvite }: { signedInvite: SignedInvitation }) {
   const inviteHash = ntfyInvite?.inviteHash
   const href = useHref({
     pathname: `/reply`,
-    hash: inviteHash ?? ''
+    search: `?invite=${inviteHash}`
   }, {
     relative: 'route'
   })
@@ -90,7 +131,7 @@ function SharableLink({ signedInvite }: { signedInvite: SignedInvitation }) {
   }, [href, location])
 
   React.useEffect(() => {
-    hashMessage(signedInvite).then((hex) => {
+    getInviteId(signedInvite).then((hex) => {
       setInviteHash(hex)
     });
   }, [signedInvite])

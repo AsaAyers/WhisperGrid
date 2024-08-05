@@ -38,7 +38,7 @@ export function ClientProvider(props: React.PropsWithChildren) {
         setClientUpdateKey((k) => k + 1 % 1000000);
       });
     }
-  }, [])
+  }, [client])
 
   const logout = React.useCallback(() => {
     localStorage.removeItem("unprotected-password-for-testing")

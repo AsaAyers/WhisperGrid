@@ -5,7 +5,7 @@ import { SettingOutlined } from "@ant-design/icons";
 import { clientAtom } from "./ClientProvider";
 import { atom, useAtom } from "jotai";
 import { matchJWS } from "./ThreadView";
-import { ArrayBuffertohex } from "jsrsasign";
+import { bufferToB64u } from "client/utils";
 
 
 const ntfyTopic = atom(
@@ -42,7 +42,7 @@ const ntfyTopic = atom(
 )
 
 type Props = {
-  relayUrl: string | null
+  relayUrl?: string
   disabled?: boolean
 }
 export function RelaySetupCascader({
@@ -84,7 +84,7 @@ export function RelaySetupCascader({
     const topicArray = window.crypto.getRandomValues(new Uint8Array(16));
 
     form.setFieldsValue({
-      relayUrl: `https://ntfy.sh/${ArrayBuffertohex(topicArray.buffer)}`
+      relayUrl: `https://ntfy.sh/${bufferToB64u(topicArray.buffer)}`
     })
   }, [])
 
@@ -144,11 +144,16 @@ export function RelaySetupCascader({
         <Form.Item
           label="Relay URL"
           name="relayUrl"
-          rules={[{ required: true }]}
         >
           <Input readOnly />
         </Form.Item>
       </Modal>
+      <Form.Item
+        style={{ display: 'none' }}
+        name="relayUrl"
+      >
+        <Input type="hidden" name="relayUrl" />
+      </Form.Item>
 
     </>
   )

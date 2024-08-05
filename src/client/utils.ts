@@ -31,9 +31,9 @@ export const b64uToBuffer = (str: string) =>
 export const bufferToB64u = (src: Uint8Array | ArrayBuffer) =>
   Buffer.from(src)
     .toString("base64")
-    .replace("+", "-")
-    .replace("/", "_")
-    .replace("=", "");
+    .replaceAll("+", "-")
+    .replaceAll("/", "_")
+    .replaceAll("=", "");
 export const ecdhAlg = {
   name: "ECDH",
   namedCurve: "P-384",
@@ -209,9 +209,8 @@ export async function getJWKthumbprint<T = AlgorithmType>(
     "SHA-256",
     hextoArrayBuffer(hex)
   );
-  const alg = jwk.alg ? `${jwk.alg}/` : "";
 
-  return `id-${alg}${hextob64u(ArrayBuffertohex(sha256))}` as any;
+  return `id-${hextob64u(ArrayBuffertohex(sha256))}` as any;
 }
 
 export function exportKey<T = AlgorithmType, V = Visibility>(

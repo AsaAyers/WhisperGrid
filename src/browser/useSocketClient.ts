@@ -12,6 +12,10 @@ export function useSocketClient(url: string): RemoteSetup | Client | null {
   const [, forceUpdate] = React.useState(0);
 
   React.useEffect(() => {
+    if (ws.current?.url === url) {
+      return;
+    }
+
     ws.current = new WebSocket(url);
     ws.current.onclose = () => {
       console.log("WebSocket connection closed");

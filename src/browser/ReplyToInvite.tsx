@@ -1,7 +1,7 @@
 import React from "react";
 import { App, Avatar, Button, Card, Descriptions, Flex, Form, FormProps, Input, Space, Typography } from "antd";
-import { getJWKthumbprint, invariant, parseJWSSync, verifyJWS } from "../client/utils";
-import { SignedInvitation, SignedTransport, UnpackTaggedString } from "../client";
+import { bufferToB64u, getJWKthumbprint, invariant, parseJWSSync, Thumbprint, verifyJWS } from "../client/utils";
+import { SignedInvitation, SignedReplyToInvite, SignedTransport, UnpackTaggedString } from "../client";
 import { clientAtom, useClient } from "./ClientProvider";
 import { SendOutlined, UserOutlined } from "@ant-design/icons";
 import { EncryptedTextInput } from "./EncryptedTextInput";
@@ -85,6 +85,7 @@ export function ReplyToInvite(): React.ReactNode {
     nickname?: string;
     message?: string;
     relayUrl?: string;
+    encrypted_message?: string
   };
   const [inviteValue, setInvitationString] = useAtom(inviteAtom)
   React.useEffect(() => {
@@ -98,22 +99,29 @@ export function ReplyToInvite(): React.ReactNode {
   const location = useLocation()
   const app = App.useApp()
 
-  const hash = location.hash
+  const inviteQuery = React.useMemo(() => {
+    const search = new URLSearchParams(location.search)
+    return search.get('invite') as null | Thumbprint<'ECDH'>
+  }, [])
   const ntfyAtom = React.useMemo(() => {
     return inviteHashAtom()
   }, [])
   const [ntfyInvite, setInviteHash] = useAtom(ntfyAtom)
 
   React.useEffect(() => {
-    if (hash.length === 65) {
-      setInviteHash(hash.substring(1))
+    if (inviteQuery) {
+      setInviteHash(inviteQuery)
     }
-  }, [hash])
+  }, [inviteQuery])
   React.useEffect(() => {
     if (ntfyInvite?.signedInvitation) {
-      form.setFieldValue('encrypted_message', ntfyInvite.signedInvitation)
+      const topicArray = window.crypto.getRandomValues(new Uint8Array(16));
+      form.setFieldsValue({
+        relayUrl: `https://ntfy.sh/${bufferToB64u(topicArray.buffer)}`,
+        encrypted_message: ntfyInvite.signedInvitation
+      })
     }
-  })
+  }, [ntfyInvite?.signedInvitation])
 
   const onFinish: FormProps<FieldType>['onFinish'] = async (values) => {
     invariant(invitationString, 'missing invitation')
@@ -121,7 +129,13 @@ export function ReplyToInvite(): React.ReactNode {
       setMyRelay: values.relayUrl ? values.relayUrl : undefined
     });
     const r = await client.decryptMessage(threadId, reply)
-
+    if (ntfyInvite) {
+      app.notification.info({
+        message: 'Relay',
+        description: "Sending message to relay"
+      })
+      await ntfyInvite.send(reply as unknown as SignedReplyToInvite)
+    }
     navigate({
       pathname: `/thread/${threadId}`,
       search: `?expandMessage=${r.messageId}`
@@ -202,7 +216,7 @@ export function ReplyToInvite(): React.ReactNode {
           >
             <Flex vertical={false} gap="small" >
               <span>
-                <RelaySetupCascader relayUrl={null} disabled={invitation == null} />
+                <RelaySetupCascader relayUrl={undefined} disabled={invitation == null} />
               </span>
               <Typography.Paragraph style={{ flexGrow: 1 }} >
                 All messages are encrypted locally and you can always copy the encrypted messages back and forth.
