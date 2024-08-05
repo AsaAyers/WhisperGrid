@@ -6,7 +6,7 @@ import {ArrayBuffertohex as $hxj1O$ArrayBuffertohex, utf8tob64u as $hxj1O$utf8to
 
 var $0896b07150fdbaad$require$Buffer = $hxj1O$Buffer;
 const $0896b07150fdbaad$export$9727364c1216843b = (str)=>$0896b07150fdbaad$require$Buffer.from(str.replace("-", "+").replace("_", "/"), "base64");
-const $0896b07150fdbaad$export$956a7f8e09e7a04 = (src)=>$0896b07150fdbaad$require$Buffer.from(src).toString("base64").replace("+", "-").replace("/", "_").replace("=", "");
+const $0896b07150fdbaad$export$956a7f8e09e7a04 = (src)=>$0896b07150fdbaad$require$Buffer.from(src).toString("base64").replaceAll("+", "-").replaceAll("/", "_").replaceAll("=", "");
 const $0896b07150fdbaad$export$1b0a11badccb060e = {
     name: "ECDH",
     namedCurve: "P-384"
@@ -105,8 +105,7 @@ async function $0896b07150fdbaad$export$d223eef5bee92cf8(jwk) {
     };
     const hex = (0, $hxj1O$rstrtohex)(JSON.stringify(s));
     const sha256 = await window.crypto.subtle.digest("SHA-256", (0, $hxj1O$hextoArrayBuffer)(hex));
-    const alg = jwk.alg ? `${jwk.alg}/` : "";
-    return `id-${alg}${(0, $hxj1O$hextob64u)((0, $hxj1O$ArrayBuffertohex)(sha256))}`;
+    return `id-${(0, $hxj1O$hextob64u)((0, $hxj1O$ArrayBuffertohex)(sha256))}`;
 }
 function $0896b07150fdbaad$export$96341dfa0e2e9076(key) {
     return window.crypto.subtle.exportKey("jwk", key);
@@ -573,6 +572,7 @@ class $2a29acee125cb879$export$1f2bb630327ac4b6 {
             myThumbprint
         ].sort();
         const threadId = (0, $hxj1O$ArrayBuffertohex)(await window.crypto.subtle.digest("SHA-256", $2a29acee125cb879$require$Buffer.from(thumbprints.join(":"))));
+        if (this.storage.queryItem(`thread-info:${this.thumbprint}:${threadId}`)) return threadId;
         this.storage.setItem(`thread-info:${this.thumbprint}:${threadId}`, {
             missing: [],
             windowSize: 5,
@@ -650,7 +650,8 @@ class $2a29acee125cb879$export$1f2bb630327ac4b6 {
             payload: {
                 messageId: nextId,
                 message: message,
-                minAck: threadInfo.minAck
+                minAck: threadInfo.minAck,
+                relay: options?.setMyRelay
             }
         };
         // threadInfo.syn = nextId;
@@ -672,7 +673,6 @@ class $2a29acee125cb879$export$1f2bb630327ac4b6 {
             };
             replyMessage = ack;
         }
-        if (options?.setMyRelay) replyMessage.payload.relay = options.setMyRelay;
         const { iv: iv, encrypted: encrypted } = await (0, $0896b07150fdbaad$export$cfb0e8a6f536315e)(secret, replyMessage.payload);
         replyMessage.header.iv = iv;
         const encryptedJWS = await (0, $0896b07150fdbaad$export$d71a6df60c6808b)(replyMessage.header, encrypted, this.identityKeyPair.privateKey);

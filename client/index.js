@@ -17,7 +17,7 @@ $parcel$export(module.exports, "GridStorage", () => $55c334ef701a8700$export$868
 
 var $ebfff71e11ab8b20$require$Buffer = $fcXhl$buffer.Buffer;
 const $ebfff71e11ab8b20$export$9727364c1216843b = (str)=>$ebfff71e11ab8b20$require$Buffer.from(str.replace("-", "+").replace("_", "/"), "base64");
-const $ebfff71e11ab8b20$export$956a7f8e09e7a04 = (src)=>$ebfff71e11ab8b20$require$Buffer.from(src).toString("base64").replace("+", "-").replace("/", "_").replace("=", "");
+const $ebfff71e11ab8b20$export$956a7f8e09e7a04 = (src)=>$ebfff71e11ab8b20$require$Buffer.from(src).toString("base64").replaceAll("+", "-").replaceAll("/", "_").replaceAll("=", "");
 const $ebfff71e11ab8b20$export$1b0a11badccb060e = {
     name: "ECDH",
     namedCurve: "P-384"
@@ -116,8 +116,7 @@ async function $ebfff71e11ab8b20$export$d223eef5bee92cf8(jwk) {
     };
     const hex = (0, $fcXhl$jsrsasign.rstrtohex)(JSON.stringify(s));
     const sha256 = await window.crypto.subtle.digest("SHA-256", (0, $fcXhl$jsrsasign.hextoArrayBuffer)(hex));
-    const alg = jwk.alg ? `${jwk.alg}/` : "";
-    return `id-${alg}${(0, $fcXhl$jsrsasign.hextob64u)((0, $fcXhl$jsrsasign.ArrayBuffertohex)(sha256))}`;
+    return `id-${(0, $fcXhl$jsrsasign.hextob64u)((0, $fcXhl$jsrsasign.ArrayBuffertohex)(sha256))}`;
 }
 function $ebfff71e11ab8b20$export$96341dfa0e2e9076(key) {
     return window.crypto.subtle.exportKey("jwk", key);
@@ -584,6 +583,7 @@ class $9b33b3bf5236aa92$export$1f2bb630327ac4b6 {
             myThumbprint
         ].sort();
         const threadId = (0, $fcXhl$jsrsasign.ArrayBuffertohex)(await window.crypto.subtle.digest("SHA-256", $9b33b3bf5236aa92$require$Buffer.from(thumbprints.join(":"))));
+        if (this.storage.queryItem(`thread-info:${this.thumbprint}:${threadId}`)) return threadId;
         this.storage.setItem(`thread-info:${this.thumbprint}:${threadId}`, {
             missing: [],
             windowSize: 5,
@@ -661,7 +661,8 @@ class $9b33b3bf5236aa92$export$1f2bb630327ac4b6 {
             payload: {
                 messageId: nextId,
                 message: message,
-                minAck: threadInfo.minAck
+                minAck: threadInfo.minAck,
+                relay: options?.setMyRelay
             }
         };
         // threadInfo.syn = nextId;
@@ -683,7 +684,6 @@ class $9b33b3bf5236aa92$export$1f2bb630327ac4b6 {
             };
             replyMessage = ack;
         }
-        if (options?.setMyRelay) replyMessage.payload.relay = options.setMyRelay;
         const { iv: iv, encrypted: encrypted } = await (0, $ebfff71e11ab8b20$export$cfb0e8a6f536315e)(secret, replyMessage.payload);
         replyMessage.header.iv = iv;
         const encryptedJWS = await (0, $ebfff71e11ab8b20$export$d71a6df60c6808b)(replyMessage.header, encrypted, this.identityKeyPair.privateKey);
