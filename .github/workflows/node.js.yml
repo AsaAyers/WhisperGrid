@@ -41,6 +41,14 @@ jobs:
       - run: |
           git remote set-url origin https://git:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git
           npm run deploy -- -u "github-actions-bot <support+actions@github.com>"
+      - name: Actions Ntfy
+        run: |
+          curl \
+            -u ${{secrets.NTFY_CRED}} \
+            -H "Title: whispergrid" \
+            -H "Content-Type: text/plain" \
+            -d $'nCommit: ${{ github.sha }}\nRef: ${{ github.ref }}\nStatus: ${{ job.status}}' \
+            ${{secrets.NTFY_URL}}
 
   cypress-run:
     runs-on: ubuntu-latest
