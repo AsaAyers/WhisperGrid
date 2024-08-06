@@ -117,10 +117,7 @@ function SharableLink({ signedInvite }: { signedInvite: SignedInvitation }) {
   const inviteAtom = React.useMemo(() => inviteHashAtom(), [])
   const [ntfyInvite, setInviteHash] = useAtom(inviteAtom)
   const inviteHash = ntfyInvite?.inviteHash
-  const href = useHref({
-    pathname: `/reply`,
-    search: `?invite=${inviteHash}`
-  }, {
+  const href = useHref({ pathname: `/reply/${inviteHash}` }, {
     relative: 'route'
   })
 

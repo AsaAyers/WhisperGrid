@@ -6,7 +6,7 @@ import { clientAtom, useClient } from "./ClientProvider";
 import { SendOutlined, UserOutlined } from "@ant-design/icons";
 import { EncryptedTextInput } from "./EncryptedTextInput";
 import { atom, useAtom } from "jotai";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { RelaySetupCascader } from "./ntfy-relay";
 import { inviteHashAtom } from "./DisplayInvite";
 
@@ -96,23 +96,19 @@ export function ReplyToInvite(): React.ReactNode {
   const { thumbprint, jws: invitation, invite: invitationString } = inviteValue ?? {}
   const [myNickname, setNickname] = useAtom(nicknameAtom)
   const navigate = useNavigate()
-  const location = useLocation()
   const app = App.useApp()
+  const { inviteId } = useParams<{ inviteId?: Thumbprint<'ECDH'> }>()
 
-  const inviteQuery = React.useMemo(() => {
-    const search = new URLSearchParams(location.search)
-    return search.get('invite') as null | Thumbprint<'ECDH'>
-  }, [])
   const ntfyAtom = React.useMemo(() => {
     return inviteHashAtom()
   }, [])
   const [ntfyInvite, setInviteHash] = useAtom(ntfyAtom)
 
   React.useEffect(() => {
-    if (inviteQuery) {
-      setInviteHash(inviteQuery)
+    if (inviteId) {
+      setInviteHash(inviteId)
     }
-  }, [inviteQuery])
+  }, [inviteId])
   React.useEffect(() => {
     if (ntfyInvite?.signedInvitation) {
       const topicArray = window.crypto.getRandomValues(new Uint8Array(16));

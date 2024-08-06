@@ -94,7 +94,7 @@ const router = selectedRouter([
         element: <ThreadView />
       },
       {
-        path: 'reply',
+        path: 'reply/:inviteId?',
         errorElement: <Error />,
         element: <ReplyToInvite />
       },

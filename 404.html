@@ -6,10 +6,7 @@
     <script type="text/javascript">
       var l = window.location;
       const url = new URL(l);
-      url.searchParams.set(
-        "path",
-        url.pathname.split("/").slice(2).join("/") + "?" + url.search
-      );
+      url.searchParams.set("path", url.pathname.split("/").slice(2).join("/"));
       url.pathname = "/WhisperGrid";
       l.replace(url);
     </script>
