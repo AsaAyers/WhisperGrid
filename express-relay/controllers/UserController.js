@@ -6,8 +6,8 @@
  * parameters are extracted and sent to the service, and where response is handled.
  */
 
-const Controller = require('./Controller');
-const service = require('../services/UserService');
+const Controller = require("./Controller");
+const service = require("../services/UserService");
 const getBackup = async (request, response) => {
   await Controller.handleRequest(request, response, service.getBackup);
 };
@@ -27,7 +27,6 @@ const logoutUser = async (request, response) => {
 const uploadBackup = async (request, response) => {
   await Controller.handleRequest(request, response, service.uploadBackup);
 };
-
 
 module.exports = {
   getBackup,

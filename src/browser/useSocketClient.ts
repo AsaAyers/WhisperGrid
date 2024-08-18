@@ -69,7 +69,7 @@ export function useSocketClient(url: string): RemoteSetup | Client | null {
                   openRequests.set(requestId, resolve);
                   if (ws.current) {
                     ws.current.send(
-                      JSON.stringify({ requestId, method: prop, args })
+                      JSON.stringify({ requestId, method: prop, args }),
                     );
                   }
                 }).then((r) => {
@@ -84,7 +84,7 @@ export function useSocketClient(url: string): RemoteSetup | Client | null {
 
             return Reflect.get(target, prop, receiver);
           },
-        }
+        },
       );
       setClient(newClient);
     });

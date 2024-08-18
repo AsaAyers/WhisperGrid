@@ -19,7 +19,7 @@ Cypress.Commands.add(
     cy.labeledInput("Thumbprint").clear();
     cy.contains("Thumbprint").type(thumbprint);
     cy.contains("Password").type(password + "{enter}");
-  }
+  },
 );
 Cypress.Commands.add("logout", () => {
   cy.contains("Logout").click();
@@ -128,7 +128,7 @@ Cypress.Commands.add("scre", function (this, label) {
       {
         capture: "fullPage",
         overwrite: true,
-      }
+      },
     );
   }
 });
@@ -165,7 +165,7 @@ declare global {
       login(
         thumbprint: string,
         password: string,
-        url?: string
+        url?: string,
       ): Chainable<void>;
       createIdentity(password: string): Chainable<string>;
       openBackup(thumbprint: string, password: string): Chainable<string>;
@@ -174,7 +174,7 @@ declare global {
       replyToInvite(
         invite: string,
         nickname: string,
-        note?: string
+        note?: string,
       ): Chainable<string>;
       labeledInput(label: string): Chainable<JQuery<HTMLElement>>;
       copyButtonText(label: string): Chainable<string>;

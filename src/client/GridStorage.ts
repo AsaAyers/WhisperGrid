@@ -19,22 +19,22 @@ export type GridStorageType = {
   hasItem<Type extends StoredDataTypes["type"]>(key: Key<Type>): boolean;
   removeItem: <Type extends StoredDataTypes["type"]>(key: Key<Type>) => null;
   queryItem: <Type extends StoredDataTypes["type"]>(
-    key: Key<Type>
+    key: Key<Type>,
   ) => Extract<StoredDataTypes, { type: Type }>["data"] | null;
   getItem: <Type extends StoredDataTypes["type"]>(
-    key: Key<Type>
+    key: Key<Type>,
   ) => Extract<StoredDataTypes, { type: Type }>["data"];
   setItem: <Type extends StoredDataTypes["type"]>(
     key: Key<Type>,
-    value: Extract<StoredDataTypes, { type: Type }>["data"]
+    value: Extract<StoredDataTypes, { type: Type }>["data"],
   ) => void;
   appendItem: <
     Type extends StoredDataTypes["type"],
-    V extends Extract<StoredDataTypes, { type: Type }>["data"]
+    V extends Extract<StoredDataTypes, { type: Type }>["data"],
   >(
     key: Key<Type>,
     value: V extends Array<any> ? V[number] : never,
-    options?: { unique?: boolean }
+    options?: { unique?: boolean },
   ) => void;
 };
 export type StoredIdentity = {
@@ -99,14 +99,14 @@ export class GridStorage implements GridStorageType {
       this.appendItem(
         `invitations:${backup.thumbprint}`,
         key as Thumbprint<"ECDH">,
-        { unique: true }
+        { unique: true },
       );
       this.setItem(`invitation:${key as Thumbprint<"ECDH">}`, value);
     });
     Object.entries(backup.encryptedThreadKeys).forEach(([thumbprint, key]) => {
       this.setItem(
         `encrypted-thread-key:${thumbprint as Thumbprint<"ECDH">}`,
-        key
+        key,
       );
     });
     Object.entries(backup.threads).forEach(([id, thread]) => {
@@ -114,11 +114,11 @@ export class GridStorage implements GridStorageType {
       this.appendItem(`threads:${backup.thumbprint}`, threadId);
       this.setItem(
         `thread-info:${backup.thumbprint}:${threadId}`,
-        thread.threadInfo
+        thread.threadInfo,
       );
       this.setItem(
         `keyed-messages:${backup.thumbprint}:${threadId}`,
-        thread.messages
+        thread.messages,
       );
     });
   }
@@ -126,7 +126,7 @@ export class GridStorage implements GridStorageType {
   async makeIdentityBackup(
     thumbprint: Thumbprint<"ECDSA">,
     idPrivateKey: EncryptedPrivateKey<"ECDSA">,
-    storagePrivateKey: EncryptedPrivateKey<"ECDH">
+    storagePrivateKey: EncryptedPrivateKey<"ECDH">,
   ): Promise<BackupPayload> {
     const identity = this.getItem(`identity:${thumbprint}`);
     const encryptedThreadKeys: BackupPayload["encryptedThreadKeys"] = {};
@@ -148,11 +148,11 @@ export class GridStorage implements GridStorageType {
           memo[key] = this.getItem(`invitation:${key}`);
 
           encryptedThreadKeys[key] = this.getItem(
-            `encrypted-thread-key:${key}`
+            `encrypted-thread-key:${key}`,
           );
           return memo;
         },
-        {} as NonNullable<BackupPayload["invites"]>
+        {} as NonNullable<BackupPayload["invites"]>,
       ),
       threads:
         (await this.queryItem(`threads:${thumbprint}`)?.reduce(
@@ -160,10 +160,10 @@ export class GridStorage implements GridStorageType {
             const memo = await m;
             const threadInfo = this.getItem(`thread-info:${thumbprint}:${key}`);
             const messages = this.getItem(
-              `keyed-messages:${thumbprint}:${key}`
+              `keyed-messages:${thumbprint}:${key}`,
             );
             encryptedThreadKeys[threadInfo.myThumbprint] = this.getItem(
-              `encrypted-thread-key:${threadInfo.myThumbprint}`
+              `encrypted-thread-key:${threadInfo.myThumbprint}`,
             );
 
             memo[key] = {
@@ -172,7 +172,7 @@ export class GridStorage implements GridStorageType {
             };
             return memo;
           },
-          Promise.resolve({} as NonNullable<BackupPayload["threads"]>)
+          Promise.resolve({} as NonNullable<BackupPayload["threads"]>),
         )) ?? {},
 
       encryptedThreadKeys,
@@ -204,7 +204,7 @@ export class GridStorage implements GridStorageType {
   appendItem: GridStorageType["appendItem"] = (
     key,
     value,
-    { unique = false } = {}
+    { unique = false } = {},
   ) => {
     let arr: any = this.queryItem(key);
     if (!Array.isArray(arr)) {
@@ -221,10 +221,10 @@ export class GridStorage implements GridStorageType {
     thumbprint: Thumbprint<"ECDSA">,
     threadId: ThreadID,
     messageId: string,
-    message: SignedTransport
+    message: SignedTransport,
   ) {
     const index = this.queryItem(
-      `keyed-messages:${thumbprint}:${threadId}`
+      `keyed-messages:${thumbprint}:${threadId}`,
     ) ?? {
       min: messageId,
       max: messageId,
@@ -235,7 +235,7 @@ export class GridStorage implements GridStorageType {
   }
   public readMessages(thumbprint: Thumbprint<"ECDSA">, threadId: ThreadID) {
     const { messages } = this.getItem(
-      `keyed-messages:${thumbprint}:${threadId}`
+      `keyed-messages:${thumbprint}:${threadId}`,
     );
     return messages;
   }

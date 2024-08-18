@@ -6,8 +6,8 @@
  * parameters are extracted and sent to the service, and where response is handled.
  */
 
-const Controller = require('./Controller');
-const service = require('../services/RelayService');
+const Controller = require("./Controller");
+const service = require("../services/RelayService");
 const getInvite = async (request, response) => {
   await Controller.handleRequest(request, response, service.getInvite);
 };
@@ -27,7 +27,6 @@ const publishReply = async (request, response) => {
 const replyToInvite = async (request, response) => {
   await Controller.handleRequest(request, response, service.replyToInvite);
 };
-
 
 module.exports = {
   getInvite,

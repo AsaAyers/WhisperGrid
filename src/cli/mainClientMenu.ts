@@ -81,7 +81,7 @@ async function createInvitationMenu(client: Client) {
   const invite = await client.createInvitation({ note, nickname });
 
   console.log(
-    `Invitation created. Share the text below to allow friends to encrypt messages to you.`
+    `Invitation created. Share the text below to allow friends to encrypt messages to you.`,
   );
   console.log(invite);
   console.log("\n\n\n");
@@ -130,7 +130,7 @@ async function replyToInvitationMenu(client: Client) {
       invite as SignedInvitation,
       reply,
       nickname,
-      { setMyRelay }
+      { setMyRelay },
     );
     await displayRawMessage(message, relay);
     return viewEncryptedThread(client, threadId);

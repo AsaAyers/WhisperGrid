@@ -2,28 +2,27 @@
 
 All URIs are relative to *http://whispergrid.example.com*
 
-| Method | HTTP request | Description |
-|------------- | ------------- | -------------|
-| [**getBackup**](UserApi.md#getBackup) | **GET** /backup/{backupKey} | Get password-protected backup by backupKey |
-| [**getLoginChallenge**](UserApi.md#getLoginChallenge) | **GET** /login/challenge | Get a login challenge |
-| [**loginWithChallenge**](UserApi.md#loginWithChallenge) | **POST** /login | Login with a challenge |
-| [**logoutUser**](UserApi.md#logoutUser) | **GET** /user/logout | Logs out current logged in user session |
-| [**uploadBackup**](UserApi.md#uploadBackup) | **POST** /backup/{backupKey} | Upload a password-protected backup |
-
+| Method                                                  | HTTP request                 | Description                                |
+| ------------------------------------------------------- | ---------------------------- | ------------------------------------------ |
+| [**getBackup**](UserApi.md#getBackup)                   | **GET** /backup/{backupKey}  | Get password-protected backup by backupKey |
+| [**getLoginChallenge**](UserApi.md#getLoginChallenge)   | **GET** /login/challenge     | Get a login challenge                      |
+| [**loginWithChallenge**](UserApi.md#loginWithChallenge) | **POST** /login              | Login with a challenge                     |
+| [**logoutUser**](UserApi.md#logoutUser)                 | **GET** /user/logout         | Logs out current logged in user session    |
+| [**uploadBackup**](UserApi.md#uploadBackup)             | **POST** /backup/{backupKey} | Upload a password-protected backup         |
 
 <a name="getBackup"></a>
+
 # **getBackup**
+
 > String getBackup(backupKey)
 
 Get password-protected backup by backupKey
 
-    
-
 ### Parameters
 
-|Name | Type | Description  | Notes |
-|------------- | ------------- | ------------- | -------------|
-| **backupKey** | **String**| sha256(thumbprint+password) | [default to null] |
+| Name          | Type       | Description                 | Notes             |
+| ------------- | ---------- | --------------------------- | ----------------- |
+| **backupKey** | **String** | sha256(thumbprint+password) | [default to null] |
 
 ### Return type
 
@@ -39,14 +38,15 @@ No authorization required
 - **Accept**: application/json
 
 <a name="getLoginChallenge"></a>
+
 # **getLoginChallenge**
+
 > String getLoginChallenge()
 
 Get a login challenge
 
-    
-
 ### Parameters
+
 This endpoint does not need any parameter.
 
 ### Return type
@@ -63,18 +63,18 @@ No authorization required
 - **Accept**: application/json
 
 <a name="loginWithChallenge"></a>
+
 # **loginWithChallenge**
+
 > String loginWithChallenge(signedChallenge)
 
 Login with a challenge
 
-    
-
 ### Parameters
 
-|Name | Type | Description  | Notes |
-|------------- | ------------- | ------------- | -------------|
-| **signedChallenge** | **String**| JWS - { header: { iat, sub: &#39;challenge&#39;, jwk, challengeUrl }, payload: challenge } | [default to null] |
+| Name                | Type       | Description                                                                                | Notes             |
+| ------------------- | ---------- | ------------------------------------------------------------------------------------------ | ----------------- |
+| **signedChallenge** | **String** | JWS - { header: { iat, sub: &#39;challenge&#39;, jwk, challengeUrl }, payload: challenge } | [default to null] |
 
 ### Return type
 
@@ -90,14 +90,15 @@ No authorization required
 - **Accept**: application/json
 
 <a name="logoutUser"></a>
+
 # **logoutUser**
+
 > logoutUser()
 
 Logs out current logged in user session
 
-    
-
 ### Parameters
+
 This endpoint does not need any parameter.
 
 ### Return type
@@ -114,19 +115,19 @@ null (empty response body)
 - **Accept**: Not defined
 
 <a name="uploadBackup"></a>
+
 # **uploadBackup**
-> String uploadBackup(backupKey, uploadBackup\_request)
+
+> String uploadBackup(backupKey, uploadBackup_request)
 
 Upload a password-protected backup
 
-    
-
 ### Parameters
 
-|Name | Type | Description  | Notes |
-|------------- | ------------- | ------------- | -------------|
-| **backupKey** | **String**| sha256(thumbprint+password) | [default to null] |
-| **uploadBackup\_request** | [**uploadBackup_request**](../Models/uploadBackup_request.md)|  | |
+| Name                     | Type                                                          | Description                 | Notes             |
+| ------------------------ | ------------------------------------------------------------- | --------------------------- | ----------------- |
+| **backupKey**            | **String**                                                    | sha256(thumbprint+password) | [default to null] |
+| **uploadBackup_request** | [**uploadBackup_request**](../Models/uploadBackup_request.md) |                             |                   |
 
 ### Return type
 
@@ -140,4 +141,3 @@ No authorization required
 
 - **Content-Type**: application/json
 - **Accept**: application/json
-

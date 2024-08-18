@@ -7,11 +7,11 @@ info:
   title: OpenAPI WhisperGrid
   version: 1.0.0
 servers:
-- url: http://whispergrid.example.com
+  - url: http://whispergrid.example.com
 tags:
-- name: relay
-- description: Operations about user
-  name: user
+  - name: relay
+  - description: Operations about user
+    name: user
 paths:
   /invite:
     post:
@@ -20,7 +20,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/Invite'
+              $ref: "#/components/schemas/Invite"
         description: "The invite is validated, and then stored by its thumbprint."
         required: true
       responses:
@@ -28,32 +28,32 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Thumbprint'
+                $ref: "#/components/schemas/Thumbprint"
           description: successful operation
         "400":
           description: Invalid invite supplied
       summary: Post an invite
       tags:
-      - relay
+        - relay
       x-eov-operation-handler: controllers/RelayController
   /invite/{thumbprint}:
     get:
       description: ""
       operationId: getInvite
       parameters:
-      - explode: false
-        in: path
-        name: thumbprint
-        required: true
-        schema:
-          $ref: '#/components/schemas/Thumbprint'
-        style: simple
+        - explode: false
+          in: path
+          name: thumbprint
+          required: true
+          schema:
+            $ref: "#/components/schemas/Thumbprint"
+          style: simple
       responses:
         "200":
           content:
             application/json:
               schema:
-                type: string
+                $ref: "#/components/schemas/Invite"
           description: successful operation
         "400":
           description: Invalid thumbprint supplied
@@ -61,21 +61,21 @@ paths:
           description: Invite not found
       summary: Get relay invite by thumbprint
       tags:
-      - relay
+        - relay
       x-eov-operation-handler: controllers/RelayController
   /thread/{threadId}:
     get:
       description: ""
       operationId: getThread
       parameters:
-      - description: ""
-        explode: false
-        in: path
-        name: threadId
-        required: true
-        schema:
-          type: string
-        style: simple
+        - description: ""
+          explode: false
+          in: path
+          name: threadId
+          required: true
+          schema:
+            type: string
+          style: simple
       responses:
         "200":
           content:
@@ -91,24 +91,24 @@ paths:
           description: Thread not found
       summary: Get a thread by threadId
       tags:
-      - relay
+        - relay
       x-eov-operation-handler: controllers/RelayController
     post:
       operationId: publishReply
       parameters:
-      - description: ""
-        explode: false
-        in: path
-        name: threadId
-        required: true
-        schema:
-          type: string
-        style: simple
+        - description: ""
+          explode: false
+          in: path
+          name: threadId
+          required: true
+          schema:
+            type: string
+          style: simple
       requestBody:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/publishReply_request'
+              $ref: "#/components/schemas/publishReply_request"
         required: true
       responses:
         "200":
@@ -121,53 +121,53 @@ paths:
           description: Invalid reply supplied
       summary: Post a reply
       tags:
-      - relay
+        - relay
       x-eov-operation-handler: controllers/RelayController
   /invite/{thumbprint}/reply:
     post:
       description: ""
       operationId: replyToInvite
       parameters:
-      - description: JWK Thumbprint https://www.rfc-editor.org/rfc/rfc7638
-        explode: false
-        in: path
-        name: thumbprint
-        required: true
-        schema:
-          $ref: '#/components/schemas/Thumbprint'
-        style: simple
+        - description: JWK Thumbprint https://www.rfc-editor.org/rfc/rfc7638
+          explode: false
+          in: path
+          name: thumbprint
+          required: true
+          schema:
+            $ref: "#/components/schemas/Thumbprint"
+          style: simple
       requestBody:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/ReplyToInvite'
+              $ref: "#/components/schemas/ReplyToInvite"
         required: true
       responses:
         "200":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/replyToInvite_200_response'
+                $ref: "#/components/schemas/replyToInvite_200_response"
           description: successful operation
         "400":
           description: Invalid reply supplied
       summary: Reply to a relay invite
       tags:
-      - relay
+        - relay
       x-eov-operation-handler: controllers/RelayController
   /backup/{backupKey}:
     get:
       description: ""
       operationId: getBackup
       parameters:
-      - description: sha256(thumbprint+password)
-        explode: false
-        in: path
-        name: backupKey
-        required: true
-        schema:
-          type: string
-        style: simple
+        - description: sha256(thumbprint+password)
+          explode: false
+          in: path
+          name: backupKey
+          required: true
+          schema:
+            type: string
+          style: simple
       responses:
         "200":
           content:
@@ -181,22 +181,22 @@ paths:
           description: Backup not found
       summary: Get password-protected backup by backupKey
       tags:
-      - user
+        - user
       x-eov-operation-handler: controllers/UserController
     post:
       description: ""
       operationId: uploadBackup
       parameters:
-      - description: sha256(thumbprint+password)
-        explode: false
-        in: path
-        name: backupKey
-        required: true
-        schema:
-          type: string
-        style: simple
+        - description: sha256(thumbprint+password)
+          explode: false
+          in: path
+          name: backupKey
+          required: true
+          schema:
+            type: string
+          style: simple
       requestBody:
-        $ref: '#/components/requestBodies/StoreBackup'
+        $ref: "#/components/requestBodies/StoreBackup"
       responses:
         "200":
           content:
@@ -208,7 +208,7 @@ paths:
           description: Invalid backup supplied
       summary: Upload a password-protected backup
       tags:
-      - user
+        - user
       x-eov-operation-handler: controllers/UserController
   /login/challenge:
     get:
@@ -223,22 +223,23 @@ paths:
           description: successful operation
       summary: Get a login challenge
       tags:
-      - user
+        - user
       x-eov-operation-handler: controllers/UserController
   /login:
     post:
       description: ""
       operationId: loginWithChallenge
       parameters:
-      - description: "JWS - { header: { iat, sub: 'challenge', jwk, challengeUrl },\
-          \ payload: challenge }"
-        explode: true
-        in: query
-        name: signedChallenge
-        required: true
-        schema:
-          type: string
-        style: form
+        - description:
+            "JWS - { header: { iat, sub: 'challenge', jwk, challengeUrl },\
+            \ payload: challenge }"
+          explode: true
+          in: query
+          name: signedChallenge
+          required: true
+          schema:
+            type: string
+          style: form
       responses:
         "200":
           content:
@@ -248,7 +249,8 @@ paths:
           description: successful operation
           headers:
             Set-Cookie:
-              description: Cookie authentication key for use with the `api_key` apiKey
+              description:
+                Cookie authentication key for use with the `api_key` apiKey
                 authentication.
               explode: false
               schema:
@@ -273,7 +275,7 @@ paths:
           description: Invalid challenge supplied
       summary: Login with a challenge
       tags:
-      - user
+        - user
       x-eov-operation-handler: controllers/UserController
   /user/logout:
     get:
@@ -283,10 +285,10 @@ paths:
         default:
           description: successful operation
       security:
-      - api_key: []
+        - api_key: []
       summary: Logs out current logged in user session
       tags:
-      - user
+        - user
       x-eov-operation-handler: controllers/UserController
 components:
   requestBodies:
@@ -294,7 +296,7 @@ components:
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/uploadBackup_request'
+            $ref: "#/components/schemas/uploadBackup_request"
       description: ""
       required: true
   schemas:
@@ -305,7 +307,7 @@ components:
         invite:
           type: string
       required:
-      - invite
+        - invite
     ReplyToInvite:
       example:
         ReplyToInvite: ReplyToInvite
@@ -313,7 +315,7 @@ components:
         ReplyToInvite:
           type: string
       required:
-      - ReplyToInvite
+        - ReplyToInvite
     Thumbprint:
       description: JWK Thumbprint https://www.rfc-editor.org/rfc/rfc7638
       type: string
@@ -322,7 +324,7 @@ components:
         signedReply:
           type: string
       required:
-      - signedReply
+        - signedReply
     replyToInvite_200_response:
       example:
         threadId: threadId
@@ -330,7 +332,7 @@ components:
         threadId:
           type: string
       required:
-      - threadId
+        - threadId
     uploadBackup_request:
       properties:
         signedBackup:
@@ -338,8 +340,8 @@ components:
         thumbprint:
           type: string
       required:
-      - signedBackup
-      - thumbprint
+        - signedBackup
+        - thumbprint
   securitySchemes:
     api_key:
       in: header

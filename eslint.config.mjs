@@ -13,6 +13,7 @@ export default [
         ...globals.browser,
         ...globals.mocha,
         ...globals.chai,
+        ...globals.node,
         cy: false,
         Cypress: false,
       },
@@ -26,4 +27,11 @@ export default [
   pluginJs.configs.recommended,
   ...tseslint.configs.recommended,
   ...fixupConfigRules(pluginReactConfig),
+  {
+    files: ["express-relay/**"],
+    rules: {
+      "@typescript-eslint/no-var-requires": "off",
+      "no-async-promise-executor": "off",
+    },
+  },
 ];

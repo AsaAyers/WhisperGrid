@@ -1,3 +1,4 @@
+.openapi-generator-ignore
 apis/RelayApi.ts
 apis/UserApi.ts
 apis/index.ts

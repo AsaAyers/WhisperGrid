@@ -1,5 +1,5 @@
-const RelayController = require('./RelayController');
-const UserController = require('./UserController');
+const RelayController = require("./RelayController");
+const UserController = require("./UserController");
 
 module.exports = {
   RelayController,

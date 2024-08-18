@@ -16,5 +16,5 @@ export function GridRouter() {
   if (path) {
     return <Navigate to={path} replace={false} />;
   }
-  return <div>Grid: {path ?? '(none)'}</div>;
+  return <div>Grid: {path ?? "(none)"}</div>;
 }

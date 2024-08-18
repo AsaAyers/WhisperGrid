@@ -31,15 +31,15 @@ describe("Client", () => {
     const aliceBackup = await alice.makeBackup("AlicePassword");
 
     await expect(
-      Client.loadClient(storage, aliceThumbprint, "wrong-password")
+      Client.loadClient(storage, aliceThumbprint, "wrong-password"),
     ).rejects.toThrowErrorMatchingInlineSnapshot(
-      `"The operation failed for an operation-specific reason"`
+      `"The operation failed for an operation-specific reason"`,
     );
 
     await expect(
-      Client.loadFromBackup(storage, aliceBackup, "wrong-password")
+      Client.loadFromBackup(storage, aliceBackup, "wrong-password"),
     ).rejects.toThrowErrorMatchingInlineSnapshot(
-      `"The operation failed for an operation-specific reason"`
+      `"The operation failed for an operation-specific reason"`,
     );
   });
 
@@ -57,12 +57,12 @@ describe("Client", () => {
     const toAlice = await Bob.replyToInvitation(
       invitation,
       "Hello Alice, 1st message",
-      "Bob"
+      "Bob",
     );
     const threadId = toAlice.threadId;
     const aliceView = await Alice.appendThread(toAlice.reply);
     expect(aliceView.message.message).toMatchInlineSnapshot(
-      `"Hello Alice, 1st message"`
+      `"Hello Alice, 1st message"`,
     );
     expect(await debugConverastion(Alice, threadId)).toMatchInlineSnapshot(`
 [
@@ -76,7 +76,7 @@ Note: Hello Bob, this first message is not encrypted, but is signed",
 
     const bobView = await Bob.appendThread(toBob.reply);
     expect(bobView.message.message).toMatchInlineSnapshot(
-      `"Hello Bob, 1st reply"`
+      `"Hello Bob, 1st reply"`,
     );
 
     const toAlice2 = await Bob.replyToThread(threadId, "2nd message");
@@ -105,7 +105,9 @@ Note: Hello Bob, this first message is not encrypted, but is signed",
 `);
     expect(a).toMatchObject(b);
     expect(
-      ArrayBuffertohex(window.crypto.getRandomValues(new Uint8Array(64)).buffer)
+      ArrayBuffertohex(
+        window.crypto.getRandomValues(new Uint8Array(64)).buffer,
+      ),
     ).toHaveLength(128);
   });
 
@@ -131,7 +133,7 @@ Note: Hello Bob, this first message is not encrypted, but is signed",
         iv,
       },
       secretA,
-      new TextEncoder().encode(message)
+      new TextEncoder().encode(message),
     );
     const encryptedB = await window.crypto.subtle.encrypt(
       {
@@ -139,7 +141,7 @@ Note: Hello Bob, this first message is not encrypted, but is signed",
         iv,
       },
       secretB,
-      new TextEncoder().encode(message)
+      new TextEncoder().encode(message),
     );
 
     expect(encryptedA).toEqual(encryptedB);
@@ -159,7 +161,10 @@ Note: Hello Bob, this first message is not encrypted, but is signed",
     const invitations = alice.getInvitations();
 
     const encryptedThreads = Object.fromEntries(
-      (await alice.getThreads()).map((id) => [id, alice.getEncryptedThread(id)])
+      (await alice.getThreads()).map((id) => [
+        id,
+        alice.getEncryptedThread(id),
+      ]),
     );
 
     const backup = await alice.makeBackup("BackupPassword");
@@ -167,7 +172,7 @@ Note: Hello Bob, this first message is not encrypted, but is signed",
     alice = await Client.loadFromBackup(
       new GridStorage(),
       jws.payload,
-      "BackupPassword"
+      "BackupPassword",
     );
 
     expect(alice.getInvitations()).toEqual(invitations);
@@ -177,15 +182,15 @@ Note: Hello Bob, this first message is not encrypted, but is signed",
         (await alice.getThreads()).map((id) => [
           id,
           alice.getEncryptedThread(id),
-        ])
-      )
+        ]),
+      ),
     ).toMatchObject(encryptedThreads);
   });
 
   test("ReplyToInvite can include a relay", async () => {
     const alice = await Client.generateClient(
       new GridStorage(),
-      "AlicePassword"
+      "AlicePassword",
     );
     alice.setClientNickname("Alice");
     const bob = await Client.generateClient(new GridStorage(), "BobPassword");
@@ -197,7 +202,7 @@ Note: Hello Bob, this first message is not encrypted, but is signed",
     const topicArray = window.crypto.getRandomValues(new Uint8Array(16));
 
     const relayURL = `https://grid.example.com/conversation/${ArrayBuffertohex(
-      topicArray.buffer
+      topicArray.buffer,
     )}`;
     messages.push(
       await bob.replyToInvitation(
@@ -206,19 +211,19 @@ Note: Hello Bob, this first message is not encrypted, but is signed",
         "Bob",
         {
           setMyRelay: relayURL,
-        }
-      )
+        },
+      ),
     );
     const threadId = messages[0].threadId;
     await alice.appendThread(messages[0].reply);
 
     messages.push(
-      await bob.replyToThread(threadId, `Hello Alice. Second message`)
+      await bob.replyToThread(threadId, `Hello Alice. Second message`),
     );
     await alice.appendThread(messages[1].reply);
     const aliceReply = await alice.replyToThread(
       threadId,
-      `Hello Bob. First reply`
+      `Hello Bob. First reply`,
     );
     expect(aliceReply.relay).toBe(relayURL);
   });
@@ -226,7 +231,7 @@ Note: Hello Bob, this first message is not encrypted, but is signed",
   test("Replies can include a relay", async () => {
     const alice = await Client.generateClient(
       new GridStorage(),
-      "AlicePassword"
+      "AlicePassword",
     );
     alice.setClientNickname("Alice");
     const bob = await Client.generateClient(new GridStorage(), "BobPassword");
@@ -236,7 +241,7 @@ Note: Hello Bob, this first message is not encrypted, but is signed",
     const messages = [];
 
     messages.push(
-      await bob.replyToInvitation(invite, `Hello Alice. First message`, "Bob")
+      await bob.replyToInvitation(invite, `Hello Alice. First message`, "Bob"),
     );
     const threadId = messages[0].threadId;
     await alice.appendThread(messages[0].reply);
@@ -244,22 +249,22 @@ Note: Hello Bob, this first message is not encrypted, but is signed",
     messages.push(
       await bob.replyToThread(threadId, `Hello Alice. Second message`, {
         setMyRelay: `https://grid.example.com/conversation/${threadId}`,
-      })
+      }),
     );
     await alice.appendThread(messages[1].reply);
     const aliceReply = await alice.replyToThread(
       threadId,
-      `Hello Bob. First reply`
+      `Hello Bob. First reply`,
     );
     expect(aliceReply.relay).toBe(
-      `https://grid.example.com/conversation/${threadId}`
+      `https://grid.example.com/conversation/${threadId}`,
     );
   });
 
   test("Messages are displayed correctly even when arriving out of order", async () => {
     const alice = await Client.generateClient(
       new GridStorage(),
-      "AlicePassword"
+      "AlicePassword",
     );
     alice.setClientNickname("Alice");
     const bob = await Client.generateClient(new GridStorage(), "BobPassword");
@@ -275,34 +280,34 @@ Note: Hello Bob, this first message is not encrypted, but is signed",
       await bob.replyToInvitation(
         invite,
         `Hello Alice. Message ${nextId++}`,
-        "Bob"
-      )
+        "Bob",
+      ),
     );
     const threadId = replies[0].threadId;
 
     replies.push(
-      await bob.replyToThread(threadId, `Hello Alice, message ${nextId++}`)
+      await bob.replyToThread(threadId, `Hello Alice, message ${nextId++}`),
     );
     replies.push(
-      await bob.replyToThread(threadId, `Hello Alice, message ${nextId++}`)
+      await bob.replyToThread(threadId, `Hello Alice, message ${nextId++}`),
     );
     replies.push(
-      await bob.replyToThread(threadId, `Hello Alice, message ${nextId++}`)
+      await bob.replyToThread(threadId, `Hello Alice, message ${nextId++}`),
     );
     replies.push(
-      await bob.replyToThread(threadId, `Hello Alice, message ${nextId++}`)
+      await bob.replyToThread(threadId, `Hello Alice, message ${nextId++}`),
     );
     replies.push(
-      await bob.replyToThread(threadId, `Hello Alice, message ${nextId++}`)
+      await bob.replyToThread(threadId, `Hello Alice, message ${nextId++}`),
     );
     replies.push(
-      await bob.replyToThread(threadId, `Hello Alice, message ${nextId++}`)
+      await bob.replyToThread(threadId, `Hello Alice, message ${nextId++}`),
     );
     replies.push(
-      await bob.replyToThread(threadId, `Hello Alice, message ${nextId++}`)
+      await bob.replyToThread(threadId, `Hello Alice, message ${nextId++}`),
     );
     replies.push(
-      await bob.replyToThread(threadId, `Hello Alice, message ${nextId++}`)
+      await bob.replyToThread(threadId, `Hello Alice, message ${nextId++}`),
     );
 
     await alice.appendThread(replies[0].reply);
@@ -334,9 +339,9 @@ Note: (none)",
     await alice.appendThread(replies[1].reply);
 
     await expect(
-      alice.appendThread(replies[6].reply)
+      alice.appendThread(replies[6].reply),
     ).rejects.toThrowErrorMatchingInlineSnapshot(
-      `"Missing 5 messages between 100002 and 100007"`
+      `"Missing 5 messages between 100002 and 100007"`,
     );
 
     expect(await debugConverastion(alice, threadId)).toMatchInlineSnapshot(`
@@ -354,7 +359,7 @@ Note: (none)",
   test("Accepting the same reply-to-invite should not produce multiple threads", async () => {
     const alice = await Client.generateClient(
       new GridStorage(),
-      "AlicePassword"
+      "AlicePassword",
     );
     alice.setClientNickname("Alice");
     const bob = await Client.generateClient(new GridStorage(), "BobPassword");
@@ -364,7 +369,7 @@ Note: (none)",
     const reply = await bob.replyToInvitation(
       invite,
       `Hello Alice. First message`,
-      "Bob"
+      "Bob",
     );
 
     expect(await alice.getThreads()).toHaveLength(0);
@@ -403,9 +408,9 @@ Note: (none)",
 
       synAck({ syn: "10" }, state);
       expect(() =>
-        synAck({ syn: "12" }, state)
+        synAck({ syn: "12" }, state),
       ).toThrowErrorMatchingInlineSnapshot(
-        `"Syn out of order 12 - Expected: 11"`
+        `"Syn out of order 12 - Expected: 11"`,
       );
     });
     test("ack sequential messages", () => {
@@ -437,9 +442,9 @@ Note: (none)",
       expect(state.maxAck).toBe("106");
 
       expect(() =>
-        synAck({ ack: "116" }, state)
+        synAck({ ack: "116" }, state),
       ).toThrowErrorMatchingInlineSnapshot(
-        `"Missing 19 messages between 103 and 116"`
+        `"Missing 19 messages between 103 and 116"`,
       );
     });
   });
