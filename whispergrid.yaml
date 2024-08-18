@@ -1,0 +1,293 @@
+openapi: 3.0.0
+servers:
+  - url: "http://whispergrid.example.com"
+info:
+  description: >-
+    OpenAPI definition for WhisperGrid relays.
+  version: 1.0.0
+  title: OpenAPI WhisperGrid
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+tags:
+  - name: relay
+  - name: user
+    description: Operations about user
+paths:
+  /invite:
+    post:
+      tags:
+        - relay
+      summary: Post an invite
+      operationId: publishInvite
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Invite"
+        description: The invite is validated, and then stored by its thumbprint.
+        required: true
+      responses:
+        "200":
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Thumbprint"
+        "400":
+          description: Invalid invite supplied
+  "/invite/{thumbprint}":
+    parameters:
+      - name: thumbprint
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/Thumbprint"
+    get:
+      tags:
+        - relay
+      summary: Get relay invite by thumbprint
+      description: ""
+      operationId: getInvite
+      responses:
+        "200":
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                type: string
+        "400":
+          description: Invalid thumbprint supplied
+        "404":
+          description: Invite not found
+  "/thread/{threadId}":
+    parameters:
+      - name: threadId
+        in: path
+        description: ""
+        required: true
+        schema:
+          type: string
+    get:
+      tags:
+        - relay
+      summary: Get a thread by threadId
+      description: ""
+      operationId: getThread
+      responses:
+        "200":
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: string
+        "400":
+          description: Invalid threadId supplied
+        "404":
+          description: Thread not found
+    post:
+      tags:
+        - relay
+      summary: Post a reply
+      operationId: publishReply
+      requestBody:
+        content:
+          application/json:
+            schema:
+              properties:
+                signedReply:
+                  type: string
+              required:
+                - signedReply
+        required: true
+      responses:
+        "200":
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                type: string
+        "400":
+          description: Invalid reply supplied
+  "/invite/{thumbprint}/reply":
+    parameters:
+      - name: thumbprint
+        in: path
+        description: "JWK Thumbprint https://www.rfc-editor.org/rfc/rfc7638"
+        required: true
+        schema:
+          $ref: "#/components/schemas/Thumbprint"
+    post:
+      tags:
+        - relay
+      summary: Reply to a relay invite
+      description: ""
+      operationId: replyToInvite
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReplyToInvite"
+        required: true
+      responses:
+        "200":
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                properties:
+                  threadId:
+                    type: string
+                required:
+                  - threadId
+        "400":
+          description: Invalid reply supplied
+  "/backup/{backupKey}":
+    parameters:
+      - name: backupKey
+        in: path
+        description: sha256(thumbprint+password)
+        required: true
+        schema:
+          type: string
+    get:
+      tags:
+        - user
+      summary: Get password-protected backup by backupKey
+      description: ""
+      operationId: getBackup
+      responses:
+        "200":
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                type: string
+        "400":
+          description: Invalid backupKey supplied
+        "404":
+          description: Backup not found
+    post:
+      tags:
+        - user
+      summary: Upload a password-protected backup
+      description: ""
+      operationId: uploadBackup
+      requestBody:
+        $ref: "#/components/requestBodies/StoreBackup"
+      responses:
+        "200":
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                type: string
+        "400":
+          description: Invalid backup supplied
+
+  /login/challenge:
+    get:
+      tags:
+        - user
+      summary: Get a login challenge
+      description: ""
+      operationId: getLoginChallenge
+      responses:
+        "200":
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                type: string
+  /login:
+    post:
+      tags:
+        - user
+      summary: Login with a challenge
+      description: ""
+      operationId: loginWithChallenge
+      parameters:
+        - name: signedChallenge
+          in: query
+          description: "JWS - { header: { iat, sub: 'challenge', jwk, challengeUrl }, payload: challenge }"
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: successful operation
+          headers:
+            Set-Cookie:
+              description: >-
+                Cookie authentication key for use with the `api_key`
+                apiKey authentication.
+              schema:
+                type: string
+                example: AUTH_KEY=abcde12345; Path=/; HttpOnly
+            X-Rate-Limit:
+              description: calls per hour allowed by the user
+              schema:
+                type: integer
+                format: int32
+            X-Expires-After:
+              description: date in UTC when token expires
+              schema:
+                type: string
+                format: date-time
+          content:
+            application/json:
+              schema:
+                type: string
+        "400":
+          description: Invalid challenge supplied
+  /user/logout:
+    get:
+      tags:
+        - user
+      summary: Logs out current logged in user session
+      description: ""
+      operationId: logoutUser
+      responses:
+        default:
+          description: successful operation
+      security:
+        - api_key: []
+components:
+  requestBodies:
+    StoreBackup:
+      content:
+        application/json:
+          schema:
+            properties:
+              signedBackup:
+                type: string
+              thumbprint:
+                type: string
+            required:
+              - signedBackup
+              - thumbprint
+      description: ""
+      required: true
+  securitySchemes:
+    api_key:
+      type: apiKey
+      name: api_key
+      in: header
+  schemas:
+    Invite:
+      properties:
+        invite:
+          type: string
+      required:
+        - invite
+    ReplyToInvite:
+      properties:
+        ReplyToInvite:
+          type: string
+      required:
+        - ReplyToInvite
+    Thumbprint:
+      type: string
+      description: "JWK Thumbprint https://www.rfc-editor.org/rfc/rfc7638"
