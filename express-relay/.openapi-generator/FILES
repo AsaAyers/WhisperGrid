@@ -1,17 +1,3 @@
 .eslintrc.json
 README.md
 api/openapi.yaml
-config.js
-controllers/Controller.js
-controllers/RelayController.js
-controllers/UserController.js
-controllers/index.js
-expressServer.js
-index.js
-logger.js
-package.json
-services/RelayService.js
-services/Service.js
-services/UserService.js
-services/index.js
-utils/openapiRouter.js

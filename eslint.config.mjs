@@ -34,4 +34,9 @@ export default [
       "no-async-promise-executor": "off",
     },
   },
+  {
+    rules: {
+      "@typescript-eslint/no-explicit-any": "off",
+    },
+  },
 ];

@@ -8,3 +8,5 @@ cypress/videos/
 *.jws.txt
 .parcel-cache
 local.env
+.env
+*.log

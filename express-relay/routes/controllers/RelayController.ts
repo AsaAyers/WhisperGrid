@@ -6,32 +6,28 @@
  * parameters are extracted and sent to the service, and where response is handled.
  */
 
-const Controller = require("./Controller");
-const service = require("../services/RelayService");
-const getInvite = async (request, response) => {
+import { Controller } from "./Controller";
+import * as service from "../services/RelayService";
+import { Request, Response } from "express";
+
+type Handler = (request: Request, response: Response) => Promise<void>;
+
+export const getInvite: Handler = async (request, response) => {
   await Controller.handleRequest(request, response, service.getInvite);
 };
 
-const getThread = async (request, response) => {
+export const getThread: Handler = async (request, response) => {
   await Controller.handleRequest(request, response, service.getThread);
 };
 
-const publishInvite = async (request, response) => {
+export const publishInvite: Handler = async (request, response) => {
   await Controller.handleRequest(request, response, service.publishInvite);
 };
 
-const publishReply = async (request, response) => {
+export const publishReply: Handler = async (request, response) => {
   await Controller.handleRequest(request, response, service.publishReply);
 };
 
-const replyToInvite = async (request, response) => {
+export const replyToInvite: Handler = async (request, response) => {
   await Controller.handleRequest(request, response, service.replyToInvite);
-};
-
-module.exports = {
-  getInvite,
-  getThread,
-  publishInvite,
-  publishReply,
-  replyToInvite,
 };

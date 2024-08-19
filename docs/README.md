@@ -4,7 +4,7 @@
 
 ## Documentation for API Endpoints
 
-All URIs are relative to *http://whispergrid.example.com*
+All URIs are relative to _http://localhost:9001_
 
 | Class      | Method                                                       | HTTP request                        | Description                                |
 | ---------- | ------------------------------------------------------------ | ----------------------------------- | ------------------------------------------ |
@@ -24,6 +24,7 @@ All URIs are relative to *http://whispergrid.example.com*
 ## Documentation for Models
 
 - [Invite](./Models/Invite.md)
+- [LoginRequest](./Models/LoginRequest.md)
 - [ReplyToInvite](./Models/ReplyToInvite.md)
 - [publishReply_request](./Models/publishReply_request.md)
 - [replyToInvite_200_response](./Models/replyToInvite_200_response.md)

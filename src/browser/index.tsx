@@ -22,6 +22,8 @@ import { HomePage } from "./HomePage";
 import { Settings } from "./Settings";
 import { GridRouter } from "./GridRouter";
 import { Provider } from "jotai";
+import { OpenAPIClientProvider } from "./OpenAPIClientProvider";
+import { QueryClient, QueryClientProvider } from "react-query";
 
 export class LocalGridStorage extends GridStorage {
   protected data = {
@@ -145,13 +147,19 @@ function SPARedirect(props: React.PropsWithChildren<object>) {
 
 const root = ReactDOM.createRoot(document.getElementById("root")!);
 
+const queryClient = new QueryClient({});
+
 root.render(
   <React.StrictMode>
     <App>
       <Provider>
-        <React.Suspense>
-          <RouterProvider router={router} />
-        </React.Suspense>
+        <QueryClientProvider client={queryClient}>
+          <OpenAPIClientProvider>
+            <React.Suspense>
+              <RouterProvider router={router} />
+            </React.Suspense>
+          </OpenAPIClientProvider>
+        </QueryClientProvider>
       </Provider>
     </App>
   </React.StrictMode>,

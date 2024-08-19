@@ -16,6 +16,8 @@ import { BackupPayload } from "../client";
 import { invariant, parseJWS, verifyJWS } from "../client/utils";
 import { UploadOutlined } from "@ant-design/icons";
 import { UploadChangeParam } from "antd/es/upload";
+import { useQuery } from "react-query";
+import { useOpenAPIClient } from "./OpenAPIClientProvider";
 
 const unsupportedBrowser = !window?.crypto?.subtle;
 
@@ -39,6 +41,13 @@ type FieldType =
     };
 
 export function LoginForm() {
+  const client = useOpenAPIClient();
+  const challengeQuery = useQuery({
+    queryKey: ["challenge"],
+    queryFn: () => client.userApi.getLoginChallenge(),
+  });
+  console.log(challengeQuery);
+
   const [form] = Form.useForm<FieldType>();
   const mode = Form.useWatch("mode", form);
   const backup = Form.useWatch("backup", form);

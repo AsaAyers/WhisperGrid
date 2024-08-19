@@ -7,7 +7,7 @@ info:
   title: OpenAPI WhisperGrid
   version: 1.0.0
 servers:
-  - url: http://whispergrid.example.com
+  - url: http://localhost:9001
 tags:
   - name: relay
   - description: Operations about user
@@ -214,6 +214,15 @@ paths:
     get:
       description: ""
       operationId: getLoginChallenge
+      # requestBody:
+      #   content:
+      #     test/html:
+      #       schema:
+      #         type: string
+      #     application/json:
+      #       schema:
+      #         type: string
+      #   required: false
       responses:
         "200":
           content:
@@ -229,17 +238,9 @@ paths:
     post:
       description: ""
       operationId: loginWithChallenge
-      parameters:
-        - description:
-            "JWS - { header: { iat, sub: 'challenge', jwk, challengeUrl },\
-            \ payload: challenge }"
-          explode: true
-          in: query
-          name: signedChallenge
-          required: true
-          schema:
-            type: string
-          style: form
+      requestBody:
+        $ref: "#/components/requestBodies/Login"
+        required: true
       responses:
         "200":
           content:
@@ -293,12 +294,17 @@ paths:
 components:
   requestBodies:
     StoreBackup:
+      required: true
       content:
         application/json:
           schema:
             $ref: "#/components/schemas/uploadBackup_request"
-      description: ""
+    Login:
       required: true
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/LoginRequest"
   schemas:
     Invite:
       example:
@@ -333,7 +339,22 @@ components:
           type: string
       required:
         - threadId
+    LoginRequest:
+      example:
+        signedChallenge: abc.123.def
+      properties:
+        signedChallenge:
+          description:
+            "The signed challenge is a JWS signed with the user's private\
+            \ key. { header: { sub: 'login', iat, challengeURL }, payload: /login/challenge\
+            \ }"
+          type: string
+      required:
+        - signedChallenge
     uploadBackup_request:
+      example:
+        signedBackup: "abc.backup.def"
+        thumbprint: "abcdefg"
       properties:
         signedBackup:
           type: string

@@ -8,9 +8,11 @@ const express = require("express");
 const cors = require("cors");
 const cookieParser = require("cookie-parser");
 const bodyParser = require("body-parser");
-const { OpenApiValidator } = require("express-openapi-validator");
+const OpenApiValidator = require("express-openapi-validator");
+// const router = require("./utils/openapiRouter");
 const logger = require("./logger");
-const config = require("./config");
+// const config = require("./config");
+var morgan = require("morgan");
 
 class ExpressServer {
   constructor(port, openApiYaml) {
@@ -18,15 +20,22 @@ class ExpressServer {
     this.app = express();
     this.openApiPath = openApiYaml;
     try {
+      console.log("openApiYaml", openApiYaml);
       this.schema = jsYaml.safeLoad(fs.readFileSync(openApiYaml));
     } catch (e) {
       logger.error("failed to start Express Server", e.message);
+      console.error(e);
     }
     this.setupMiddleware();
   }
 
   setupMiddleware() {
     // this.setupAllowedMedia();
+    this.app.use(
+      morgan("combined", {
+        // immediate: true,
+      }),
+    );
     this.app.use(cors());
     this.app.use(bodyParser.json({ limit: "14MB" }));
     this.app.use(express.json());
@@ -48,7 +57,11 @@ class ExpressServer {
       res.sendFile(path.join(__dirname, "api", "openapi.yaml")),
     );
     //View the openapi document in a visual interface. Should be able to test from this page
-    this.app.use("/api-docs", swaggerUI.serve, swaggerUI.setup(this.schema));
+    this.app.use(
+      "/api-docs",
+      swaggerUI.serve,
+      swaggerUI.setup(this.schema, {}),
+    );
     this.app.get("/login-redirect", (req, res) => {
       res.status(200);
       res.json(req.query);
@@ -60,26 +73,37 @@ class ExpressServer {
   }
 
   launch() {
-    new OpenApiValidator({
-      apiSpec: this.openApiPath,
-      operationHandlers: path.join(__dirname),
-      fileUploader: { dest: config.FILE_UPLOAD_PATH },
-    })
-      .install(this.app)
-      .catch((e) => console.log(e))
-      .then(() => {
-        // eslint-disable-next-line no-unused-vars, @typescript-eslint/no-unused-vars
-        this.app.use((err, req, res, next) => {
-          // format errors
-          res.status(err.status || 500).json({
-            message: err.message || err,
-            errors: err.errors || "",
-          });
-        });
+    this.app.use(async (err, req, res, next) => {
+      try {
+        console.log("callNext?");
+        return next();
+      } catch (e) {
+        console.log(e);
+        return res.status(500).json({ error: e.message });
+      }
+    });
+    this.app.use(
+      OpenApiValidator.middleware({
+        apiSpec: this.openApiPath,
+        validateResponses: true,
+        validateRequests: true,
+        validateApiSpec: true,
+        operationHandlers: path.join(__dirname, "routes"),
+      }),
+    );
 
-        http.createServer(this.app).listen(this.port);
-        console.log(`Listening on http://localhost:${this.port}`);
+    // eslint-disable-next-line no-unused-vars, @typescript-eslint/no-unused-vars
+    this.app.use((err, req, res, next) => {
+      // format error
+      console.log("err", err);
+      res.status(err.status || 500).json({
+        message: err.message,
+        errors: err.errors,
       });
+    });
+
+    http.createServer(this.app).listen(this.port);
+    console.log(`Listening on http://localhost:${this.port}`);
   }
 
   async close() {

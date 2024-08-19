@@ -1,4 +1,4 @@
-const { transports, createLogger, format } = require("winston");
+import { transports, createLogger, format } from "winston";
 
 const logger = createLogger({
   level: "info",
@@ -9,9 +9,9 @@ const logger = createLogger({
     new transports.File({
       filename: "error.log",
       level: "error",
-      timestamp: true,
+      // timestamp: true,
     }),
-    new transports.File({ filename: "combined.log", timestamp: true }),
+    new transports.File({ filename: "combined.log" }),
   ],
 });
 

@@ -1,6 +1,6 @@
 # UserApi
 
-All URIs are relative to *http://whispergrid.example.com*
+All URIs are relative to _http://localhost:9001_
 
 | Method                                                  | HTTP request                 | Description                                |
 | ------------------------------------------------------- | ---------------------------- | ------------------------------------------ |
@@ -66,15 +66,15 @@ No authorization required
 
 # **loginWithChallenge**
 
-> String loginWithChallenge(signedChallenge)
+> String loginWithChallenge(LoginRequest)
 
 Login with a challenge
 
 ### Parameters
 
-| Name                | Type       | Description                                                                                | Notes             |
-| ------------------- | ---------- | ------------------------------------------------------------------------------------------ | ----------------- |
-| **signedChallenge** | **String** | JWS - { header: { iat, sub: &#39;challenge&#39;, jwk, challengeUrl }, payload: challenge } | [default to null] |
+| Name             | Type                                          | Description | Notes |
+| ---------------- | --------------------------------------------- | ----------- | ----- |
+| **LoginRequest** | [**LoginRequest**](../Models/LoginRequest.md) |             |       |
 
 ### Return type
 
@@ -86,7 +86,7 @@ No authorization required
 
 ### HTTP request headers
 
-- **Content-Type**: Not defined
+- **Content-Type**: application/json
 - **Accept**: application/json
 
 <a name="logoutUser"></a>

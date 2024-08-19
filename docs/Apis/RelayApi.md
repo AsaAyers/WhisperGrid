@@ -1,6 +1,6 @@
 # RelayApi
 
-All URIs are relative to *http://whispergrid.example.com*
+All URIs are relative to _http://localhost:9001_
 
 | Method                                         | HTTP request                        | Description                    |
 | ---------------------------------------------- | ----------------------------------- | ------------------------------ |
