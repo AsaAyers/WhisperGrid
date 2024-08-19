@@ -59,6 +59,7 @@
     "body-parser": "^1.20.2",
     "camelcase": "^5.3.1",
     "cookie-parser": "^1.4.4",
+    "cookie-session": "^2.1.0",
     "cors": "^2.8.5",
     "express": "^4.16.4",
     "express-openapi-validator": "^4.13.8",

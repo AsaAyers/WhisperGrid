@@ -2,6 +2,7 @@ import { Service, ServiceHandler } from "./Service";
 import config from "../../config";
 import crypto from "crypto";
 import { UserApi } from "../../../src/openapi-client";
+import { parseJWSSync, verifyJWS } from "../../../src/client/utils";
 
 type T = ServiceHandler<InstanceType<typeof UserApi>>;
 
@@ -53,16 +54,36 @@ const getLoginChallenge: T["getLoginChallenge"] = async () => {
  * Login with a challenge
  *
  *
- * signedChallenge String JWS - { header: { iat, sub: 'challenge', jwk, challengeUrl }, payload: challenge }
+ * signedChallenge String JWS - { header: { iat, sub: 'challenge', jwk, }, payload: challenge }
  * returns String
  * */
-const loginWithChallenge: T["loginWithChallenge"] = async ({
-  loginRequest: { signedChallenge },
-}) => {
+const loginWithChallenge: T["loginWithChallenge"] = async (
+  { loginRequest: { signedChallenge } },
+  response,
+) => {
   try {
+    if (!(await verifyJWS(signedChallenge))) {
+      throw Service.rejectResponse("Invalid JWS", 400);
+    }
+    const { header, payload } = parseJWSSync<{
+      header: { iat: number; sub: string; jwk: any };
+      payload: string;
+    }>(signedChallenge);
+    if (header.sub !== "challenge") {
+      throw Service.rejectResponse("Invalid JWS", 400);
+    }
+    if (!header.iat || Date.now() - header.iat > 1000 * 60) {
+      throw Service.rejectResponse("Invalid JWS", 400);
+    }
+    await validateChallenge(payload);
+
+    response.headers.set(
+      "Set-Cookie",
+      `session=${signedChallenge}; Path=/; HttpOnly; Secure; SameSite=Strict`,
+    );
     return Service.successResponse(JSON.stringify(signedChallenge));
   } catch (e) {
-    throw Service.rejectResponse(e.message || "Invalid input", e.status || 405);
+    throw Service.rejectError(e);
   }
 };
 /**

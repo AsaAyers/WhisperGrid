@@ -328,7 +328,7 @@ export async function parseJWS<
   return parseJWSSync(jws);
 }
 export function parseJWSSync<
-  T extends { header: unknown; payload: unknown },
+  T extends { header: object; payload: object | string },
   J extends
     | string
     | SignedTransport

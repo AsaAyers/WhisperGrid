@@ -57,7 +57,7 @@ export class Controller {
 
   static sendError(response: Response, error: any) {
     response.status(error.code || 500);
-    if (error.error instanceof Object) {
+    if (error.error instanceof Object || typeof error.error === "string") {
       response.json(error.error);
     } else {
       response.end(error.error || error.message);
@@ -105,11 +105,6 @@ export class Controller {
     const refObjectPath = (request as any).openapi.schema.requestBody.content?.[
       "application/json"
     ].schema.$ref;
-    console.log(
-      "request",
-      JSON.stringify(schemaValue(request.openapi.schema), null, 2),
-      refObjectPath,
-    );
     if (refObjectPath !== undefined && refObjectPath.length > 0) {
       return refObjectPath.substr(refObjectPath.lastIndexOf("/") + 1);
     }
@@ -174,12 +169,16 @@ export class Controller {
   static async handleRequest<Args, Result>(
     request: Request,
     response: Response,
-    serviceOperation: (args: Args) => Promise<SuccessResponse<Result>>,
+    serviceOperation: (
+      args: Args,
+      r: Response,
+    ) => Promise<SuccessResponse<Result>>,
     bodyName = "body",
   ) {
     try {
       const serviceResponse = await serviceOperation(
         this.collectRequestParams(request, bodyName) as any,
+        response,
       );
       Controller.sendResponse(response, serviceResponse);
     } catch (error) {

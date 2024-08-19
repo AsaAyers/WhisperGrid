@@ -7,12 +7,17 @@ const jsYaml = require("js-yaml");
 const express = require("express");
 const cors = require("cors");
 const cookieParser = require("cookie-parser");
+var cookieSession = require("cookie-session");
 const bodyParser = require("body-parser");
 const OpenApiValidator = require("express-openapi-validator");
 // const router = require("./utils/openapiRouter");
 const logger = require("./logger");
-// const config = require("./config");
+const config = require("./config").default;
 var morgan = require("morgan");
+
+const crypto = require("crypto");
+global.window ??= {};
+global.window.crypto ??= crypto;
 
 class ExpressServer {
   constructor(port, openApiYaml) {
@@ -36,6 +41,14 @@ class ExpressServer {
         // immediate: true,
       }),
     );
+    this.app.use(
+      cookieSession({
+        name: "session",
+        keys: config.SERVER_SECRET,
+        maxAge: 24 * 60 * 60 * 1000, // 24 hours
+      }),
+    );
+
     this.app.use(cors());
     this.app.use(bodyParser.json({ limit: "14MB" }));
     this.app.use(express.json());
