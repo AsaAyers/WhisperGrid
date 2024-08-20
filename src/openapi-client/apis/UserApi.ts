@@ -193,10 +193,6 @@ export class UserApi extends runtime.BaseAPI {
 
     const headerParameters: runtime.HTTPHeaders = {};
 
-    if (this.configuration && this.configuration.apiKey) {
-      headerParameters["api_key"] = await this.configuration.apiKey("api_key"); // api_key authentication
-    }
-
     const response = await this.request(
       {
         path: `/user/logout`,

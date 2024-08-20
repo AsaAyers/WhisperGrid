@@ -106,6 +106,39 @@ export class RelayApi extends runtime.BaseAPI {
   }
 
   /**
+   * Get all threads for the current user
+   */
+  async getMyThreadsRaw(
+    initOverrides?: RequestInit | runtime.InitOverrideFunction,
+  ): Promise<runtime.ApiResponse<Array<string>>> {
+    const queryParameters: any = {};
+
+    const headerParameters: runtime.HTTPHeaders = {};
+
+    const response = await this.request(
+      {
+        path: `/myThreads`,
+        method: "GET",
+        headers: headerParameters,
+        query: queryParameters,
+      },
+      initOverrides,
+    );
+
+    return new runtime.JSONApiResponse<any>(response);
+  }
+
+  /**
+   * Get all threads for the current user
+   */
+  async getMyThreads(
+    initOverrides?: RequestInit | runtime.InitOverrideFunction,
+  ): Promise<Array<string>> {
+    const response = await this.getMyThreadsRaw(initOverrides);
+    return await response.value();
+  }
+
+  /**
    *
    * Get a thread by threadId
    */

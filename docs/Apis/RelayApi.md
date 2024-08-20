@@ -2,13 +2,14 @@
 
 All URIs are relative to _http://localhost:9001_
 
-| Method                                         | HTTP request                        | Description                    |
-| ---------------------------------------------- | ----------------------------------- | ------------------------------ |
-| [**getInvite**](RelayApi.md#getInvite)         | **GET** /invite/{thumbprint}        | Get relay invite by thumbprint |
-| [**getThread**](RelayApi.md#getThread)         | **GET** /thread/{threadId}          | Get a thread by threadId       |
-| [**publishInvite**](RelayApi.md#publishInvite) | **POST** /invite                    | Post an invite                 |
-| [**publishReply**](RelayApi.md#publishReply)   | **POST** /thread/{threadId}         | Post a reply                   |
-| [**replyToInvite**](RelayApi.md#replyToInvite) | **POST** /invite/{thumbprint}/reply | Reply to a relay invite        |
+| Method                                         | HTTP request                        | Description                          |
+| ---------------------------------------------- | ----------------------------------- | ------------------------------------ |
+| [**getInvite**](RelayApi.md#getInvite)         | **GET** /invite/{thumbprint}        | Get relay invite by thumbprint       |
+| [**getMyThreads**](RelayApi.md#getMyThreads)   | **GET** /myThreads                  | Get all threads for the current user |
+| [**getThread**](RelayApi.md#getThread)         | **GET** /thread/{threadId}          | Get a thread by threadId             |
+| [**publishInvite**](RelayApi.md#publishInvite) | **POST** /invite                    | Post an invite                       |
+| [**publishReply**](RelayApi.md#publishReply)   | **POST** /thread/{threadId}         | Post a reply                         |
+| [**replyToInvite**](RelayApi.md#replyToInvite) | **POST** /invite/{thumbprint}/reply | Reply to a relay invite              |
 
 <a name="getInvite"></a>
 
@@ -31,6 +32,31 @@ Get relay invite by thumbprint
 ### Authorization
 
 No authorization required
+
+### HTTP request headers
+
+- **Content-Type**: Not defined
+- **Accept**: application/json
+
+<a name="getMyThreads"></a>
+
+# **getMyThreads**
+
+> List getMyThreads()
+
+Get all threads for the current user
+
+### Parameters
+
+This endpoint does not need any parameter.
+
+### Return type
+
+**List**
+
+### Authorization
+
+[cookieAuth](../README.md#cookieAuth)
 
 ### HTTP request headers
 

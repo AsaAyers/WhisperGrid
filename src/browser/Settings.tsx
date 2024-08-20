@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import React from "react";
 import { clientAtom, useClient, useClientSetup } from "./ClientProvider";
-import { Button, Flex, Form, Input, Modal } from "antd";
+import { Button, Flex, Form, Input, Modal, Typography } from "antd";
 import { useHref } from "react-router-dom";
 import { invariant } from "./invariant";
 import { useResolved } from "./useResolved";
@@ -158,7 +158,7 @@ function DeleteAll() {
   );
 }
 
-function RegisterHandler() {
+export function RegisterHandler() {
   const href = useHref({ pathname: "/grid/" }, { relative: "route" });
 
   return (
@@ -190,12 +190,61 @@ function RegisterHandler() {
   );
 }
 
+function LoginChallenge() {
+  const client = useClient();
+  const [form] = Form.useForm();
+  const [signedChallenge, setSignedChallenge] = React.useState<string | null>(
+    null,
+  );
+
+  if (!client?.isLocalClient) {
+    return null;
+  }
+
+  return (
+    <>
+      <Form
+        form={form}
+        onFinish={async (values) => {
+          const signedChallenge = await client.signLoginChallenge(
+            values.challenge,
+          );
+          setSignedChallenge(signedChallenge);
+        }}
+      >
+        {signedChallenge ? (
+          <Typography.Paragraph copyable>
+            {signedChallenge}
+          </Typography.Paragraph>
+        ) : (
+          <Form.Item
+            label="Challenge"
+            name="challenge"
+            rules={[
+              {
+                required: true,
+                pattern: /^\d+:[0-9a-f]+$/,
+                message: "Invalid challenge",
+              },
+            ]}
+          >
+            <Input />
+          </Form.Item>
+        )}
+        <Button type="primary" htmlType="submit">
+          Login challenge
+        </Button>
+      </Form>
+    </>
+  );
+}
+
 export function Settings() {
   return (
     <Flex vertical>
+      <LoginChallenge />
       <Backup />
       <DeleteAll />
-      <RegisterHandler />
     </Flex>
   );
 }

@@ -63,6 +63,24 @@ paths:
       tags:
         - relay
       x-eov-operation-handler: controllers/RelayController
+  /myThreads:
+    get:
+      operationId: getMyThreads
+      security:
+        - cookieAuth: []
+      summary: Get all threads for the current user
+      tags:
+        - relay
+      x-eov-operation-handler: controllers/RelayController
+      responses:
+        "200":
+          description: List of threadIDs
+          content:
+            application/json:
+              schema:
+                items:
+                  type: string
+                type: array
   /thread/{threadId}:
     get:
       description: ""
@@ -273,8 +291,6 @@ paths:
                 type: string
               style: simple
         "400":
-          description: Invalid challenge supplied
-        "401":
           description: "Invalid JWS"
           content:
             application/json:
@@ -292,7 +308,7 @@ paths:
         default:
           description: successful operation
       security:
-        - api_key: []
+        - cookieAuth: []
       summary: Logs out current logged in user session
       tags:
         - user
@@ -374,3 +390,7 @@ components:
       in: header
       name: api_key
       type: apiKey
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: api_key

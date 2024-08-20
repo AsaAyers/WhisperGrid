@@ -10,3 +10,4 @@ cypress/videos/
 local.env
 .env
 *.log
+express-relay/session.jwk

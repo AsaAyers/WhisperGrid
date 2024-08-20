@@ -33,6 +33,15 @@ export const getThread: T["getThread"] = async ({ threadId }) => {
     throw Service.rejectResponse(e.message || "Invalid input", e.status || 405);
   }
 };
+
+export const getMyThreads: T["getMyThreads"] = async () => {
+  try {
+    return Service.successResponse(["a", "b"]);
+  } catch (e) {
+    throw Service.rejectResponse(e.message || "Invalid input", e.status || 405);
+  }
+};
+
 /**
  * Post an invite
  *

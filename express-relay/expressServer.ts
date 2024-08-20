@@ -1,31 +1,29 @@
-// const { Middleware } = require('swagger-express-middleware');
-const http = require("http");
-const fs = require("fs");
-const path = require("path");
-const swaggerUI = require("swagger-ui-express");
-const jsYaml = require("js-yaml");
-const express = require("express");
-const cors = require("cors");
-const cookieParser = require("cookie-parser");
-var cookieSession = require("cookie-session");
-const bodyParser = require("body-parser");
-const OpenApiValidator = require("express-openapi-validator");
-// const router = require("./utils/openapiRouter");
-const logger = require("./logger");
-const config = require("./config").default;
-var morgan = require("morgan");
-
-const crypto = require("crypto");
-global.window ??= {};
-global.window.crypto ??= crypto;
+import http from "http";
+import fs from "fs";
+import path from "path";
+import swaggerUI from "swagger-ui-express";
+import jsYaml from "js-yaml";
+import express from "express";
+import cors from "cors";
+import cookieParser from "cookie-parser";
+import cookieSession from "cookie-session";
+import bodyParser from "body-parser";
+import { middleware } from "express-openapi-validator";
+import logger from "./logger";
+import config from "./config";
+import morgan from "morgan";
 
 class ExpressServer {
-  constructor(port, openApiYaml) {
+  port: any;
+  app: ReturnType<typeof express>;
+  openApiPath: any;
+  schema: any;
+  server: http.Server<typeof http.IncomingMessage, typeof http.ServerResponse>;
+  constructor(port: number, openApiYaml: string) {
     this.port = port;
     this.app = express();
     this.openApiPath = openApiYaml;
     try {
-      console.log("openApiYaml", openApiYaml);
       this.schema = jsYaml.safeLoad(fs.readFileSync(openApiYaml));
     } catch (e) {
       logger.error("failed to start Express Server", e.message);
@@ -44,7 +42,7 @@ class ExpressServer {
     this.app.use(
       cookieSession({
         name: "session",
-        keys: config.SERVER_SECRET,
+        keys: [config.SERVER_SECRET],
         maxAge: 24 * 60 * 60 * 1000, // 24 hours
       }),
     );
@@ -62,6 +60,9 @@ class ExpressServer {
       "/WhisperGrid",
       express.static(path.join(__dirname, "../dist")),
     );
+    this.app.all("/WhisperGrid/*", (req, res) => {
+      res.sendFile(path.join(__dirname, "../dist/index.html"));
+    });
     this.app.get("/hello", (req, res) =>
       res.send(`Hello World. path: ${this.openApiPath}`),
     );
@@ -88,7 +89,6 @@ class ExpressServer {
   launch() {
     this.app.use(async (err, req, res, next) => {
       try {
-        console.log("callNext?");
         return next();
       } catch (e) {
         console.log(e);
@@ -96,7 +96,7 @@ class ExpressServer {
       }
     });
     this.app.use(
-      OpenApiValidator.middleware({
+      middleware({
         apiSpec: this.openApiPath,
         validateResponses: true,
         validateRequests: true,
@@ -115,16 +115,16 @@ class ExpressServer {
       });
     });
 
-    http.createServer(this.app).listen(this.port);
+    this.server = http.createServer(this.app).listen(this.port);
     console.log(`Listening on http://localhost:${this.port}`);
   }
 
   async close() {
     if (this.server !== undefined) {
-      await this.server.close();
+      this.server.close();
       console.log(`Server on port ${this.port} shut down`);
     }
   }
 }
 
-module.exports = ExpressServer;
+export default ExpressServer;

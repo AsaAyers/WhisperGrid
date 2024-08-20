@@ -107,7 +107,7 @@ null (empty response body)
 
 ### Authorization
 
-[api_key](../README.md#api_key)
+[cookieAuth](../README.md#cookieAuth)
 
 ### HTTP request headers
 

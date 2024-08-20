@@ -42,9 +42,9 @@ export class Controller {
      * payload will be an object consisting of a code and a payload. If not customized
      * send 200 and the payload as received in this method.
      */
-    response.status(payload.code || 200);
+    response.status(payload?.code || 200);
     const responsePayload =
-      payload.payload !== undefined ? payload.payload : payload;
+      payload?.payload !== undefined ? payload.payload : payload;
     if (
       responsePayload instanceof Object ||
       typeof responsePayload === "string"
@@ -56,7 +56,8 @@ export class Controller {
   }
 
   static sendError(response: Response, error: any) {
-    response.status(error.code || 500);
+    const code = error?.code || 500;
+    response.status(typeof code === "number" ? code : 500);
     if (error.error instanceof Object || typeof error.error === "string") {
       response.json(error.error);
     } else {
@@ -171,13 +172,15 @@ export class Controller {
     response: Response,
     serviceOperation: (
       args: Args,
-      r: Response,
+      req: Request,
+      res: Response,
     ) => Promise<SuccessResponse<Result>>,
     bodyName = "body",
   ) {
     try {
       const serviceResponse = await serviceOperation(
         this.collectRequestParams(request, bodyName) as any,
+        request,
         response,
       );
       Controller.sendResponse(response, serviceResponse);

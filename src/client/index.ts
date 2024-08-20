@@ -826,6 +826,18 @@ export class Client {
     };
   }
 
+  public async signLoginChallenge(challenge: string) {
+    return signJWS(
+      {
+        sub: "challenge",
+        alg: "ES384",
+        jwk: await exportKey(this.identityKeyPair.publicKey),
+      },
+      challenge,
+      this.identityKeyPair.privateKey,
+    );
+  }
+
   async makeBackup(password: string) {
     const idJWKs = await exportKeyPair(this.identityKeyPair);
     const storageJWKs = await exportKeyPair(this.storageKeyPair);

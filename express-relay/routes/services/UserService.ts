@@ -2,11 +2,23 @@ import { Service, ServiceHandler } from "./Service";
 import config from "../../config";
 import crypto from "crypto";
 import { UserApi } from "../../../src/openapi-client";
-import { parseJWSSync, verifyJWS } from "../../../src/client/utils";
+import {
+  getJWKthumbprint,
+  invariant,
+  parseJWSSync,
+  signJWS,
+  verifyJWS,
+} from "../../../src/client/utils";
+import { response } from "express";
 
 type T = ServiceHandler<InstanceType<typeof UserApi>>;
 
-export const makeLoginChallenge = async (now = Date.now()) => {
+const sessionKey = config.sessionPrivateKey;
+const SIGN_TIME_LIMIT = 60;
+
+export const makeLoginChallenge = async (
+  now = Math.floor(Date.now() / 1000),
+) => {
   const signature = Buffer.from(
     await crypto.subtle.digest(
       "SHA-256",
@@ -18,8 +30,19 @@ export const makeLoginChallenge = async (now = Date.now()) => {
 
 export const validateChallenge = async (challenge: string) => {
   const [timestamp, signature] = challenge.split(":");
-  if (signature !== (await makeLoginChallenge(Number(timestamp)))) {
+  const expected = await (
+    await makeLoginChallenge(Number(timestamp))
+  ).split(":")[1];
+  if (signature !== expected) {
     throw new Error("Invalid challenge");
+  }
+  const unixTimetsamp = Math.floor(Date.now() / 1000);
+  if (Number(timestamp) > unixTimetsamp) {
+    throw new Error(`Challenges cannot be in the future`);
+  }
+
+  if (unixTimetsamp - Number(timestamp) > 600) {
+    throw new Error(`Challenges expire after 10 minutes`);
   }
 };
 
@@ -59,7 +82,7 @@ const getLoginChallenge: T["getLoginChallenge"] = async () => {
  * */
 const loginWithChallenge: T["loginWithChallenge"] = async (
   { loginRequest: { signedChallenge } },
-  response,
+  request,
 ) => {
   try {
     if (!(await verifyJWS(signedChallenge))) {
@@ -72,16 +95,27 @@ const loginWithChallenge: T["loginWithChallenge"] = async (
     if (header.sub !== "challenge") {
       throw Service.rejectResponse("Invalid JWS", 400);
     }
-    if (!header.iat || Date.now() - header.iat > 1000 * 60) {
-      throw Service.rejectResponse("Invalid JWS", 400);
+
+    const unixTimetsamp = Math.floor(Date.now() / 1000);
+    if (!header.iat || unixTimetsamp - header.iat > SIGN_TIME_LIMIT) {
+      throw Service.rejectResponse(
+        `Invalid JWS iat signed ${unixTimetsamp - header.iat} seconds ago`,
+        400,
+      );
     }
     await validateChallenge(payload);
 
-    response.headers.set(
-      "Set-Cookie",
-      `session=${signedChallenge}; Path=/; HttpOnly; Secure; SameSite=Strict`,
+    const thumbprint = await getJWKthumbprint(header.jwk);
+    invariant(request.session, "Session not available");
+    const apiKey = await signJWS(
+      { alg: "ES384", sub: "api-key" },
+      thumbprint,
+      await sessionKey,
     );
-    return Service.successResponse(JSON.stringify(signedChallenge));
+    // response.cookie("api_key", apiKey);
+    // request.cookies["api_key"] = apiKey;
+    response.header("Set-Cookie", `api_key=${apiKey}; HttpOnly`);
+    return Service.successResponse(apiKey);
   } catch (e) {
     throw Service.rejectError(e);
   }

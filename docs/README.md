@@ -9,6 +9,7 @@ All URIs are relative to _http://localhost:9001_
 | Class      | Method                                                       | HTTP request                        | Description                                |
 | ---------- | ------------------------------------------------------------ | ----------------------------------- | ------------------------------------------ |
 | _RelayApi_ | [**getInvite**](Apis/RelayApi.md#getinvite)                  | **GET** /invite/{thumbprint}        | Get relay invite by thumbprint             |
+| _RelayApi_ | [**getMyThreads**](Apis/RelayApi.md#getmythreads)            | **GET** /myThreads                  | Get all threads for the current user       |
 | _RelayApi_ | [**getThread**](Apis/RelayApi.md#getthread)                  | **GET** /thread/{threadId}          | Get a thread by threadId                   |
 | _RelayApi_ | [**publishInvite**](Apis/RelayApi.md#publishinvite)          | **POST** /invite                    | Post an invite                             |
 | _RelayApi_ | [**publishReply**](Apis/RelayApi.md#publishreply)            | **POST** /thread/{threadId}         | Post a reply                               |
@@ -41,3 +42,11 @@ All URIs are relative to _http://localhost:9001_
 - **Type**: API key
 - **API key parameter name**: api_key
 - **Location**: HTTP header
+
+<a name="cookieAuth"></a>
+
+### cookieAuth
+
+- **Type**: API key
+- **API key parameter name**: api_key
+- **Location**:

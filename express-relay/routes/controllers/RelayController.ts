@@ -20,6 +20,10 @@ export const getThread: Handler = async (request, response) => {
   await Controller.handleRequest(request, response, service.getThread);
 };
 
+export const getMyThreads: Handler = async (request, response) => {
+  await Controller.handleRequest(request, response, service.getMyThreads);
+};
+
 export const publishInvite: Handler = async (request, response) => {
   await Controller.handleRequest(request, response, service.publishInvite);
 };

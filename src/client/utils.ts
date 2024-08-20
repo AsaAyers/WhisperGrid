@@ -51,7 +51,7 @@ export const ecdsaSignAlg = {
 const keySymbol = Symbol("keySymbol");
 type Visibility = "public" | "private";
 type AlgorithmType = "ECDSA" | "ECDH";
-type TaggedKey<T = [AlgorithmType, Visibility]> = CryptoKey & {
+export type TaggedKey<T = [AlgorithmType, Visibility]> = CryptoKey & {
   [keySymbol]: T;
 };
 export type EncryptedPrivateKey<T = AlgorithmType> = TaggedString<

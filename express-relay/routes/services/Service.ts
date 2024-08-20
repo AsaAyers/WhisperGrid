@@ -1,4 +1,5 @@
 import { BaseAPI } from "../../../src/openapi-client";
+import { Request, Response } from "express";
 
 export type SuccessResponse<T> = {
   payload: T;
@@ -32,12 +33,17 @@ export class Service {
 }
 
 export type ServiceHandler<T extends BaseAPI> = {
-  [K in keyof T]: T[K] extends (
-    // params: infer P,
-    r: RequestInit,
-  ) => Promise<infer R>
-    ? (response: Response) => Promise<SuccessResponse<R>>
+  [K in keyof T]: T[K] extends (r: RequestInit) => Promise<infer R>
+    ? (
+        params: unknown,
+        request: Request,
+        response: Response,
+      ) => Promise<SuccessResponse<R>>
     : T[K] extends (params: infer P, r: RequestInit) => Promise<infer R>
-      ? (params: P, response: Response) => Promise<SuccessResponse<R>>
+      ? (
+          params: P,
+          request: Request,
+          response: Response,
+        ) => Promise<SuccessResponse<R>>
       : never;
 };
