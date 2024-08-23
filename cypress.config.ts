@@ -8,7 +8,7 @@ export default defineConfig({
   trashAssetsBeforeRuns: true,
   screenshotOnRunFailure: true,
   e2e: {
-    baseUrl: "http://localhost:1234",
+    baseUrl: "http://localhost:9001",
     video: true,
     videoCompression: true,
     viewportWidth: 800,

@@ -27,7 +27,6 @@
     "whispergrid": "bin.js"
   },
   "scripts": {
-    "prestart": "npm run build -- --no-optimize",
     "start": "ts-node --transpileOnly express-relay",
     "start:parcel": "parcel serve --public-url / index.html",
     "cy:open": "cypress open",

@@ -13,7 +13,7 @@
 // -- This is a parent command --
 Cypress.Commands.add(
   "login",
-  (thumbprint, password, url = "http://localhost:1234/") => {
+  (thumbprint, password, url = "http://localhost:9001/") => {
     cy.visit(url);
     cy.contains("Open locally stored identity").click();
     cy.labeledInput("Thumbprint").clear();
@@ -23,7 +23,7 @@ Cypress.Commands.add(
 );
 Cypress.Commands.add("logout", () => {
   cy.contains("Logout").click();
-  cy.visit("http://localhost:1234/");
+  cy.visit("http://localhost:9001/");
 });
 Cypress.Commands.add("replyToInvite", (invitation, nickname, note = "") => {
   cy.contains("Reply to invite").click();
@@ -53,12 +53,13 @@ Cypress.Commands.add("downloadBackup", (filename, password) => {
   cy.wait(500);
 });
 Cypress.Commands.add("openBackup", (filename, password) => {
-  cy.contains("Open Backup").click();
+  cy.contains("Open Backup File").click();
+  cy.wait(100);
   cy.get("input[type=file]").selectFile(`cypress/downloads/${filename}`, {
     force: true,
   });
 
-  cy.labeledInput("Password").type(password);
+  cy.labeledInput("File Password").type(password);
   cy.contains("Unlock").click();
   return cy
     .contains(/id-[a-zA-Z0-9_-]+/)
@@ -68,7 +69,7 @@ Cypress.Commands.add("openBackup", (filename, password) => {
     });
 });
 Cypress.Commands.add("createIdentity", (password) => {
-  cy.visit("http://localhost:1234/");
+  cy.visit("http://localhost:9001/");
   cy.contains("Create Identity").click();
   cy.contains("Password").type(password);
   cy.contains("Confirm password").type(password + "{enter}");

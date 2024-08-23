@@ -10,7 +10,6 @@ const context = React.createContext<OpenAPIClient | null>(null);
 
 export const useOpenAPIClient = () => {
   const client = React.useContext(context);
-  console.log({ client });
   invariant(
     client != null,
     "useOpenAPIClient must be used within OpenAPIClientProvider",
@@ -19,7 +18,7 @@ export const useOpenAPIClient = () => {
 };
 
 export function OpenAPIClientProvider({
-  basePath = String(new URL("/api", window.location as any)),
+  basePath = String(new URL("/", window.location as any)).replace(/\/$/, ""),
   children,
 }: React.PropsWithChildren<{ basePath?: string }>) {
   const value = React.useMemo(() => {
@@ -32,6 +31,5 @@ export function OpenAPIClientProvider({
     };
   }, [basePath]);
 
-  console.log({ value });
   return <context.Provider value={value}>{children}</context.Provider>;
 }
