@@ -42,13 +42,13 @@ async function mainMenu() {
       const client = await Client.loadFromBackup(
         new GridStorage(),
         backup,
-        pass
+        pass,
       );
       client.subscribe(
         debounce(async () => {
           const backup = await client.makeBackup(pass);
           await fs.writeFile(filename, backup);
-        }, 500)
+        }, 500),
       );
       // eslint-disable-next-line no-constant-condition
       while (true) {
@@ -96,7 +96,7 @@ async function makeNewIdentity() {
     debounce(async () => {
       const backup = await client.makeBackup(pass1);
       await fs.writeFile(filename, backup);
-    }, 500)
+    }, 500),
   );
 
   // eslint-disable-next-line no-constant-condition

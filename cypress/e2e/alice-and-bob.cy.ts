@@ -42,7 +42,7 @@ describe("Alice and Bob can use WhisperGrid to have a conversation", () => {
         const reply = cy.replyToInvite(
           invitation,
           "Bob",
-          "Hello Alice, this is a test"
+          "Hello Alice, this is a test",
         );
         return reply;
       })
@@ -112,7 +112,7 @@ describe("Alice and Bob can use WhisperGrid to have a conversation", () => {
     cy.contains("OK").click();
 
     cy.labeledInput("Message").type(
-      "Hello Alice, this message includes setting up a Relay{enter}"
+      "Hello Alice, this message includes setting up a Relay{enter}",
     );
 
     cy.copyButtonText("Copy").as("relaySetup");
@@ -139,7 +139,7 @@ describe("Alice and Bob can use WhisperGrid to have a conversation", () => {
       .click();
 
     cy.labeledInput("Message").type(
-      "Hello Bob, this message is relayed{enter}"
+      "Hello Bob, this message is relayed{enter}",
     );
     cy.contains("Sending message to relay:");
     cy.downloadBackup("alice4.jws.txt", password2);

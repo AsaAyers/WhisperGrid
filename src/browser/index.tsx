@@ -3,7 +3,14 @@ import React from "react";
 import ReactDOM from "react-dom/client";
 import { GridStorage } from "../client";
 import { WhisperGridDemo } from "./WhisperGridDemo";
-import { Navigate, RouterProvider, createBrowserRouter, createHashRouter, useRouteError, useSearchParams } from "react-router-dom";
+import {
+  Navigate,
+  RouterProvider,
+  createBrowserRouter,
+  createHashRouter,
+  useRouteError,
+  useSearchParams,
+} from "react-router-dom";
 import { CreateInvitation } from "./CreateInvitation";
 import { ClientProvider } from "./ClientProvider";
 import { InviteRoute } from "./DisplayInvite";
@@ -16,11 +23,10 @@ import { Settings } from "./Settings";
 import { GridRouter } from "./GridRouter";
 import { Provider } from "jotai";
 
-
 export class LocalGridStorage extends GridStorage {
   protected data = {
     get: (key: string) => {
-      const str = localStorage.getItem(key)
+      const str = localStorage.getItem(key);
       try {
         if (str) {
           return JSON.parse(str);
@@ -28,86 +34,96 @@ export class LocalGridStorage extends GridStorage {
       } catch (e) {
         // ignore parse errors
       }
-      return str
+      return str;
     },
     set: (key: string, value: any) => {
-      localStorage.setItem(key, JSON.stringify(value))
+      localStorage.setItem(key, JSON.stringify(value));
     },
     has: (key: string) => {
-      const has = (null != localStorage.getItem(key))
+      const has = null != localStorage.getItem(key);
       if (!has) {
-        console.warn('localStorage!has', key, localStorage.getItem(key))
+        console.warn("localStorage!has", key, localStorage.getItem(key));
       }
-      return has
+      return has;
     },
 
-    delete: (key: string) => { (localStorage.removeItem(key)) },
-  }
-
+    delete: (key: string) => {
+      localStorage.removeItem(key);
+    },
+  };
 }
 
 let basename = location.pathname.startsWith("/WhisperGrid")
-  ? '/WhisperGrid'
+  ? "/WhisperGrid"
   : undefined;
 
-if (location.pathname.includes('index.html')) {
-  basename = location.pathname.substring(0, location.pathname.indexOf('index.html') + 'index.html'.length)
+if (location.pathname.includes("index.html")) {
+  basename = location.pathname.substring(
+    0,
+    location.pathname.indexOf("index.html") + "index.html".length,
+  );
 }
 
-const selectedRouter = location.protocol === 'file:' ? createHashRouter : createBrowserRouter;
+const selectedRouter =
+  location.protocol === "file:" ? createHashRouter : createBrowserRouter;
 
-const router = selectedRouter([
+const router = selectedRouter(
+  [
+    {
+      path: "/logo.svg",
+      element: <Logo />,
+    },
+    {
+      path: "grid/:url",
+      element: <GridRouter />,
+    },
+    {
+      path: "/",
+      element: (
+        <SPARedirect>
+          <ClientProvider>
+            <WhisperGridDemo />
+          </ClientProvider>
+        </SPARedirect>
+      ),
+      children: [
+        {
+          path: "create",
+          errorElement: <Error />,
+          element: <CreateInvitation />,
+        },
+        {
+          path: "/settings",
+          errorElement: <Error />,
+          element: <Settings />,
+        },
+        {
+          path: "invitation/:thumbprint",
+          errorElement: <Error />,
+          element: <InviteRoute />,
+        },
+        {
+          path: "thread/:threadId",
+          errorElement: <Error />,
+          element: <ThreadView />,
+        },
+        {
+          path: "reply/:inviteId?",
+          errorElement: <Error />,
+          element: <ReplyToInvite />,
+        },
+        {
+          path: "/",
+          errorElement: <Error />,
+          element: <HomePage />,
+        },
+      ],
+    },
+  ],
   {
-    path: '/logo.svg',
-    element: <Logo />
+    basename,
   },
-  {
-    path: 'grid/:url',
-    element: <GridRouter />
-  },
-  {
-    path: "/",
-    element: (
-      <SPARedirect>
-        <ClientProvider><WhisperGridDemo /></ClientProvider>
-      </SPARedirect>
-    ),
-    children: [
-      {
-        path: 'create',
-        errorElement: <Error />,
-        element: <CreateInvitation />
-      },
-      {
-        path: '/settings',
-        errorElement: <Error />,
-        element: <Settings />
-      },
-      {
-        path: 'invitation/:thumbprint',
-        errorElement: <Error />,
-        element: <InviteRoute />,
-      },
-      {
-        path: 'thread/:threadId',
-        errorElement: <Error />,
-        element: <ThreadView />
-      },
-      {
-        path: 'reply/:inviteId?',
-        errorElement: <Error />,
-        element: <ReplyToInvite />
-      },
-      {
-        path: '/',
-        errorElement: <Error />,
-        element: <HomePage />
-      },
-    ]
-  },
-], {
-  basename,
-});
+);
 
 // declare the optional window property cypress.CopyText
 declare global {
@@ -117,21 +133,17 @@ declare global {
 }
 
 function SPARedirect(props: React.PropsWithChildren<object>) {
-  const [searchParams] = useSearchParams()
-  const path = searchParams.get('path')
-
+  const [searchParams] = useSearchParams();
+  const path = searchParams.get("path");
 
   return path ? (
-    <Navigate to={path}
-      replace
-      relative="route"
-    />
-  ) : props.children
+    <Navigate to={path} replace relative="route" />
+  ) : (
+    props.children
+  );
 }
 
-const root = ReactDOM.createRoot(
-  document.getElementById("root")!
-);
+const root = ReactDOM.createRoot(document.getElementById("root")!);
 
 root.render(
   <React.StrictMode>
@@ -142,18 +154,16 @@ root.render(
         </React.Suspense>
       </Provider>
     </App>
-  </React.StrictMode>
-)
+  </React.StrictMode>,
+);
 
 function Error(): React.ReactNode {
   const error: any = useRouteError();
-  console.log('error', error)
+  console.log("error", error);
   const message = error?.data ?? error?.message ?? "An error occurred";
-  return <Flex vertical align="center">
-    <Alert
-      message="Error"
-      description={message}
-      type="error"
-      showIcon />
-  </Flex>;
+  return (
+    <Flex vertical align="center">
+      <Alert message="Error" description={message} type="error" showIcon />
+    </Flex>
+  );
 }

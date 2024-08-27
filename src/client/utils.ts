@@ -79,7 +79,7 @@ export async function generateECDSAKeyPair() {
   const keyPair = (await window.crypto.subtle.generateKey(
     ecdsaAlg,
     true,
-    ecdsaKeyUseages
+    ecdsaKeyUseages,
   )) as ECDSACryptoKeyPair;
   const thumbprint = await getJWKthumbprint(await exportKey(keyPair.publicKey));
   setNickname(thumbprint, `${thumbprint}/ECDSA`);
@@ -104,7 +104,7 @@ export function invariant<T>(condition: T, message: string): asserts condition {
 
 export async function deriveSharedSecret(
   privateKey: TaggedKey<["ECDH", "private"]>,
-  publicKey: TaggedKey<["ECDH", "public"]>
+  publicKey: TaggedKey<["ECDH", "public"]>,
 ): Promise<SymmetricKey> {
   const bits = await window.crypto.subtle.deriveBits(
     {
@@ -112,14 +112,14 @@ export async function deriveSharedSecret(
       public: publicKey,
     },
     privateKey,
-    256
+    256,
   );
   return (await window.crypto.subtle.importKey(
     "raw",
     bits,
     { name: "AES-GCM" },
     false,
-    ["encrypt", "decrypt"]
+    ["encrypt", "decrypt"],
   )) as SymmetricKey;
 }
 
@@ -131,7 +131,7 @@ type Header = {
 export async function signJWS<H extends Header = Header, P = object | string>(
   header: H,
   payload: P,
-  privateKey: ECDSACryptoKey<"private">
+  privateKey: ECDSACryptoKey<"private">,
 ): Promise<string> {
   const unixTimetsamp = Math.floor(Date.now() / 1000);
   header.iat = unixTimetsamp;
@@ -139,14 +139,14 @@ export async function signJWS<H extends Header = Header, P = object | string>(
   const encodedHeader = utf8tob64u(JSON.stringify(header));
 
   const encodedPayload = utf8tob64u(
-    typeof payload === "string" ? payload : JSON.stringify(payload)
+    typeof payload === "string" ? payload : JSON.stringify(payload),
   );
   const dataToSign = `${encodedHeader}.${encodedPayload}`;
 
   const signature = await window.crypto.subtle.sign(
     ecdsaSignAlg,
     privateKey,
-    new TextEncoder().encode(dataToSign)
+    new TextEncoder().encode(dataToSign),
   );
 
   // Step 5: Encode the signature
@@ -159,7 +159,7 @@ export async function signJWS<H extends Header = Header, P = object | string>(
 }
 export async function verifyJWS(
   jws: string,
-  pubKey?: ECDSACryptoKey<"public"> | JWK<"ECDSA", "public"> | null
+  pubKey?: ECDSACryptoKey<"public"> | JWK<"ECDSA", "public"> | null,
 ): Promise<boolean> {
   if (jws.startsWith('"') && jws.endsWith('"')) {
     jws = jws.slice(1, -1);
@@ -190,12 +190,12 @@ export async function verifyJWS(
     { name: ecdsaAlg.name, hash: { name: "SHA-384" } },
     pubKey as CryptoKey,
     hextoArrayBuffer(b64utohex(signature)),
-    new TextEncoder().encode(signedData)
+    new TextEncoder().encode(signedData),
   );
   return isValid;
 }
 export async function getJWKthumbprint<T = AlgorithmType>(
-  jwk: JWK<T, any>
+  jwk: JWK<T, any>,
 ): Promise<Thumbprint<T>> {
   invariant(jwk.kty === "EC", "Unsupported key type");
   const s = {
@@ -207,20 +207,20 @@ export async function getJWKthumbprint<T = AlgorithmType>(
   const hex = rstrtohex(JSON.stringify(s));
   const sha256 = await window.crypto.subtle.digest(
     "SHA-256",
-    hextoArrayBuffer(hex)
+    hextoArrayBuffer(hex),
   );
 
   return `id-${hextob64u(ArrayBuffertohex(sha256))}` as any;
 }
 
 export function exportKey<T = AlgorithmType, V = Visibility>(
-  key: TaggedKey<[T, V]>
+  key: TaggedKey<[T, V]>,
 ) {
   return window.crypto.subtle.exportKey("jwk", key) as Promise<JWK<T, V>>;
 }
 
 export async function exportKeyPair<T = AlgorithmType>(
-  keyPair: TaggedCryptoKeyPair<T>
+  keyPair: TaggedCryptoKeyPair<T>,
 ) {
   const privateKeyJWK = await exportKey(keyPair.privateKey);
   const publicKeyJWK = await exportKey(keyPair.publicKey);
@@ -228,7 +228,7 @@ export async function exportKeyPair<T = AlgorithmType>(
 }
 export async function encryptPrivateKey<T = AlgorithmType>(
   privateKeyJWK: JWK<T, "private">,
-  password: string
+  password: string,
 ): Promise<EncryptedPrivateKey<T>> {
   const enc = new TextEncoder();
   const passwordKey = await window.crypto.subtle.importKey(
@@ -236,7 +236,7 @@ export async function encryptPrivateKey<T = AlgorithmType>(
     enc.encode(password),
     { name: "PBKDF2" },
     false,
-    ["deriveKey"]
+    ["deriveKey"],
   );
 
   const salt = window.crypto.getRandomValues(new Uint8Array(16));
@@ -250,7 +250,7 @@ export async function encryptPrivateKey<T = AlgorithmType>(
     passwordKey,
     { name: "AES-GCM", length: 256 },
     false,
-    ["encrypt", "decrypt"]
+    ["encrypt", "decrypt"],
   );
 
   const iv = window.crypto.getRandomValues(new Uint8Array(12));
@@ -261,7 +261,7 @@ export async function encryptPrivateKey<T = AlgorithmType>(
       iv: iv,
     },
     keyMaterial,
-    enc.encode(privateKeyString)
+    enc.encode(privateKeyString),
   );
 
   return [
@@ -272,7 +272,7 @@ export async function encryptPrivateKey<T = AlgorithmType>(
 }
 export async function decryptPrivateKey<T = AlgorithmType>(
   str: TaggedString<[T, "private"]>,
-  password: string
+  password: string,
 ): Promise<JWK<T, "private">> {
   const [encryptedPrivateKey, iv, salt] = str
     .split(".")
@@ -284,7 +284,7 @@ export async function decryptPrivateKey<T = AlgorithmType>(
     enc.encode(password),
     { name: "PBKDF2" },
     false,
-    ["deriveKey"]
+    ["deriveKey"],
   );
 
   const keyMaterial = await window.crypto.subtle.deriveKey(
@@ -297,7 +297,7 @@ export async function decryptPrivateKey<T = AlgorithmType>(
     passwordKey,
     { name: "AES-GCM", length: 256 },
     false,
-    ["encrypt", "decrypt"]
+    ["encrypt", "decrypt"],
   );
 
   const decryptedPrivateKey = await window.crypto.subtle.decrypt(
@@ -306,11 +306,11 @@ export async function decryptPrivateKey<T = AlgorithmType>(
       iv: iv,
     },
     keyMaterial,
-    encryptedPrivateKey
+    encryptedPrivateKey,
   );
 
   const privateKeyJWK = JSON.parse(
-    new TextDecoder().decode(decryptedPrivateKey)
+    new TextDecoder().decode(decryptedPrivateKey),
   );
   return privateKeyJWK;
 }
@@ -319,7 +319,7 @@ export async function parseJWS<
     | string
     | SignedTransport
     | SignedBackup
-    | SignedSelfEncrypted = string
+    | SignedSelfEncrypted = string,
 >(jws: J, pubKey?: ECDSACryptoKey<"public"> | null) {
   if (pubKey !== null) {
     const isValid = await verifyJWS(jws, pubKey);
@@ -333,20 +333,20 @@ export function parseJWSSync<
     | string
     | SignedTransport
     | SignedBackup
-    | SignedSelfEncrypted = string
+    | SignedSelfEncrypted = string,
 >(
-  jws: J
+  jws: J,
 ): J extends SignedInvitation
   ? Invitation
   : J extends SignedReply
-  ? ReplyMessage
-  : J extends SignedReplyToInvite
-  ? ReplyToInvite
-  : J extends SignedSelfEncrypted
-  ? SelfEncrypted
-  : J extends SignedBackup
-  ? BackupJWS
-  : T {
+    ? ReplyMessage
+    : J extends SignedReplyToInvite
+      ? ReplyToInvite
+      : J extends SignedSelfEncrypted
+        ? SelfEncrypted
+        : J extends SignedBackup
+          ? BackupJWS
+          : T {
   invariant(typeof jws === "string", "Expected a string");
   if (jws.startsWith('"') && jws.endsWith('"')) {
     jws = jws.slice(1, -1) as any;
@@ -365,26 +365,26 @@ export function parseJWSSync<
 
 export async function importPrivateKey<T = AlgorithmType>(
   type: T,
-  jwk: JWK<T, "private">
+  jwk: JWK<T, "private">,
 ): Promise<TaggedKey<[T, "private"]>> {
   return (await window.crypto.subtle.importKey(
     "jwk",
     jwk,
     type === "ECDH" ? ecdhAlg : ecdsaAlg,
     true,
-    type === "ECDH" ? ["deriveKey", "deriveBits"] : ["sign"]
+    type === "ECDH" ? ["deriveKey", "deriveBits"] : ["sign"],
   )) as TaggedKey<[T, "private"]>;
 }
 export async function importPublicKey<T = AlgorithmType>(
   type: T,
-  jwk: JWK<T, "public">
+  jwk: JWK<T, "public">,
 ): Promise<TaggedKey<[T, "public"]>> {
   return (await window.crypto.subtle.importKey(
     "jwk",
     jwk,
     type === "ECDH" ? ecdhAlg : ecdsaAlg,
     true,
-    type === "ECDH" ? [] : ["verify"]
+    type === "ECDH" ? [] : ["verify"],
   )) as TaggedKey<[T, "public"]>;
 }
 
@@ -393,7 +393,7 @@ export async function importKeyPair<T = AlgorithmType>(
     privateKeyJWK: JWK<T, "private">;
     publicKeyJWK: JWK<T, "public">;
   },
-  type: "ecdsa" | "ecdh" = "ecdh"
+  type: "ecdsa" | "ecdh" = "ecdh",
 ): Promise<{
   privateKey: TaggedKey<[T, "private"]>;
   publicKey: TaggedKey<[T, "public"]>;
@@ -404,14 +404,14 @@ export async function importKeyPair<T = AlgorithmType>(
       t.privateKeyJWK,
       type === "ecdh" ? ecdhAlg : ecdsaAlg,
       true,
-      type === "ecdh" ? ["deriveKey", "deriveBits"] : ["sign"]
+      type === "ecdh" ? ["deriveKey", "deriveBits"] : ["sign"],
     )) as TaggedKey<[T, "private"]>,
     publicKey: (await window.crypto.subtle.importKey(
       "jwk",
       t.publicKeyJWK,
       type === "ecdh" ? ecdhAlg : ecdsaAlg,
       true,
-      type === "ecdh" ? [] : ["verify"]
+      type === "ecdh" ? [] : ["verify"],
     )) as TaggedKey<[T, "public"]>,
   };
 }
@@ -419,7 +419,7 @@ export async function importKeyPair<T = AlgorithmType>(
 const MIN_MESSAGE_SIZE = 30;
 export async function encryptData<T extends string | object>(
   secret: SymmetricKey,
-  message: T
+  message: T,
 ): Promise<{
   iv: string;
   encrypted: Encrypted<T>;
@@ -433,7 +433,7 @@ export async function encryptData<T extends string | object>(
       msg = JSON.stringify({
         random: ArrayBuffertohex(
           window.crypto.getRandomValues(new Uint8Array(MIN_MESSAGE_SIZE / 2))
-            .buffer
+            .buffer,
         ),
         m: message,
       });
@@ -444,7 +444,7 @@ export async function encryptData<T extends string | object>(
         iv,
       },
       secret,
-      new TextEncoder().encode(msg)
+      new TextEncoder().encode(msg),
     );
     return {
       iv: Buffer.from(iv).toString("base64"),
@@ -458,7 +458,7 @@ export async function encryptData<T extends string | object>(
 export async function decryptData<T extends string | object>(
   secret: SymmetricKey,
   iv: string,
-  encryptedPayload: Encrypted<T>
+  encryptedPayload: Encrypted<T>,
 ): Promise<T> {
   try {
     const payloadBuffer = await window.crypto.subtle.decrypt(
@@ -467,7 +467,7 @@ export async function decryptData<T extends string | object>(
         iv: b64uToBuffer(iv),
       },
       secret,
-      b64uToBuffer(encryptedPayload)
+      b64uToBuffer(encryptedPayload),
     );
     const decoded = new TextDecoder().decode(payloadBuffer);
     const decrypted = JSON.parse(decoded);

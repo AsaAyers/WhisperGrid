@@ -15,7 +15,7 @@ export async function viewEncryptedThread(client: Client, threadId: ThreadID) {
     try {
       console.log(`fetching updates from... ${threadInfo.myRelay}`);
       const response = await fetch(
-        `${threadInfo.myRelay}/json?since=all&poll=1`
+        `${threadInfo.myRelay}/json?since=all&poll=1`,
       );
       const text = await response.text();
 
@@ -37,13 +37,13 @@ export async function viewEncryptedThread(client: Client, threadId: ThreadID) {
   }
 
   console.log(
-    `Thread: ${threadId}\n--------------------------------------------`
+    `Thread: ${threadId}\n--------------------------------------------`,
   );
   thread.map((message) => {
     console.log(
       `${message.type} From: ${message.from} ${new Date(message.iat * 1000)}\n${
         message.message
-      }\n--------------------------------------------`
+      }\n--------------------------------------------`,
     );
   });
 
@@ -135,7 +135,7 @@ async function replyMenu(
   client: Client,
   threadId: ThreadID,
   variant: "reply" | "replyEditor",
-  options: { setMyRelay?: string } = {}
+  options: { setMyRelay?: string } = {},
 ) {
   const prompt = variant === "reply" ? input : editor;
   const message = await prompt({

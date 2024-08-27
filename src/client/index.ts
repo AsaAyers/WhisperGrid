@@ -93,7 +93,7 @@ export class Client {
       setNickname(this.thumbprint, this.clientNickname!);
       setNickname(
         await getJWKthumbprint(await exportKey(this.storageKeyPair.publicKey)),
-        `storage[${this.clientNickname!}]`
+        `storage[${this.clientNickname!}]`,
       );
     }
   }
@@ -102,7 +102,7 @@ export class Client {
     private storage: GridStorage,
     private readonly thumbprint: Thumbprint<"ECDSA">,
     private readonly identityKeyPair: ECDSACryptoKeyPair,
-    private readonly storageKeyPair: ECDHCryptoKeyPair
+    private readonly storageKeyPair: ECDHCryptoKeyPair,
   ) {}
 
   async getThumbprint() {
@@ -111,7 +111,7 @@ export class Client {
 
   static async generateClient(
     storage: GridStorage,
-    password: string
+    password: string,
   ): Promise<Client> {
     const identity = await generateECDSAKeyPair();
     const storageKey = await generateECDHKeyPair();
@@ -120,11 +120,11 @@ export class Client {
 
     const encryptedIdentity = await encryptPrivateKey(
       idJWKs.privateKeyJWK,
-      password
+      password,
     );
     const encryptedStorageKey = await encryptPrivateKey(
       storageJWKs.privateKeyJWK,
-      password
+      password,
     );
 
     const thumbprint = await getJWKthumbprint(idJWKs.publicKeyJWK);
@@ -146,7 +146,7 @@ export class Client {
   static async loadFromBackup(
     storage: GridStorage,
     backup: BackupPayload | SignedBackup,
-    password: string
+    password: string,
   ): Promise<Client> {
     if (typeof backup === "string") {
       const jws = await parseJWS(backup);
@@ -155,11 +155,11 @@ export class Client {
 
     const identityPrivateKey = await decryptPrivateKey(
       backup.identity.id.private,
-      password
+      password,
     );
     const storagePrivateKey = await decryptPrivateKey(
       backup.identity.storage.private,
-      password
+      password,
     );
 
     const identityKeyPair: ECDSACryptoKeyPair = await importKeyPair(
@@ -167,14 +167,14 @@ export class Client {
         privateKeyJWK: identityPrivateKey,
         publicKeyJWK: backup.identity.id.jwk,
       },
-      "ecdsa"
+      "ecdsa",
     );
     const storageKeyPair: ECDHCryptoKeyPair = await importKeyPair(
       {
         privateKeyJWK: storagePrivateKey,
         publicKeyJWK: backup.identity.storage.jwk,
       },
-      "ecdh"
+      "ecdh",
     );
 
     await storage.loadIdentityBackup(backup);
@@ -182,7 +182,7 @@ export class Client {
       storage,
       backup.thumbprint,
       identityKeyPair,
-      storageKeyPair
+      storageKeyPair,
     );
     return client;
   }
@@ -190,29 +190,29 @@ export class Client {
   static async loadClient(
     storage: GridStorage,
     thumbprint: Thumbprint<"ECDSA">,
-    password: string
+    password: string,
   ) {
     const storedData = storage.getItem(`identity:${thumbprint}`);
     invariant(storedData, "No identity found for thumbprint");
 
     const privateKeyJWK = await decryptPrivateKey(
       storedData.id.private,
-      password
+      password,
     );
     const id = await importKeyPair(
       { privateKeyJWK, publicKeyJWK: storedData.id.jwk },
-      "ecdsa"
+      "ecdsa",
     );
 
     const storageKeys: ECDHCryptoKeyPair = await importKeyPair(
       {
         privateKeyJWK: await decryptPrivateKey(
           storedData.storage.private,
-          password
+          password,
         ),
         publicKeyJWK: storedData.storage.jwk,
       },
-      "ecdh"
+      "ecdh",
     );
 
     return new Client(storage, thumbprint, id, storageKeys);
@@ -221,19 +221,19 @@ export class Client {
   async decryptFromSelf(message: SignedSelfEncrypted): Promise<string> {
     const selfEncrypted = await parseJWS(
       message,
-      this.identityKeyPair.publicKey
+      this.identityKeyPair.publicKey,
     );
 
     const epk = await importPublicKey("ECDH", selfEncrypted.header.epk);
 
     const secret = await deriveSharedSecret(
       this.storageKeyPair.privateKey,
-      epk
+      epk,
     );
     const payload = await decryptData(
       secret,
       selfEncrypted.header.iv,
-      selfEncrypted.payload
+      selfEncrypted.payload,
     );
     return payload;
   }
@@ -243,7 +243,7 @@ export class Client {
 
     const secret = await deriveSharedSecret(
       epk.privateKey,
-      this.storageKeyPair.publicKey
+      this.storageKeyPair.publicKey,
     );
     const { iv, encrypted } = await encryptData(secret, message);
 
@@ -262,7 +262,7 @@ export class Client {
     const encryptedJWS = (await signJWS(
       selfEncrypted.header,
       selfEncrypted.payload,
-      this.identityKeyPair.privateKey
+      this.identityKeyPair.privateKey,
     )) as SignedSelfEncrypted;
     // try {
     invariant(await verifyJWS(encryptedJWS), "Error encrypting message");
@@ -271,7 +271,7 @@ export class Client {
     invariant(
       decryptedMessage === message ||
         message === JSON.stringify(decryptedMessage),
-      "Decrypted message mismatch"
+      "Decrypted message mismatch",
     );
     // } catch (e: any) {
     //   throw new Error(`Error encrypting message: ${e?.message ?? e}`);
@@ -299,7 +299,7 @@ export class Client {
       payload: {
         messageId: Number(
           messageIdForInviteTesting ??
-            Math.floor(Math.random() * MAX_MESSAGE_ID)
+            Math.floor(Math.random() * MAX_MESSAGE_ID),
         ).toString(16),
         epk: jwks.publicKeyJWK,
         note,
@@ -309,7 +309,7 @@ export class Client {
     const signedInvitation = (await signJWS(
       invitation.header,
       invitation.payload,
-      this.identityKeyPair.privateKey
+      this.identityKeyPair.privateKey,
     )) as SignedInvitation;
 
     this.storage.setItem(`invitation:${thumbprint}`, signedInvitation);
@@ -318,7 +318,7 @@ export class Client {
     });
     this.storage.setItem(
       `threads:${this.thumbprint}`,
-      this.storage.queryItem(`threads:${this.thumbprint}`) ?? []
+      this.storage.queryItem(`threads:${this.thumbprint}`) ?? [],
     );
     this.notifySubscribers();
     return signedInvitation;
@@ -328,7 +328,7 @@ export class Client {
     signedInvite: SignedInvitation,
     message: string,
     nickname: string,
-    { setMyRelay }: { setMyRelay?: string } = {}
+    { setMyRelay }: { setMyRelay?: string } = {},
   ) {
     invariant(await verifyJWS(signedInvite), "Invalid invitation signature");
     const invite = await parseJWS(signedInvite);
@@ -336,7 +336,7 @@ export class Client {
     const threadId = await this.startThread(
       signedInvite,
       invite.payload.epk,
-      invite.header.jwk
+      invite.header.jwk,
     );
     const reply = this.replyToThread(threadId, message, {
       selfSign: true,
@@ -350,21 +350,21 @@ export class Client {
     signedInvite: SignedInvitation,
     theirEPKJWK: JWK<"ECDH", "public">,
     theirSignature: JWK<"ECDSA", "public">,
-    myThumbprint?: Thumbprint<"ECDH">
+    myThumbprint?: Thumbprint<"ECDH">,
   ): Promise<ThreadID> {
     if (!myThumbprint) {
       const { thumbprint } = await this.makeThreadKeys();
       myThumbprint = thumbprint;
     }
     const keyBackup = this.storage.getItem(
-      `encrypted-thread-key:${myThumbprint}`
+      `encrypted-thread-key:${myThumbprint}`,
     );
     invariant(keyBackup, `Thread key not found ${myThumbprint}`);
 
     const signatureThumbprint = await getJWKthumbprint(theirSignature);
     invariant(
       !myThumbprint || signatureThumbprint !== this.thumbprint,
-      "Cannot start a thread with yourself"
+      "Cannot start a thread with yourself",
     );
 
     const thumbprints: Thumbprint<"ECDH">[] = [
@@ -375,8 +375,8 @@ export class Client {
     const threadId = ArrayBuffertohex(
       await window.crypto.subtle.digest(
         "SHA-256",
-        Buffer.from(thumbprints.join(":"))
-      )
+        Buffer.from(thumbprints.join(":")),
+      ),
     ) as ThreadID;
 
     if (this.storage.queryItem(`thread-info:${this.thumbprint}:${threadId}`)) {
@@ -411,7 +411,7 @@ export class Client {
   }
   async getInvitations() {
     return (await this.getInvitationIds()).map(
-      (t) => this.storage.getItem(`invitation:${t}`)!
+      (t) => this.storage.getItem(`invitation:${t}`)!,
     );
   }
 
@@ -435,7 +435,7 @@ export class Client {
     epk: JWK<"ECDH", "public">;
   }> {
     const threadInfo = this.storage.getItem(
-      `thread-info:${this.thumbprint}:${threadThumbprint}`
+      `thread-info:${this.thumbprint}:${threadThumbprint}`,
     );
     invariant(threadInfo, "Thread not found");
 
@@ -443,11 +443,11 @@ export class Client {
     invariant(publicJWK, `Public key not found ${threadInfo.theirEPK}`);
 
     const encryptedBackup = this.storage.getItem(
-      `encrypted-thread-key:${threadInfo.myThumbprint}`
+      `encrypted-thread-key:${threadInfo.myThumbprint}`,
     );
     invariant(
       typeof encryptedBackup === "string",
-      `Thread key not found ${threadInfo.myThumbprint}`
+      `Thread key not found ${threadInfo.myThumbprint}`,
     );
 
     type JWKPair = {
@@ -455,7 +455,7 @@ export class Client {
       publicKeyJWK: JWK<"ECDH", "public">;
     };
     const jwks: JWKPair = JSON.parse(
-      await this.decryptFromSelf(encryptedBackup)
+      await this.decryptFromSelf(encryptedBackup),
     );
     const pKey = await importPublicKey("ECDH", publicJWK);
     const privateKey = await importPrivateKey("ECDH", jwks.privateKeyJWK);
@@ -473,7 +473,7 @@ export class Client {
       selfSign?: boolean;
       nickname?: string;
       setMyRelay?: string;
-    }
+    },
   ): Promise<{
     reply: SignedReply;
     threadId: ThreadID;
@@ -481,7 +481,7 @@ export class Client {
   }> {
     const { secret, epk } = await this.readThreadSecret(threadId);
     const threadInfo = this.storage.getItem(
-      `thread-info:${this.thumbprint}:${threadId}`
+      `thread-info:${this.thumbprint}:${threadId}`,
     );
     invariant(threadInfo, "Thread not found");
     const messageId =
@@ -489,7 +489,7 @@ export class Client {
       Number(
         messageIdForInviteTesting
           ? parseInt("100000", 16) + messageIdForInviteTesting
-          : Math.floor(Math.random() * MAX_MESSAGE_ID)
+          : Math.floor(Math.random() * MAX_MESSAGE_ID),
       ).toString(16);
     invariant(typeof messageId === "string", `Invalid message id ${messageId}`);
     const nextId = incMessageId(messageId);
@@ -517,7 +517,7 @@ export class Client {
     // threadInfo.syn = nextId;
     this.storage.setItem(
       `thread-info:${this.thumbprint}:${threadId}`,
-      threadInfo
+      threadInfo,
     );
     if (options?.selfSign && options.nickname) {
       const ack: Decrypted<ReplyToInvite> = {
@@ -534,7 +534,7 @@ export class Client {
           messageId: Number(
             messageIdForInviteTesting
               ? parseInt("100000", 16) + messageIdForInviteTesting
-              : Math.floor(Math.random() * MAX_MESSAGE_ID)
+              : Math.floor(Math.random() * MAX_MESSAGE_ID),
           ).toString(16),
         },
       };
@@ -546,12 +546,12 @@ export class Client {
     const encryptedJWS = (await signJWS(
       replyMessage.header,
       encrypted,
-      this.identityKeyPair.privateKey
+      this.identityKeyPair.privateKey,
     )) as SignedReply;
 
     invariant(
       verifyJWS(encryptedJWS, this.identityKeyPair.publicKey),
-      "Error encrypting message"
+      "Error encrypting message",
     );
     const theirThumbprint = await getJWKthumbprint(threadInfo.theirSignature);
     const relay = threadInfo.relays[theirThumbprint];
@@ -566,7 +566,7 @@ export class Client {
 
   public async appendThread(
     encryptedMessage: SignedTransport,
-    threadId?: ThreadID
+    threadId?: ThreadID,
   ): Promise<{
     threadId: ThreadID;
     message: {
@@ -590,23 +590,23 @@ export class Client {
           invariant(reply.header.epk, "First message must have an epk");
           invariant(
             reply.header.invite,
-            'First message must have an "invite" header'
+            'First message must have an "invite" header',
           );
           const invitationThumbprint = reply.header.invite;
           const invitation = this.storage.getItem(
-            `invitation:${invitationThumbprint}`
+            `invitation:${invitationThumbprint}`,
           );
           invariant(invitation, "Invitation not found " + invitationThumbprint);
           const invitationJWS = await parseJWS(invitation);
 
           const myThumbprint = await getJWKthumbprint(
-            invitationJWS.payload.epk
+            invitationJWS.payload.epk,
           );
           threadId = await this.startThread(
             invitation,
             reply.header.epk,
             reply.header.jwk,
-            myThumbprint
+            myThumbprint,
           );
           // FALLS THROUGH
         }
@@ -614,7 +614,7 @@ export class Client {
           const reply = jws as ReplyMessage;
           threadId ??= reply.header.re;
           const threadInfo = this.storage.getItem(
-            `thread-info:${this.thumbprint}:${threadId}`
+            `thread-info:${this.thumbprint}:${threadId}`,
           );
 
           const fromMe = reply.header.from === this.thumbprint;
@@ -622,12 +622,12 @@ export class Client {
           if (fromMe) {
             isValid = await verifyJWS(
               encryptedMessage,
-              this.identityKeyPair.publicKey
+              this.identityKeyPair.publicKey,
             );
           } else {
             isValid = await verifyJWS(
               encryptedMessage,
-              threadInfo.theirSignature
+              threadInfo.theirSignature,
             );
           }
           invariant(isValid, "Invalid message signature");
@@ -648,7 +648,7 @@ export class Client {
     if (fromMe) {
       isValid = await verifyJWS(
         encryptedMessage,
-        this.identityKeyPair.publicKey
+        this.identityKeyPair.publicKey,
       );
     } else {
       isValid = await verifyJWS(encryptedMessage, threadInfo.theirSignature);
@@ -662,12 +662,12 @@ export class Client {
         : {
             ack: message.messageId,
           },
-      threadInfo
+      threadInfo,
     );
 
     if (storeMessage) {
       const m = this.storage.queryItem(
-        `keyed-messages:${this.thumbprint}:${threadId}`
+        `keyed-messages:${this.thumbprint}:${threadId}`,
       )?.messages;
       invariant(
         m ? !m.includes(encryptedMessage) : true,
@@ -681,8 +681,8 @@ export class Client {
             messageIndex: m?.indexOf(encryptedMessage),
           },
           null,
-          2
-        )}`
+          2,
+        )}`,
       );
       if (message.relay) {
         threadInfo.relays[await getJWKthumbprint(threadInfo.theirSignature)] =
@@ -697,13 +697,13 @@ export class Client {
       }
       this.storage.setItem(
         `thread-info:${this.thumbprint}:${threadId}`,
-        threadInfo
+        threadInfo,
       );
       this.storage.storeMessage(
         this.thumbprint,
         threadId,
         message.messageId,
-        encryptedMessage
+        encryptedMessage,
       );
       this.notifySubscribers();
     } else {
@@ -723,7 +723,7 @@ export class Client {
         return typeof message === "string"
           ? this.decryptMessage(threadId, message)
           : message;
-      })
+      }),
     );
     messages.sort((a, b) => {
       if (a.from !== b.from) {
@@ -746,10 +746,10 @@ export class Client {
   }
   public async decryptMessage(
     threadId: ThreadID,
-    encryptedMessage: SignedTransport
+    encryptedMessage: SignedTransport,
   ): Promise<DecryptedMessageType> {
     const threadInfo = this.storage.getItem(
-      `thread-info:${this.thumbprint}:${threadId}`
+      `thread-info:${this.thumbprint}:${threadId}`,
     );
     const jws = await parseJWS(encryptedMessage, null);
     invariant(threadInfo, "Thread not found");
@@ -783,7 +783,7 @@ export class Client {
     const payload = await decryptData<ReplyToInvitePayload | ReplyPayload>(
       secret,
       jws.header.iv,
-      reply.payload
+      reply.payload,
     );
     const from = reply.header.from;
 
@@ -812,7 +812,7 @@ export class Client {
 
   public async getThreadInfo(thread: ThreadID) {
     const threadInfo = this.storage.getItem(
-      `thread-info:${this.thumbprint}:${thread}`
+      `thread-info:${this.thumbprint}:${thread}`,
     );
     invariant(threadInfo, "Thread not found");
     const myRelay = threadInfo.relays[this.thumbprint];
@@ -821,7 +821,7 @@ export class Client {
       myRelay,
       myNickname: getNickname(this.thumbprint),
       theirNickname: getNickname(
-        await getJWKthumbprint(threadInfo.theirSignature)
+        await getJWKthumbprint(threadInfo.theirSignature),
       ),
     };
   }
@@ -832,16 +832,16 @@ export class Client {
 
     const encryptedIdentity = await encryptPrivateKey(
       idJWKs.privateKeyJWK,
-      password
+      password,
     );
     const encryptedStorageKey = await encryptPrivateKey(
       storageJWKs.privateKeyJWK,
-      password
+      password,
     );
     const payload = await this.storage.makeIdentityBackup(
       this.thumbprint,
       encryptedIdentity,
-      encryptedStorageKey
+      encryptedStorageKey,
     );
 
     return signJWS(
@@ -850,7 +850,7 @@ export class Client {
         jwk: idJWKs.publicKeyJWK,
       },
       payload,
-      this.identityKeyPair.privateKey
+      this.identityKeyPair.privateKey,
     ) as Promise<SignedBackup>;
   }
 
@@ -883,7 +883,7 @@ export function incMessageId(messageId: string) {
   const n = nextId.toString(16);
   invariant(
     !Number.isNaN(n),
-    `Invalid message toString ${messageId} ${nextId}`
+    `Invalid message toString ${messageId} ${nextId}`,
   );
   return n;
 }

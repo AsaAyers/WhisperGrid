@@ -44,13 +44,13 @@ export async function runWebserver(c: Client | null) {
                 const c = await Client.loadFromBackup(
                   new GridStorage(),
                   backup,
-                  password
+                  password,
                 );
                 c.subscribe(
                   debounce(async () => {
                     const backup = await c.makeBackup(password);
                     await fs.writeFile(filename, backup);
-                  }, 500)
+                  }, 500),
                 );
                 client = c;
                 return c;
@@ -70,18 +70,21 @@ export async function runWebserver(c: Client | null) {
               // value match the method
               const result = await method.apply(ctx, data.args);
               socket.send(
-                JSON.stringify({ requestId: data.requestId, result })
+                JSON.stringify({ requestId: data.requestId, result }),
               );
             } catch (e: any) {
               socket.send(
-                JSON.stringify({ requestId: data.requestId, error: e?.message })
+                JSON.stringify({
+                  requestId: data.requestId,
+                  error: e?.message,
+                }),
               );
             }
           }
         }
       });
       socket.send(
-        JSON.stringify({ requestId: "init", result: client != null })
+        JSON.stringify({ requestId: "init", result: client != null }),
       );
     });
   });

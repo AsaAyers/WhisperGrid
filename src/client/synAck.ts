@@ -9,7 +9,7 @@ export type SynAckState = {
 };
 export function synAck(
   id: { syn: string } | { ack: string },
-  state: SynAckState
+  state: SynAckState,
 ) {
   if ("syn" in id) {
     if (state.syn === undefined) {
@@ -18,7 +18,7 @@ export function synAck(
       state.syn = id.syn;
     } else {
       throw new Error(
-        `Syn out of order ${id.syn} - Expected: ${incMessageId(state.syn)}`
+        `Syn out of order ${id.syn} - Expected: ${incMessageId(state.syn)}`,
       );
     }
   } else {
@@ -45,7 +45,7 @@ export function synAck(
 
       if (ack - min >= state.windowSize) {
         throw new Error(
-          `Missing ${ack - min} messages between ${state.minAck} and ${id.ack}`
+          `Missing ${ack - min} messages between ${state.minAck} and ${id.ack}`,
         );
       }
       if (state.missing.length === 0) {
@@ -60,7 +60,7 @@ export function synAck(
       state.maxAck = id.ack;
     } else {
       throw new Error(
-        `Ack out of order ${JSON.stringify(id)} ${JSON.stringify(state)}`
+        `Ack out of order ${JSON.stringify(id)} ${JSON.stringify(state)}`,
       );
     }
   }
