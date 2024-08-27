@@ -22,6 +22,8 @@ import { HomePage } from "./HomePage";
 import { Settings } from "./Settings";
 import { GridRouter } from "./GridRouter";
 import { Provider } from "jotai";
+import { OpenAPIClientProvider } from "./OpenAPIClientProvider";
+import { QueryClient, QueryClientProvider } from "react-query";
 
 export class LocalGridStorage extends GridStorage {
   protected data = {
@@ -67,6 +69,15 @@ if (location.pathname.includes("index.html")) {
 const selectedRouter =
   location.protocol === "file:" ? createHashRouter : createBrowserRouter;
 
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      refetchOnWindowFocus: false,
+      retry: false,
+    },
+  },
+});
+
 const router = selectedRouter(
   [
     {
@@ -82,7 +93,11 @@ const router = selectedRouter(
       element: (
         <SPARedirect>
           <ClientProvider>
-            <WhisperGridDemo />
+            <QueryClientProvider client={queryClient}>
+              <OpenAPIClientProvider>
+                <WhisperGridDemo />
+              </OpenAPIClientProvider>
+            </QueryClientProvider>
           </ClientProvider>
         </SPARedirect>
       ),

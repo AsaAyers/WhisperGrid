@@ -1,5 +1,5 @@
 import React from "react";
-import { Configuration, RelayApi, UserApi } from "openapi-client";
+import { Configuration, RelayApi, UserApi } from "../openapi-client";
 import { invariant } from "./invariant";
 
 type OpenAPIClient = {
