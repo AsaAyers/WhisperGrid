@@ -1,0 +1,397 @@
+openapi: 3.0.0
+info:
+  description: OpenAPI definition for WhisperGrid relays.
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+  title: OpenAPI WhisperGrid
+  version: 1.0.0
+servers:
+  - url: http://localhost:9001/api
+  - url: http://localhost:9011/api
+tags:
+  - name: relay
+  - description: Operations about user
+    name: user
+paths:
+  /invite:
+    post:
+      operationId: publishInvite
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Invite"
+        description: "The invite is validated, and then stored by its thumbprint."
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Thumbprint"
+          description: successful operation
+        "400":
+          description: Invalid invite supplied
+      summary: Post an invite
+      tags:
+        - relay
+      x-eov-operation-handler: controllers/RelayController
+  /invite/{thumbprint}:
+    get:
+      description: ""
+      operationId: getInvite
+      parameters:
+        - explode: false
+          in: path
+          name: thumbprint
+          required: true
+          schema:
+            $ref: "#/components/schemas/Thumbprint"
+          style: simple
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Invite"
+          description: successful operation
+        "400":
+          description: Invalid thumbprint supplied
+        "404":
+          description: Invite not found
+      summary: Get relay invite by thumbprint
+      tags:
+        - relay
+      x-eov-operation-handler: controllers/RelayController
+  /myThreads:
+    get:
+      operationId: getMyThreads
+      security:
+        - cookieAuth: []
+      summary: Get all threads for the current user
+      tags:
+        - relay
+      x-eov-operation-handler: controllers/RelayController
+      responses:
+        "200":
+          description: List of threadIDs
+          content:
+            application/json:
+              schema:
+                items:
+                  type: string
+                type: array
+  /thread/{threadId}:
+    get:
+      description: ""
+      operationId: getThread
+      parameters:
+        - description: ""
+          explode: false
+          in: path
+          name: threadId
+          required: true
+          schema:
+            type: string
+          style: simple
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                items:
+                  type: string
+                type: array
+          description: successful operation
+        "400":
+          description: Invalid threadId supplied
+        "404":
+          description: Thread not found
+      summary: Get a thread by threadId
+      tags:
+        - relay
+      x-eov-operation-handler: controllers/RelayController
+    post:
+      operationId: publishReply
+      parameters:
+        - description: ""
+          explode: false
+          in: path
+          name: threadId
+          required: true
+          schema:
+            type: string
+          style: simple
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/publishReply_request"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                type: string
+          description: successful operation
+        "400":
+          description: Invalid reply supplied
+      summary: Post a reply
+      tags:
+        - relay
+      x-eov-operation-handler: controllers/RelayController
+  /invite/{thumbprint}/reply:
+    post:
+      description: ""
+      operationId: replyToInvite
+      parameters:
+        - description: JWK Thumbprint https://www.rfc-editor.org/rfc/rfc7638
+          explode: false
+          in: path
+          name: thumbprint
+          required: true
+          schema:
+            $ref: "#/components/schemas/Thumbprint"
+          style: simple
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReplyToInvite"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/replyToInvite_200_response"
+          description: successful operation
+        "400":
+          description: Invalid reply supplied
+      summary: Reply to a relay invite
+      tags:
+        - relay
+      x-eov-operation-handler: controllers/RelayController
+  /backup/{backupKey}:
+    get:
+      description: ""
+      operationId: getBackup
+      parameters:
+        - description: sha256(thumbprint+password)
+          explode: false
+          in: path
+          name: backupKey
+          required: true
+          schema:
+            type: string
+          style: simple
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                type: string
+          description: successful operation
+        "400":
+          description: Invalid backupKey supplied
+        "404":
+          description: Backup not found
+      summary: Get password-protected backup by backupKey
+      tags:
+        - user
+      x-eov-operation-handler: controllers/UserController
+    post:
+      description: ""
+      operationId: uploadBackup
+      parameters:
+        - description: sha256(thumbprint+password)
+          explode: false
+          in: path
+          name: backupKey
+          required: true
+          schema:
+            type: string
+          style: simple
+      requestBody:
+        $ref: "#/components/requestBodies/StoreBackup"
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                type: string
+          description: successful operation
+        "400":
+          description: Invalid backup supplied
+      summary: Upload a password-protected backup
+      tags:
+        - user
+      x-eov-operation-handler: controllers/UserController
+  /login/challenge:
+    get:
+      description: ""
+      operationId: getLoginChallenge
+      # requestBody:
+      #   content:
+      #     test/html:
+      #       schema:
+      #         type: string
+      #     application/json:
+      #       schema:
+      #         type: string
+      #   required: false
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                type: string
+          description: successful operation
+      summary: Get a login challenge
+      tags:
+        - user
+      x-eov-operation-handler: controllers/UserController
+  /login:
+    post:
+      description: ""
+      operationId: loginWithChallenge
+      requestBody:
+        $ref: "#/components/requestBodies/Login"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                type: string
+          description: successful operation
+          headers:
+            Set-Cookie:
+              description:
+                Cookie authentication key for use with the `api_key` apiKey
+                authentication.
+              explode: false
+              schema:
+                example: AUTH_KEY=abcde12345; Path=/; HttpOnly
+                type: string
+              style: simple
+            X-Rate-Limit:
+              description: calls per hour allowed by the user
+              explode: false
+              schema:
+                format: int32
+                type: integer
+              style: simple
+            X-Expires-After:
+              description: date in UTC when token expires
+              explode: false
+              schema:
+                format: date-time
+                type: string
+              style: simple
+        "400":
+          description: "Invalid JWS"
+          content:
+            application/json:
+              schema:
+                type: string
+      summary: Login with a challenge
+      tags:
+        - user
+      x-eov-operation-handler: controllers/UserController
+  /user/logout:
+    get:
+      description: ""
+      operationId: logoutUser
+      responses:
+        default:
+          description: successful operation
+      security:
+        - cookieAuth: []
+      summary: Logs out current logged in user session
+      tags:
+        - user
+      x-eov-operation-handler: controllers/UserController
+components:
+  requestBodies:
+    StoreBackup:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/uploadBackup_request"
+    Login:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/LoginRequest"
+  schemas:
+    Invite:
+      example:
+        invite: invite
+      properties:
+        invite:
+          type: string
+      required:
+        - invite
+    ReplyToInvite:
+      example:
+        ReplyToInvite: ReplyToInvite
+      properties:
+        ReplyToInvite:
+          type: string
+      required:
+        - ReplyToInvite
+    Thumbprint:
+      description: JWK Thumbprint https://www.rfc-editor.org/rfc/rfc7638
+      type: string
+    publishReply_request:
+      properties:
+        signedReply:
+          type: string
+      required:
+        - signedReply
+    replyToInvite_200_response:
+      example:
+        threadId: threadId
+      properties:
+        threadId:
+          type: string
+      required:
+        - threadId
+    LoginRequest:
+      example:
+        signedChallenge: abc.123.def
+      properties:
+        signedChallenge:
+          description:
+            "The signed challenge is a JWS signed with the user's private\
+            \ key. { header: { sub: 'login', iat, challengeURL }, payload: /login/challenge\
+            \ }"
+          type: string
+      required:
+        - signedChallenge
+    uploadBackup_request:
+      example:
+        signedBackup: "abc.backup.def"
+        thumbprint: "abcdefg"
+      properties:
+        signedBackup:
+          type: string
+        thumbprint:
+          type: string
+      required:
+        - signedBackup
+        - thumbprint
+  securitySchemes:
+    api_key:
+      in: header
+      name: api_key
+      type: apiKey
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: api_key
