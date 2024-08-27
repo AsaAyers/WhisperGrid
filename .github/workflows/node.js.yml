@@ -26,6 +26,7 @@ jobs:
 
   deploy:
     runs-on: ubuntu-latest
+    if: ${{ github.ref == 'refs/heads/main' }}
     needs: [build, cypress-run]
     name: Deploy with gh-pages
     env:
