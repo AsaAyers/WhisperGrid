@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import React from "react";
 import ReactDOM from "react-dom/client";
-import { GridStorage } from "../client";
+import { GridStorage } from "../whispergrid";
 import { WhisperGridDemo } from "./WhisperGridDemo";
 import {
   Navigate,

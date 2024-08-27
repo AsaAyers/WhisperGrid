@@ -18,8 +18,8 @@ g.window.crypto ??= crypto;
 
 const config = {
   ROOT_DIR: __dirname,
-  URL_PORT: 9001,
-  URL_PATH: "http://localhost:9001",
+  URL_PORT: 1234,
+  URL_PATH: "http://localhost:1234",
   BASE_VERSION: "",
   CONTROLLER_DIRECTORY: path.join(__dirname, "controllers"),
   PROJECT_DIR: __dirname,

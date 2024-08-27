@@ -1,6 +1,6 @@
 # UserApi
 
-All URIs are relative to _http://localhost:9001_
+All URIs are relative to _http://localhost:1234_
 
 | Method                                                  | HTTP request                 | Description                                |
 | ------------------------------------------------------- | ---------------------------- | ------------------------------------------ |

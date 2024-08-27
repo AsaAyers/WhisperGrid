@@ -20,7 +20,7 @@ ts cert \
   --key-file /var/lib/tailscale/key.pem \
   $DOMAIN
 
-ts serve --bg http://localhost:9001/
+ts serve --bg http://localhost:1234/
 
 wait -n
 exit $?
