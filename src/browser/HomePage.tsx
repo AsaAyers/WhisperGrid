@@ -9,7 +9,7 @@ import {
   UserOutlined,
 } from "@ant-design/icons";
 import { CopyInvite } from "./DisplayInvite";
-import { SignedInvitation } from "../client";
+import { SignedInvitation } from "../whispergrid";
 import { useResolved } from "./useResolved";
 
 export function HomePage() {

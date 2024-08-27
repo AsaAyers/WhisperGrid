@@ -870,7 +870,7 @@ export class Client {
     for (const sub of this.subscriptions) {
       try {
         sub?.();
-      } catch (e) {
+      } catch (e: any) {
         // Ignore
       }
     }

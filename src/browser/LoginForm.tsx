@@ -12,6 +12,8 @@ import { LoginTab } from "./LoginTab";
 export function LoginForm() {
   const client = useOpenAPIClient();
   const challengeQuery = useQuery({
+    // This feature isn't ready yet
+    enabled: false,
     queryKey: ["challenge"],
     queryFn: () => client.userApi.getLoginChallenge().then((challenge) => {
       if (!challenge.match(/^\d+:[0-9a-f]+$/)) {

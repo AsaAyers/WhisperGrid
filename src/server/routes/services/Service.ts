@@ -1,4 +1,4 @@
-import { BaseAPI } from "../../../src/openapi-client";
+import { BaseAPI } from "../../../openapi-client";
 import { Request, Response } from "express";
 
 export type SuccessResponse<T> = {

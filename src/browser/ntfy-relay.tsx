@@ -5,7 +5,7 @@ import { SettingOutlined } from "@ant-design/icons";
 import { clientAtom } from "./ClientProvider";
 import { atom, useAtom } from "jotai";
 import { matchJWS } from "./ThreadView";
-import { bufferToB64u } from "client/utils";
+import { bufferToB64u } from "whispergrid/utils";
 
 const ntfyTopic = atom(
   null as null | {

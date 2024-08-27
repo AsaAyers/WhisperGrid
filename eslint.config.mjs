@@ -28,7 +28,7 @@ export default [
   ...tseslint.configs.recommended,
   ...fixupConfigRules(pluginReactConfig),
   {
-    files: ["express-relay/**"],
+    files: ["server/**"],
     rules: {
       "@typescript-eslint/no-var-requires": "off",
       "no-async-promise-executor": "off",

@@ -8,11 +8,11 @@ import {
   Upload,
 } from "antd";
 import { useClientSetup } from "./ClientProvider";
-import { BackupPayload } from "../client";
-import { invariant, parseJWS, verifyJWS } from "../client/utils";
+import { BackupPayload } from "../whispergrid";
+import { invariant, parseJWS, verifyJWS } from "../whispergrid/utils";
 import { UploadOutlined } from "@ant-design/icons";
 import { UploadChangeParam } from "antd/es/upload";
-import { SignedBackup } from "client/types";
+import { SignedBackup } from "whispergridtypes";
 
 const unsupportedBrowser = !window?.crypto?.subtle;
 export function OpenBackupTab() {

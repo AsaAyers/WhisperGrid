@@ -20,9 +20,9 @@ import {
   SignedTransport,
   DecryptedMessageType,
   Client,
-} from "../client";
+} from "../whispergrid";
 import { SendOutlined, UserOutlined } from "@ant-design/icons";
-import { invariant, parseJWSSync } from "../client/utils";
+import { invariant, parseJWSSync } from "../whispergrid/utils";
 import { useParams, useSearchParams } from "react-router-dom";
 import { useClient } from "./ClientProvider";
 import { RelaySetupCascader } from "./ntfy-relay";

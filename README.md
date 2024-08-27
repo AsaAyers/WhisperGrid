@@ -48,7 +48,7 @@ This `replyToInvite` contains your `nickname`, `message`, optional `relay`, a
 Everything after that is a regular reply. The mechanics of re-keying the
 conversation has not been implemented yet.
 
-## src/client (target audience: Developers)
+## src/whispergrid (target audience: Developers)
 
 The `Client` generates or decrypts a set of keys using your password. It
 manages your conversations through `invites` and `threads`. An `invite` declares

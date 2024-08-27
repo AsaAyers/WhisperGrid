@@ -6,16 +6,15 @@ import {
   importPrivateKey,
   JWK,
   TaggedKey,
-} from "../src/client/utils";
-
+} from "../whispergrid/utils";
+import path from "path";
+import fs from "fs";
 import crypto from "crypto";
+import { TaggedString } from "whispergrid/types";
 
 const g = global as any;
 g.window ??= {};
 g.window.crypto ??= crypto;
-
-const path = require("path");
-const fs = require("fs");
 
 const config = {
   ROOT_DIR: __dirname,
@@ -48,7 +47,9 @@ async function loadSessionPrivateKey(): Promise<
     const backup = await encryptPrivateKey(jwk, config.SERVER_SECRET);
     fs.writeFileSync(filename, backup);
   } else {
-    const backup = fs.readFileSync(filename, "utf8");
+    const backup = fs.readFileSync(filename, "utf8") as TaggedString<
+      ["ECDSA", "private"]
+    >;
     jwk = await decryptPrivateKey(backup, config.SERVER_SECRET);
   }
   return importPrivateKey("ECDSA", jwk);

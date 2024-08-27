@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import React from "react";
 import { clientAtom, useClient, useClientSetup } from "./ClientProvider";
-import { Button, Flex, Form, Input, Modal, Typography } from "antd";
+import { Button, Card, Flex, Form, Input, Modal, Typography } from "antd";
 import { useHref } from "react-router-dom";
 import { invariant } from "./invariant";
 import { useResolved } from "./useResolved";
@@ -202,15 +202,27 @@ function LoginChallenge() {
   }
 
   return (
-    <>
-      <Form
-        form={form}
-        onFinish={async (values) => {
+    <Form
+      form={form}
+      onFinish={async (values) => {
+        if (values.challenge) {
           const signedChallenge = await client.signLoginChallenge(
             values.challenge,
           );
           setSignedChallenge(signedChallenge);
-        }}
+        } else {
+          setSignedChallenge(null);
+        }
+      }}
+    >
+      <Card
+        title="Sign Login Challenge"
+        style={{ maxWidth: '40rem' }}
+        actions={[
+          <Button key="submit" type="primary" htmlType="submit">
+            {signedChallenge ? "Reset" : "Sign"}
+          </Button>
+        ]}
       >
         {signedChallenge ? (
           <Typography.Paragraph copyable>
@@ -231,18 +243,19 @@ function LoginChallenge() {
             <Input />
           </Form.Item>
         )}
-        <Button type="primary" htmlType="submit">
-          Login challenge
-        </Button>
-      </Form>
-    </>
+      </Card>
+    </Form>
   );
 }
+
+const enableLoginChallenge = false
 
 export function Settings() {
   return (
     <Flex vertical>
-      <LoginChallenge />
+      {enableLoginChallenge && (
+        <LoginChallenge />
+      )}
       <Backup />
       <DeleteAll />
     </Flex>

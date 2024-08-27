@@ -1,2 +1,1 @@
-export { Client } from "./client";
-export { GridStorage } from "./client/GridStorage";
+export { Client, GridStorage } from "./whispergrid";

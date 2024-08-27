@@ -1,15 +1,14 @@
 import { Service, ServiceHandler } from "./Service";
 import config from "../../config";
 import crypto from "crypto";
-import { UserApi } from "../../../src/openapi-client";
+import { UserApi } from "../../../openapi-client";
 import {
   getJWKthumbprint,
   invariant,
   parseJWSSync,
   signJWS,
   verifyJWS,
-} from "../../../src/client/utils";
-import { response } from "express";
+} from "../../../whispergrid/utils";
 
 type T = ServiceHandler<InstanceType<typeof UserApi>>;
 
@@ -56,7 +55,7 @@ export const validateChallenge = async (challenge: string) => {
 const getBackup: T["getBackup"] = async ({ backupKey }) => {
   try {
     return Service.successResponse(backupKey);
-  } catch (e) {
+  } catch (e: any) {
     throw Service.rejectResponse(e.message || "Invalid input", e.status || 405);
   }
 };
@@ -69,7 +68,7 @@ const getBackup: T["getBackup"] = async ({ backupKey }) => {
 const getLoginChallenge: T["getLoginChallenge"] = async () => {
   try {
     return Service.successResponse(await makeLoginChallenge());
-  } catch (e) {
+  } catch (e: any) {
     throw Service.rejectResponse(e.message || "Invalid input", e.status || 405);
   }
 };
@@ -112,11 +111,8 @@ const loginWithChallenge: T["loginWithChallenge"] = async (
       thumbprint,
       await sessionKey,
     );
-    // response.cookie("api_key", apiKey);
-    // request.cookies["api_key"] = apiKey;
-    response.header("Set-Cookie", `api_key=${apiKey}; HttpOnly`);
     return Service.successResponse(apiKey);
-  } catch (e) {
+  } catch (e: any) {
     throw Service.rejectError(e);
   }
 };
@@ -129,7 +125,7 @@ const loginWithChallenge: T["loginWithChallenge"] = async (
 const logoutUser: T["logoutUser"] = async () => {
   try {
     return Service.successResponse(undefined);
-  } catch (e) {
+  } catch (e: any) {
     throw Service.rejectResponse(e.message || "Invalid input", e.status || 405);
   }
 };
@@ -152,7 +148,7 @@ const uploadBackup: T["uploadBackup"] = async ({
         uploadBackupRequest,
       }),
     );
-  } catch (e) {
+  } catch (e: any) {
     throw Service.rejectResponse(e.message || "Invalid input", e.status || 405);
   }
 };

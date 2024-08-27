@@ -1,5 +1,5 @@
 import { Service, ServiceHandler } from "./Service";
-import { RelayApi } from "../../../src/openapi-client";
+import { RelayApi } from "../../../openapi-client";
 
 type T = ServiceHandler<InstanceType<typeof RelayApi>>;
 
@@ -14,7 +14,7 @@ export const getInvite: T["getInvite"] = async ({ thumbprint }) => {
   try {
     console.log({ thumbprint });
     return Service.successResponse("invite" as any);
-  } catch (e) {
+  } catch (e: any) {
     throw Service.rejectResponse(e.message || "Invalid input", e.status || 405);
   }
 };
@@ -29,7 +29,7 @@ export const getThread: T["getThread"] = async ({ threadId }) => {
   try {
     console.log({ threadId });
     return Service.successResponse([]);
-  } catch (e) {
+  } catch (e: any) {
     throw Service.rejectResponse(e.message || "Invalid input", e.status || 405);
   }
 };
@@ -37,7 +37,7 @@ export const getThread: T["getThread"] = async ({ threadId }) => {
 export const getMyThreads: T["getMyThreads"] = async () => {
   try {
     return Service.successResponse(["a", "b"]);
-  } catch (e) {
+  } catch (e: any) {
     throw Service.rejectResponse(e.message || "Invalid input", e.status || 405);
   }
 };
@@ -51,7 +51,7 @@ export const getMyThreads: T["getMyThreads"] = async () => {
 export const publishInvite: T["publishInvite"] = async ({ invite }) => {
   try {
     return Service.successResponse(invite as any);
-  } catch (e) {
+  } catch (e: any) {
     throw Service.rejectResponse(e.message || "Invalid input", e.status || 405);
   }
 };
@@ -73,7 +73,7 @@ export const publishReply: T["publishReply"] = async ({
         publishReplyRequest,
       }),
     );
-  } catch (e) {
+  } catch (e: any) {
     throw Service.rejectResponse(e.message || "Invalid input", e.status || 405);
   }
 };
@@ -94,7 +94,7 @@ export const replyToInvite: T["replyToInvite"] = async ({
     return Service.successResponse({
       threadId: "threadId",
     });
-  } catch (e) {
+  } catch (e: any) {
     throw Service.rejectResponse(e.message || "Invalid input", e.status || 405);
   }
 };

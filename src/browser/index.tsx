@@ -1,7 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import React from "react";
 import ReactDOM from "react-dom/client";
-import { GridStorage } from "../client";
 import { WhisperGridDemo } from "./WhisperGridDemo";
 import {
   Navigate,
@@ -11,6 +10,7 @@ import {
   useRouteError,
   useSearchParams,
 } from "react-router-dom";
+import { GridStorage } from "../whispergrid";
 import { CreateInvitation } from "./CreateInvitation";
 import { ClientProvider } from "./ClientProvider";
 import { InviteRoute } from "./DisplayInvite";
@@ -33,7 +33,7 @@ export class LocalGridStorage extends GridStorage {
         if (str) {
           return JSON.parse(str);
         }
-      } catch (e) {
+      } catch (e: any) {
         // ignore parse errors
       }
       return str;

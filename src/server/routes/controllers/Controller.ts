@@ -5,10 +5,10 @@ import {
 } from "express-openapi-validator/dist/framework/types";
 import { SuccessResponse } from "../services/Service";
 
-const fs = require("fs");
-const path = require("path");
-const camelCase = require("camelcase");
-const config = require("../../config");
+import fs from "fs";
+import path from "path";
+import camelCase from "camelcase";
+import config from "../../config";
 // const logger = require('../logger');
 
 const isReference = (val: any): val is OpenAPIV3.ReferenceObject =>
@@ -98,6 +98,7 @@ export class Controller {
 
   static getRequestBodyName(request: Request, defaultBodyName = "body") {
     const codeGenDefinedBodyName =
+      // @ts-expect-error TS doesn't know about this property
       request.openapi.schema["x-codegen-request-body-name"];
     if (codeGenDefinedBodyName !== undefined) {
       return codeGenDefinedBodyName;

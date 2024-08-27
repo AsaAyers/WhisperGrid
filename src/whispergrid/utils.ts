@@ -172,7 +172,7 @@ export async function verifyJWS(
     let headerObj;
     try {
       headerObj = JSON.parse(b64utoutf8(header));
-    } catch (e) {
+    } catch (e: any) {
       // ignore JSON parse errors
     }
     if (headerObj && "jwk" in headerObj && typeof headerObj.jwk === "object") {
@@ -356,7 +356,7 @@ export function parseJWSSync<
   let payload = b64utoutf8(encodedPayload);
   try {
     payload = JSON.parse(payload);
-  } catch (e) {
+  } catch (e: any) {
     // ignore JSON parse errors
   }
 

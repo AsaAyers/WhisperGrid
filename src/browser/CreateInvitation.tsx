@@ -1,6 +1,6 @@
 import React from "react";
 import { Button, Card, Form, FormProps, Input } from "antd";
-import { getJWKthumbprint, parseJWS } from "../client/utils";
+import { getJWKthumbprint, parseJWS } from "../whispergrid/utils";
 import { useClient } from "./ClientProvider";
 import { useNavigate } from "react-router-dom";
 
