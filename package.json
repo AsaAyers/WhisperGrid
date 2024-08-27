@@ -35,9 +35,9 @@
     "postgenerate": "npm run format",
     "prelint": "tsc --noEmit",
     "prebuild": "rm -rf dist",
+    "format": "prettier --write .",
     "build": "tsc -p tsconfig.json --outDir dist/whispergrid && cp -r src/server/api/ dist/whispergrid/server/",
     "postbuild": "parcel build --public-url /WhisperGrid --target WhisperGrid",
-    "format": "prettier --write .",
     "predeploy": "npm run build",
     "deploy": "gh-pages -d dist",
     "prepare": "husky"

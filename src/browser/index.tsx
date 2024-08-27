@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import React from "react";
 import ReactDOM from "react-dom/client";
+import { GridStorage } from "../client";
 import { WhisperGridDemo } from "./WhisperGridDemo";
 import {
   Navigate,
@@ -10,7 +11,6 @@ import {
   useRouteError,
   useSearchParams,
 } from "react-router-dom";
-import { GridStorage } from "../whispergrid";
 import { CreateInvitation } from "./CreateInvitation";
 import { ClientProvider } from "./ClientProvider";
 import { InviteRoute } from "./DisplayInvite";
@@ -22,8 +22,6 @@ import { HomePage } from "./HomePage";
 import { Settings } from "./Settings";
 import { GridRouter } from "./GridRouter";
 import { Provider } from "jotai";
-import { OpenAPIClientProvider } from "./OpenAPIClientProvider";
-import { QueryClient, QueryClientProvider } from "react-query";
 
 export class LocalGridStorage extends GridStorage {
   protected data = {
@@ -33,7 +31,7 @@ export class LocalGridStorage extends GridStorage {
         if (str) {
           return JSON.parse(str);
         }
-      } catch (e: any) {
+      } catch (e) {
         // ignore parse errors
       }
       return str;
@@ -147,19 +145,13 @@ function SPARedirect(props: React.PropsWithChildren<object>) {
 
 const root = ReactDOM.createRoot(document.getElementById("root")!);
 
-const queryClient = new QueryClient({});
-
 root.render(
   <React.StrictMode>
     <App>
       <Provider>
-        <QueryClientProvider client={queryClient}>
-          <OpenAPIClientProvider>
-            <React.Suspense>
-              <RouterProvider router={router} />
-            </React.Suspense>
-          </OpenAPIClientProvider>
-        </QueryClientProvider>
+        <React.Suspense>
+          <RouterProvider router={router} />
+        </React.Suspense>
       </Provider>
     </App>
   </React.StrictMode>,

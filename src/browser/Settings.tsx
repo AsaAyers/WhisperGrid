@@ -19,6 +19,9 @@ function Backup() {
   const thumbprint = useResolved(
     React.useMemo(() => client?.getThumbprint(), [client]),
   );
+  const thumbprint = useResolved(
+    React.useMemo(() => client?.getThumbprint(), [client]),
+  );
   const [processing, setProcessing] = React.useState(false);
 
   if (!client.isLocalClient) {
