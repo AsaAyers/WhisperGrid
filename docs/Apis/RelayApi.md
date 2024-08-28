@@ -1,6 +1,6 @@
 # RelayApi
 
-All URIs are relative to _http://localhost:1234_
+All URIs are relative to _http://localhost:3141_
 
 | Method                                         | HTTP request                        | Description                          |
 | ---------------------------------------------- | ----------------------------------- | ------------------------------------ |

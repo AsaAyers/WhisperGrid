@@ -7,22 +7,32 @@
   "module": "dist/module.js",
   "types": "dist/types.d.ts",
   "targets": {
-    "WhisperGrid": {
+    "whispergrid": {
+      "context": "node",
+      "source": "src/whispergrid/index.ts",
+      "distDir": "dist/whispergrid",
+      "isLibrary": true
+    },
+    "PWA": {
       "context": "browser",
-      "publicUrl": "/WhisperGrid",
-      "distDir": "dist",
       "source": [
         "src/index.html",
         "src/404.html"
-      ]
+      ],
+      "isLibrary": false,
+      "publicUrl": "/WhisperGrid",
+      "distDir": "dist/pwa",
+      "engines": {
+        "browsers": "> 0.2% and not dead"
+      }
     }
   },
   "bin": {
     "whispergrid": "bin.js"
   },
   "scripts": {
-    "start": "ts-node --transpileOnly src/server/dev.ts",
-    "start:parcel": "parcel serve --port 1234 --public-url / src/index.html",
+    "start": "ts-node --transpileOnly src/server/index.ts",
+    "start:parcel": "parcel watch",
     "cy:open": "cypress open",
     "cy:run": "cypress run -b electron --e2e",
     "precy:run": "npm run test",
@@ -36,10 +46,10 @@
     "prelint": "tsc --noEmit",
     "prebuild": "rm -rf dist",
     "format": "prettier --write .",
-    "build": "tsc -p tsconfig.json --outDir dist/whispergrid && cp -r src/server/api/ dist/whispergrid/server/",
-    "postbuild": "parcel build --public-url /WhisperGrid --target WhisperGrid",
+    "build": "tsc -p tsconfig.json --outDir dist/server && cp -r src/server/api/ dist/server/server/",
+    "postbuild": "parcel build --public-url /WhisperGrid --target PWA",
     "predeploy": "npm run build",
-    "deploy": "gh-pages -d dist",
+    "deploy": "gh-pages -d dist/pwa",
     "prepare": "husky"
   },
   "author": "",

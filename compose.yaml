@@ -11,7 +11,7 @@ services:
     # volumes:
     #   - tailscale-data:/data
     environment:
-      - PORT=1234
+      - PORT=3141
     env_file:
       - path: ./local.env
         required: true

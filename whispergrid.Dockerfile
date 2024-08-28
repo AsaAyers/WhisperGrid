@@ -6,7 +6,7 @@ COPY package*.json ./
 RUN npm install
 COPY . .
 
-EXPOSE 1234
+EXPOSE 3141
 
 RUN npm run build
 

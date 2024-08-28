@@ -12,6 +12,7 @@ import { middleware } from "express-openapi-validator";
 import logger from "./logger";
 import config from "./config";
 import morgan from "morgan";
+import { invariant } from "../whispergrid/utils";
 
 class ExpressServer {
   port: any;
@@ -58,17 +59,22 @@ class ExpressServer {
     this.app.get("/", (req, res) => {
       res.redirect("/WhisperGrid");
     });
-    if (this.port === config.URL_PORT) {
-      const dist = path.join(__dirname, "../../");
-      this.app.use("/WhisperGrid", express.static(dist));
-      this.app.all("/WhisperGrid/*", (req, res) => {
-        if (path.extname(req.path) === "") {
-          res.sendFile(path.join(dist, "index.html"));
-        } else {
-          res.sendStatus(404);
-        }
-      });
+    let dist = __dirname;
+    while (dist && !fs.existsSync(path.join(dist, "dist"))) {
+      dist = path.dirname(dist);
     }
+    dist = path.join(dist, "dist/pwa");
+    console.log({ dist });
+    invariant(fs.existsSync(dist), "dist folder not found");
+
+    this.app.use("/WhisperGrid", express.static(dist));
+    this.app.all("/WhisperGrid/*", (req, res) => {
+      if (path.extname(req.path) === "") {
+        res.sendFile(path.join(dist, "index.html"));
+      } else {
+        res.sendStatus(404);
+      }
+    });
     this.app.get("/openapi", (req, res) =>
       res.sendFile(path.join(__dirname, "api", "openapi.yaml")),
     );
