@@ -31,6 +31,7 @@
     "whispergrid": "bin.js"
   },
   "scripts": {
+    "prestart": "npm run postbuild",
     "start": "ts-node --transpileOnly src/server/index.ts",
     "start:parcel": "parcel watch",
     "cy:open": "cypress open",
@@ -47,7 +48,7 @@
     "prebuild": "rm -rf dist",
     "format": "prettier --write .",
     "build": "tsc -p tsconfig.json --outDir dist/server && cp -r src/server/api/ dist/server/server/",
-    "postbuild": "parcel build --public-url /WhisperGrid --target PWA",
+    "postbuild": "parcel build",
     "predeploy": "npm run build",
     "deploy": "gh-pages -d dist/pwa",
     "prepare": "husky"

@@ -60,7 +60,7 @@ class ExpressServer {
       res.redirect("/WhisperGrid");
     });
     let dist = __dirname;
-    while (dist && !fs.existsSync(path.join(dist, "dist"))) {
+    while (dist && !fs.existsSync(path.join(dist, "package.json"))) {
       dist = path.dirname(dist);
     }
     dist = path.join(dist, "dist/pwa");
