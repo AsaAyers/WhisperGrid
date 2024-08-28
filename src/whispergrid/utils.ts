@@ -51,7 +51,7 @@ export const ecdsaSignAlg = {
 const keySymbol = Symbol("keySymbol");
 type Visibility = "public" | "private";
 type AlgorithmType = "ECDSA" | "ECDH";
-type TaggedKey<T = [AlgorithmType, Visibility]> = CryptoKey & {
+export type TaggedKey<T = [AlgorithmType, Visibility]> = CryptoKey & {
   [keySymbol]: T;
 };
 export type EncryptedPrivateKey<T = AlgorithmType> = TaggedString<
@@ -172,7 +172,7 @@ export async function verifyJWS(
     let headerObj;
     try {
       headerObj = JSON.parse(b64utoutf8(header));
-    } catch (e) {
+    } catch (e: any) {
       // ignore JSON parse errors
     }
     if (headerObj && "jwk" in headerObj && typeof headerObj.jwk === "object") {
@@ -328,7 +328,7 @@ export async function parseJWS<
   return parseJWSSync(jws);
 }
 export function parseJWSSync<
-  T extends { header: unknown; payload: unknown },
+  T extends { header: object; payload: object | string },
   J extends
     | string
     | SignedTransport
@@ -356,7 +356,7 @@ export function parseJWSSync<
   let payload = b64utoutf8(encodedPayload);
   try {
     payload = JSON.parse(payload);
-  } catch (e) {
+  } catch (e: any) {
     // ignore JSON parse errors
   }
 

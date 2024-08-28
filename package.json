@@ -2,44 +2,55 @@
   "name": "whispergrid",
   "version": "1.0.8",
   "description": "",
-  "source": "src/client/index.ts",
-  "main": "dist/client/index.js",
+  "source": "src/whispergrid/index.ts",
+  "main": "dist/whispergrid/index.js",
   "module": "dist/module.js",
   "types": "dist/types.d.ts",
   "targets": {
-    "WhisperGrid": {
-      "context": "browser",
-      "publicUrl": "/WhisperGrid",
-      "distDir": "dist",
-      "source": [
-        "index.html",
-        "404.html"
-      ]
-    },
-    "cli": {
+    "whispergrid": {
       "context": "node",
-      "source": "src/cli/index.ts"
+      "source": "src/whispergrid/index.ts",
+      "distDir": "dist/whispergrid",
+      "isLibrary": true
     },
-    "main": {},
-    "module": {}
+    "PWA": {
+      "context": "browser",
+      "source": [
+        "src/index.html",
+        "src/404.html"
+      ],
+      "isLibrary": false,
+      "publicUrl": "/WhisperGrid",
+      "distDir": "dist/pwa",
+      "engines": {
+        "browsers": "> 0.2% and not dead"
+      }
+    }
   },
   "bin": {
     "whispergrid": "bin.js"
   },
   "scripts": {
-    "start": "parcel serve --public-url / index.html",
+    "prestart": "npm run postbuild",
+    "start": "ts-node --transpileOnly src/server/index.ts",
+    "start:parcel": "parcel watch",
     "cy:open": "cypress open",
     "cy:run": "cypress run -b electron --e2e",
     "precy:run": "npm run test",
     "test": "jest",
     "pretest": "npm run lint",
     "lint": "eslint src cypress",
+    "generate:openapi-client": "docker run --rm -v \"${PWD}:/local\" openapitools/openapi-generator-cli generate -i /local/src/server/api/openapi.yaml -g typescript-fetch -o /local/src/openapi-client",
+    "generate:openapi-docs": "docker run --rm -v \"${PWD}:/local\" openapitools/openapi-generator-cli generate -i /local/src/server/api/openapi.yaml -g markdown -o /local/docs",
+    "generate": "npm run generate:openapi-client && npm run generate:openapi-docs",
+    "postgenerate": "npm run format",
     "prelint": "tsc --noEmit",
     "prebuild": "rm -rf dist",
     "format": "prettier --write .",
-    "build": "parcel build --public-url /WhisperGrid",
+    "build": "tsc -p tsconfig.json --outDir dist/server && cp -r src/server/api/ dist/server/server/",
+    "postbuild": "parcel build",
     "predeploy": "npm run build",
-    "deploy": "gh-pages -d dist",
+    "deploy": "gh-pages -d dist/pwa",
     "prepare": "husky"
   },
   "author": "",
@@ -50,16 +61,30 @@
     "@fastify/websocket": "^10.0.1",
     "@inquirer/prompts": "^5.2.1",
     "antd": "^5.18.3",
+    "body-parser": "^1.20.2",
+    "camelcase": "^5.3.1",
+    "cookie-parser": "^1.4.4",
+    "cookie-session": "^2.1.0",
+    "cors": "^2.8.5",
+    "express": "^4.16.4",
+    "express-openapi-validator": "^4.13.8",
     "fastify": "^4.28.1",
     "jose": "^5.4.0",
     "jotai": "^2.9.0",
+    "js-yaml": "^3.3.0",
     "jsrsasign": "^11.1.0",
     "jsrsasign-util": "^1.0.5",
     "lodash.debounce": "^4.0.8",
+    "morgan": "^1.10.0",
+    "ono": "^5.0.1",
+    "openapi-sampler": "^1.0.0-beta.15",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
+    "react-query": "^3.39.3",
     "react-router": "6.3",
-    "react-router-dom": "^6.23.1"
+    "react-router-dom": "^6.23.1",
+    "swagger-ui-express": "^4.0.2",
+    "winston": "^3.2.1"
   },
   "devDependencies": {
     "@eslint/compat": "^1.1.0",
@@ -67,20 +92,32 @@
     "@parcel/packager-ts": "^2.12.0",
     "@parcel/transformer-typescript-types": "^2.12.0",
     "@rollup/plugin-image": "^3.0.3",
+    "@types/cookie-parser": "^1.4.7",
+    "@types/cookie-session": "^2.0.49",
+    "@types/cors": "^2.8.17",
+    "@types/express": "^4.17.21",
     "@types/jest": "^29.5.12",
+    "@types/js-yaml": "^3.3.0",
     "@types/jsrsasign": "^10.5.14",
     "@types/lodash.debounce": "^4.0.9",
+    "@types/morgan": "^1.9.9",
     "@types/react": "^18.3.3",
     "@types/react-dom": "^18.3.0",
+    "@types/swagger-ui-express": "^4.0.2",
     "@types/ws": "^8.5.11",
+    "axios": "^0.19.0",
+    "chai": "^4.2.0",
+    "chai-as-promised": "^7.1.1",
     "cypress": "^13.12.0",
     "eslint": "^8.57.0",
     "eslint-plugin-react": "^7.34.3",
     "gh-pages": "^6.1.1",
     "globals": "^15.6.0",
+    "http-proxy-middleware": "^3.0.0",
     "husky": "^9.0.11",
     "jest": "^29.7.0",
     "jest-environment-jsdom": "^29.7.0",
+    "mocha": "^7.1.1",
     "parcel": "^2.12.0",
     "prettier": "^3.3.3",
     "ts-jest": "^29.1.4",

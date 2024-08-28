@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { Client } from "../client";
+import { Client } from "../whispergrid";
 import React from "react";
 
 export type RemoteSetup = {
@@ -31,7 +31,7 @@ export function useSocketClient(url: string): RemoteSetup | Client | null {
       let data;
       try {
         data = JSON.parse(event.data);
-      } catch (e) {
+      } catch (e: any) {
         // ignore parse errors
       }
       if (data && data.requestId) {

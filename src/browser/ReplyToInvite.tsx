@@ -19,13 +19,13 @@ import {
   parseJWSSync,
   Thumbprint,
   verifyJWS,
-} from "../client/utils";
+} from "../whispergrid/utils";
 import {
   SignedInvitation,
   SignedReplyToInvite,
   SignedTransport,
   UnpackTaggedString,
-} from "../client";
+} from "../whispergrid";
 import { clientAtom, useClient } from "./ClientProvider";
 import { SendOutlined, UserOutlined } from "@ant-design/icons";
 import { EncryptedTextInput } from "./EncryptedTextInput";

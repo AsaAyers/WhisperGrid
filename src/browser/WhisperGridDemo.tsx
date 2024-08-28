@@ -11,8 +11,8 @@ import {
   UserAddOutlined,
   UserOutlined,
 } from "@ant-design/icons";
-import { getJWKthumbprint, parseJWS } from "../client/utils";
-import { Invitation, SignedInvitation } from "../client";
+import { getJWKthumbprint, parseJWS } from "../whispergrid/utils";
+import { Invitation, SignedInvitation } from "../whispergrid";
 import { Outlet, useHref, useLocation, useNavigate } from "react-router-dom";
 import { useClientSetup } from "./ClientProvider";
 import { useResolved } from "./useResolved";
@@ -42,9 +42,8 @@ export function WhisperGridDemo() {
             key,
             signedInvite,
             invitation,
-            label: `(${invitation.payload.nickname}) ${
-              invitation.payload.note ?? key
-            }`,
+            label: `(${invitation.payload.nickname}) ${invitation.payload.note ?? key
+              }`,
           };
         });
         setInvitations(await Promise.all(promises));

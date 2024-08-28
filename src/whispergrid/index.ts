@@ -1,4 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
+import { Buffer } from "buffer";
 import { GridStorage, ThreadID } from "./GridStorage";
 import {
   SignedInvitation,
@@ -826,6 +827,18 @@ export class Client {
     };
   }
 
+  public async signLoginChallenge(challenge: string) {
+    return signJWS(
+      {
+        sub: "challenge",
+        alg: "ES384",
+        jwk: await exportKey(this.identityKeyPair.publicKey),
+      },
+      challenge,
+      this.identityKeyPair.privateKey,
+    );
+  }
+
   async makeBackup(password: string) {
     const idJWKs = await exportKeyPair(this.identityKeyPair);
     const storageJWKs = await exportKeyPair(this.storageKeyPair);
@@ -858,7 +871,7 @@ export class Client {
     for (const sub of this.subscriptions) {
       try {
         sub?.();
-      } catch (e) {
+      } catch (e: any) {
         // Ignore
       }
     }
