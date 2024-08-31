@@ -32,6 +32,7 @@
   },
   "scripts": {
     "start": "node bin.js",
+    "predev": "npm run build",
     "dev": "ts-node --transpileOnly src/server/index.ts",
     "dev:parcel": "parcel watch",
     "cy:open": "cypress open",
