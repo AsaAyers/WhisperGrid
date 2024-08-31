@@ -5,13 +5,13 @@ import {
   SignedReply,
   SignedTransport,
   UnpackTaggedString,
-} from "../whispergrid";
+} from "../../whispergrid";
 import {
   invariant,
   parseJWS,
   parseJWSSync,
   verifyJWS,
-} from "../whispergrid/utils";
+} from "../../whispergrid/utils";
 
 const jwsRegex = /^[a-zA-Z0-9_-]+\.[a-zA-Z0-9_-]+\.[a-zA-Z0-9_-]+$/;
 

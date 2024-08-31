@@ -1,5 +1,5 @@
 import React from "react";
-import { useClient } from "./ClientProvider";
+import { useClient } from "./components/ClientProvider";
 import { Button, Flex, Typography } from "antd";
 import { useHref } from "react-router-dom";
 import {
@@ -8,21 +8,21 @@ import {
   SettingOutlined,
   UserOutlined,
 } from "@ant-design/icons";
-import { CopyInvite } from "./DisplayInvite";
+import { CopyInvite } from "./invitation/DisplayInvite";
 import { SignedInvitation } from "../whispergrid";
-import { useResolved } from "./useResolved";
+import { useSettled } from "./hooks/useSettled";
 
 export function HomePage() {
   const client = useClient();
   const replyHref = useHref("/reply");
   const createHref = useHref("/create");
-  const threads = useResolved(
+  const threads = useSettled(
     React.useMemo(() => client?.getThreads() ?? [], [client]),
   );
   const threadHref = useHref("/thread/ABCDE");
   const settingsHref = useHref("/settings");
 
-  const thumbprint = useResolved(
+  const thumbprint = useSettled(
     React.useMemo(() => client?.getThumbprint(), [client]),
   );
 

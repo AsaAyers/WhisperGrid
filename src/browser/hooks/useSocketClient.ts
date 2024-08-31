@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { Client } from "../whispergrid";
+import { Client } from "../../whispergrid";
 import React from "react";
 
 export type RemoteSetup = {

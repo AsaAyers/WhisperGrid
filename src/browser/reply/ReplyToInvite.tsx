@@ -19,20 +19,20 @@ import {
   parseJWSSync,
   Thumbprint,
   verifyJWS,
-} from "../whispergrid/utils";
+} from "../../whispergrid/utils";
 import {
   SignedInvitation,
   SignedReplyToInvite,
   SignedTransport,
   UnpackTaggedString,
-} from "../whispergrid";
-import { clientAtom, useClient } from "./ClientProvider";
+} from "../../whispergrid";
+import { clientAtom, useClient } from "../components/ClientProvider";
 import { SendOutlined, UserOutlined } from "@ant-design/icons";
-import { EncryptedTextInput } from "./EncryptedTextInput";
+import { EncryptedTextInput } from "../components/EncryptedTextInput";
 import { atom, useAtom } from "jotai";
 import { useNavigate, useParams } from "react-router-dom";
-import { RelaySetupCascader } from "./ntfy-relay";
-import { inviteHashAtom } from "./DisplayInvite";
+import { RelaySetupCascader } from "../ntfy-relay";
+import { inviteHashAtom } from "../invitation/DisplayInvite";
 
 const jwsPattern = /^[a-zA-Z0-9_-]+\.[a-zA-Z0-9_-]+\.[a-zA-Z0-9_-]+$/;
 const myColor = "#87d068";

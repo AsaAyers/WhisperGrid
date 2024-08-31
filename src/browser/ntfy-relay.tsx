@@ -2,9 +2,9 @@
 import React from "react";
 import { Cascader, Form, Input, Modal, Typography } from "antd";
 import { SettingOutlined } from "@ant-design/icons";
-import { clientAtom } from "./ClientProvider";
+import { clientAtom } from "./components/ClientProvider";
 import { atom, useAtom } from "jotai";
-import { matchJWS } from "./ThreadView";
+import { matchJWS } from "./thread/ThreadView";
 import { bufferToB64u } from "../whispergrid/utils";
 
 const ntfyTopic = atom(

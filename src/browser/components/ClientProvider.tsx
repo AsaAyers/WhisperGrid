@@ -1,11 +1,11 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import React from "react";
-import { Client, Thumbprint, BackupPayload } from "../whispergrid";
-import { LocalGridStorage } from ".";
+import { Client, Thumbprint, BackupPayload } from "../../whispergrid";
+import { LocalGridStorage } from "..";
 import { useNavigate } from "react-router-dom";
 import { atom, useAtom } from "jotai";
-import { invariant } from "./invariant";
-import { useSocketClient } from "./useSocketClient";
+import { invariant } from "../invariant";
+import { useSocketClient } from "../hooks/useSocketClient";
 
 export const clientAtom = atom(
   undefined as Client | undefined,
@@ -47,7 +47,7 @@ export function ClientProvider(props: React.PropsWithChildren) {
   }, []);
 
   const generateClient = React.useCallback(
-    (password: string, cb: (c: Client) => Promise<any>) => {
+    (password: string, cb?: (c: Client) => Promise<any>) => {
       const storage = new LocalGridStorage();
       return Client.generateClient(storage, password).then(async (c) => {
         await cb?.(c);

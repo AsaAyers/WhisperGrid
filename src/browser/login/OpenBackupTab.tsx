@@ -1,11 +1,11 @@
 import React from "react";
 import { Button, Flex, Form, FormProps, Input, Upload } from "antd";
-import { useClientSetup } from "./ClientProvider";
-import { BackupPayload } from "../whispergrid";
-import { invariant, parseJWS, verifyJWS } from "../whispergrid/utils";
+import { useClientSetup } from "../components/ClientProvider";
+import { BackupPayload } from "../../whispergrid";
+import { SignedBackup } from "../../whispergrid/types";
+import { invariant, parseJWS, verifyJWS } from "../../whispergrid/utils";
 import { UploadOutlined } from "@ant-design/icons";
 import { UploadChangeParam } from "antd/es/upload";
-import { SignedBackup } from "../whispergrid/types";
 
 const unsupportedBrowser = !window?.crypto?.subtle;
 export function OpenBackupTab() {

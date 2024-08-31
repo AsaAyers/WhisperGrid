@@ -1,14 +1,10 @@
 import React from "react";
 import { Alert, App, Button, Flex, Form, FormProps, Input, Switch } from "antd";
-import { useClientSetup } from "./ClientProvider";
+import { useClientSetup } from "../components/ClientProvider";
 import { useMutation } from "react-query";
-import { useOpenAPIClient } from "./OpenAPIClientProvider";
+import { useOpenAPIClient } from "../components/OpenAPIClientProvider";
+import { useBackupKey as useBackupKey } from "../hooks/useBackupKey";
 const unsupportedBrowser = !window?.crypto?.subtle;
-
-export const sha256 = async (input: string) =>
-  Buffer.from(
-    await crypto.subtle.digest("SHA-256", new TextEncoder().encode(input)),
-  ).toString("hex");
 
 export function CreateAccountTab({ challenge }: { challenge?: string }) {
   type CreateForm = {
@@ -19,20 +15,12 @@ export function CreateAccountTab({ challenge }: { challenge?: string }) {
   };
   const [form] = Form.useForm<CreateForm>();
   const { message } = App.useApp();
-  const password = Form.useWatch("password", form);
   const backupToServer = Form.useWatch("backupToServer", form);
+  const password = Form.useWatch("password", form);
   const identifier = (
     Form.useWatch("identifier", form) || ""
   ).toLocaleLowerCase();
-
-  const hashPromise = React.useMemo(() => {
-    if (identifier && password) {
-      const input = `${identifier}:${password}`;
-      return sha256(input);
-    }
-    return Promise.resolve(undefined);
-  }, [identifier, password]);
-  const hash = useSettled(hashPromise);
+  const backupKey = useBackupKey(form, backupToServer);
 
   const { generateClient } = useClientSetup();
 
@@ -52,22 +40,21 @@ export function CreateAccountTab({ challenge }: { challenge?: string }) {
         },
       });
     },
-    onSettled(data, err) {
-      if (err) {
-        message.error(err);
-      } else {
-        message.success("Backup uploaded");
-      }
+    onError() {
+      message.error("Failed to upload backup");
+    },
+    onSuccess() {
+      message.success("Backup uploaded");
     },
   });
 
   const onFinish: FormProps<CreateForm>["onFinish"] = async (values) => {
     await generateClient(values.password, async (client) => {
       const thumbprint = await client.getThumbprint();
-      if (values.backupToServer && hash) {
+      if (values.backupToServer && backupKey) {
         const signedBackup = await client.makeBackup(values.password);
         await backupMutation.mutateAsync({
-          backupKey: hash,
+          backupKey: backupKey,
           signedBackup,
           thumbprint,
         });
@@ -166,7 +153,7 @@ export function CreateAccountTab({ challenge }: { challenge?: string }) {
                       <br />
                       sha256({identifier || "[identifier]"}:
                       {(password || "").replace(/./g, "*") || "[password]"})=
-                      {hash}
+                      {backupKey}
                     </>
                   }
                 />
@@ -191,11 +178,4 @@ export function CreateAccountTab({ challenge }: { challenge?: string }) {
       </Flex>
     </Form>
   );
-}
-function useSettled<T>(hashPromise: Promise<T>): void | T {
-  const [value, setValue] = React.useState<T | undefined>(undefined);
-  React.useEffect(() => {
-    hashPromise.then(setValue);
-  }, [hashPromise]);
-  return value;
 }

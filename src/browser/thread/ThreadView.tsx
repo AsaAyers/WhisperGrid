@@ -20,12 +20,12 @@ import {
   SignedTransport,
   DecryptedMessageType,
   Client,
-} from "../whispergrid";
+} from "../../whispergrid";
 import { SendOutlined, UserOutlined } from "@ant-design/icons";
-import { invariant, parseJWSSync } from "../whispergrid/utils";
+import { invariant, parseJWSSync } from "../../whispergrid/utils";
 import { useParams, useSearchParams } from "react-router-dom";
-import { useClient } from "./ClientProvider";
-import { RelaySetupCascader } from "./ntfy-relay";
+import { useClient } from "../components/ClientProvider";
+import { RelaySetupCascader } from "../ntfy-relay";
 
 export const matchJWS = /^([a-zA-Z0-9-_]+)(\.[a-zA-Z0-9-_]+){2}$/;
 const myColor = "#87d068";

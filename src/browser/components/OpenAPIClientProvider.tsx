@@ -1,6 +1,6 @@
 import React from "react";
-import { Configuration, RelayApi, UserApi } from "../openapi-client";
-import { invariant } from "./invariant";
+import { Configuration, RelayApi, UserApi } from "../../openapi-client";
+import { invariant } from "../invariant";
 
 type OpenAPIClient = {
   relayApi: InstanceType<typeof RelayApi>;

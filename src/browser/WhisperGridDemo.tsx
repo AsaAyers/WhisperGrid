@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import React from "react";
 import { Flex, Layout, Menu, Typography } from "antd";
-import { LoginForm } from "./LoginForm";
+import { LoginPage } from "./login/LoginPage";
 import { ItemType, MenuItemType } from "antd/es/menu/interface";
 import {
   LogoutOutlined,
@@ -14,8 +14,8 @@ import {
 import { getJWKthumbprint, parseJWS } from "../whispergrid/utils";
 import { Invitation, SignedInvitation } from "../whispergrid";
 import { Outlet, useHref, useLocation, useNavigate } from "react-router-dom";
-import { useClientSetup } from "./ClientProvider";
-import { useResolved } from "./useResolved";
+import { useClientSetup } from "./components/ClientProvider";
+import { useSettled } from "./hooks/useSettled";
 
 export function WhisperGridDemo() {
   const { client, logout } = useClientSetup();
@@ -42,9 +42,8 @@ export function WhisperGridDemo() {
             key,
             signedInvite,
             invitation,
-            label: `(${invitation.payload.nickname}) ${
-              invitation.payload.note ?? key
-            }`,
+            label: `(${invitation.payload.nickname}) ${invitation.payload.note ?? key
+              }`,
           };
         });
         setInvitations(await Promise.all(promises));
@@ -53,7 +52,7 @@ export function WhisperGridDemo() {
     run();
   }, [client]);
 
-  const threads = useResolved(
+  const threads = useSettled(
     React.useMemo(() => (client ? client.getThreads() : []), [client]),
   );
 
@@ -139,7 +138,7 @@ export function WhisperGridDemo() {
           overflow: "auto",
         }}
       >
-        {!isLoggedIn && <LoginForm />}
+        {!isLoggedIn && <LoginPage />}
         {client && isLoggedIn && <Outlet />}
       </Layout.Content>
     </Layout>

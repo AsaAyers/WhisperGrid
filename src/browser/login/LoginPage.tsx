@@ -1,12 +1,13 @@
 import React from "react";
 import { Flex, Tabs } from "antd";
 import { useQuery } from "react-query";
-import { useOpenAPIClient } from "./OpenAPIClientProvider";
+import { useOpenAPIClient } from "../components/OpenAPIClientProvider";
 import { CreateAccountTab } from "./CreateAccountTab";
 import { OpenBackupTab } from "./OpenBackupTab";
 import { LoginTab } from "./LoginTab";
+import styles from './LoginPage.module.css'
 
-export function LoginForm() {
+export function LoginPage() {
   const client = useOpenAPIClient();
   const challengeQuery = useQuery({
     queryKey: ["challenge"],
@@ -20,7 +21,13 @@ export function LoginForm() {
   });
 
   return (
-    <Flex vertical align="center" justify="center" gap="small">
+    <Flex
+      vertical
+      align="stretch"
+      justify="center"
+      gap="small"
+      className={styles.loginPage}
+    >
       <Tabs
         items={[
           {

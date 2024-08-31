@@ -17,8 +17,8 @@ import {
   SignedReplyToInvite,
   SignedTransport,
   UnpackTaggedString,
-} from "../whispergrid";
-import { clientAtom, useClient } from "./ClientProvider";
+} from "../../whispergrid";
+import { clientAtom, useClient } from "../components/ClientProvider";
 import {
   Thumbprint,
   getJWKthumbprint,
@@ -26,11 +26,11 @@ import {
   parseJWS,
   parseJWSSync,
   verifyJWS,
-} from "../whispergrid/utils";
+} from "../../whispergrid/utils";
 import { useHref, useLocation, useNavigate, useParams } from "react-router-dom";
-import { EncryptedTextInput } from "./EncryptedTextInput";
+import { EncryptedTextInput } from "../components/EncryptedTextInput";
 import { NotificationInstance } from "antd/es/notification/interface";
-import { useResolved } from "./useResolved";
+import { useSettled } from "../hooks/useSettled";
 import { atom, useAtom } from "jotai";
 
 const getInviteId = async (signedInvite: SignedInvitation) => {
@@ -72,10 +72,10 @@ export const inviteHashAtom = (
               set(inviteAtom, (v) =>
                 v
                   ? {
-                      ...v,
-                      signedInvitation: message,
-                      expires: Math.max(v.expires ?? 0, expires ?? 0),
-                    }
+                    ...v,
+                    signedInvitation: message,
+                    expires: Math.max(v.expires ?? 0, expires ?? 0),
+                  }
                   : v,
               );
             } else {
@@ -96,7 +96,7 @@ export const inviteHashAtom = (
                 .getInvitation(thumbprint)
                 .catch(() => null);
               if (invite) {
-                await client.appendThread(message).catch(() => {});
+                await client.appendThread(message).catch(() => { });
               }
             }
           }
@@ -117,7 +117,7 @@ export const inviteHashAtom = (
 
           invariant(
             jws.header.sub === "reply-to-invite" ||
-              jws.header.sub === "grid-invitation",
+            jws.header.sub === "grid-invitation",
             "Invalid JWS - Expected an invite or a reply to invite",
           );
           let headers = {};
@@ -141,10 +141,10 @@ export const inviteHashAtom = (
             set(inviteAtom, (v) =>
               v
                 ? {
-                    ...v,
-                    signedInvitation: message as SignedInvitation,
-                    expires,
-                  }
+                  ...v,
+                  signedInvitation: message as SignedInvitation,
+                  expires,
+                }
                 : v,
             );
           }
@@ -209,7 +209,7 @@ export function InviteRoute() {
   invariant(thumbprint, "Thumbprint is required");
 
   const [invitation, setInvitation] = React.useState<Invitation | null>(null);
-  const signedInvite = useResolved(
+  const signedInvite = useSettled(
     React.useMemo(() => client.getInvitation(thumbprint), []),
   );
 

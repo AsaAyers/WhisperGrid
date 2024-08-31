@@ -12,17 +12,17 @@ import {
   useSearchParams,
 } from "react-router-dom";
 import { CreateInvitation } from "./CreateInvitation";
-import { ClientProvider } from "./ClientProvider";
-import { InviteRoute } from "./DisplayInvite";
+import { ClientProvider } from "./components/ClientProvider";
+import { InviteRoute } from "./invitation/DisplayInvite";
 import { Alert, App, Flex } from "antd";
-import { ReplyToInvite } from "./ReplyToInvite";
-import { ThreadView } from "./ThreadView";
+import { ReplyToInvite } from "./reply/ReplyToInvite";
+import { ThreadView } from "./thread/ThreadView";
 import { Logo } from "./Logo";
 import { HomePage } from "./HomePage";
-import { Settings } from "./Settings";
-import { GridRouter } from "./GridRouter";
+import { Settings } from "./settings/Settings";
+import { GridRouter } from "./grid/GridRouter";
 import { Provider } from "jotai";
-import { OpenAPIClientProvider } from "./OpenAPIClientProvider";
+import { OpenAPIClientProvider } from "./components/OpenAPIClientProvider";
 import { QueryClient, QueryClientProvider } from "react-query";
 
 export class LocalGridStorage extends GridStorage {

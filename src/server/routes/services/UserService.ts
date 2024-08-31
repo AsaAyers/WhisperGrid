@@ -92,10 +92,7 @@ export const getBackup: T["getBackup"] = async ({ backupKey }) => {
     }
     return Service.successResponse(backup.backup);
   } catch (e: any) {
-    throw Service.rejectResponse(
-      e.message || e.error || "Invalid input",
-      e.code || e.status || 405,
-    );
+    throw Service.rejectError(e);
   }
 };
 /**
@@ -166,6 +163,12 @@ export const uploadBackup: T["uploadBackup"] = async ({
   uploadBackupRequest,
 }) => {
   try {
+    if (
+      (await prisma.backup.findUnique({ where: { id: backupKey } })) !== null
+    ) {
+      throw Service.rejectResponse(undefined, 409);
+    }
+
     const backup = await prisma.backup.create({
       data: {
         id: backupKey,
@@ -175,8 +178,7 @@ export const uploadBackup: T["uploadBackup"] = async ({
 
     return Service.successResponse(backup.id);
   } catch (e: any) {
-    console.error(e);
-    throw Service.rejectResponse(e.message || "Invalid input", e.status || 405);
+    throw Service.rejectError(e);
   }
 };
 
@@ -187,7 +189,6 @@ export const removeBackup: T["removeBackup"] = async ({
   console.log("removeBackup", backupKey, challengeRequest);
   try {
     const backup = await prisma.backup.findUnique({ where: { id: backupKey } });
-    console.log({ backup });
     if (!backup) {
       throw Service.rejectResponse("Not Foud", 404);
     }

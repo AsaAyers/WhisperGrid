@@ -9,12 +9,12 @@ import {
   Select,
   Switch,
 } from "antd";
-import { useClientSetup } from "./ClientProvider";
-import { sha256 } from "./CreateAccountTab";
-import { useOpenAPIClient } from "./OpenAPIClientProvider";
-import { SignedBackup } from "../whispergrid/types";
-import { parseJWSSync, verifyJWS } from "../whispergrid/utils";
-import { invariant } from "./invariant";
+import { useClientSetup } from "../components/ClientProvider";
+import { useOpenAPIClient } from "../components/OpenAPIClientProvider";
+import { SignedBackup } from "../../whispergrid/types";
+import { parseJWSSync, verifyJWS } from "../../whispergrid/utils";
+import { invariant } from "../invariant";
+import { useBackupKey } from "../hooks/useBackupKey";
 
 const unsupportedBrowser = !window?.crypto?.subtle;
 
@@ -34,7 +34,7 @@ export function LoginTab({ challenge }: { challenge?: string }) {
     );
     return localIdentities.map(([key]) => key.split(":")[1]);
   }, []);
-
+  const backupKey = useBackupKey(form);
   React.useEffect(() => {
     if (!downloadFromServer && localKeys.length === 0) {
       form.setFieldsValue({
@@ -46,8 +46,7 @@ export function LoginTab({ challenge }: { challenge?: string }) {
   const { loadClient, loadFromBackup } = useClientSetup();
   const client = useOpenAPIClient();
   const onFinish: FormProps<LoginForm>["onFinish"] = async (values) => {
-    if (values.downloadFromServer) {
-      const backupKey = await sha256(values.identifier + ":" + values.password);
+    if (values.downloadFromServer && backupKey) {
       const backup = await client.userApi.getBackup({ backupKey });
       const isValid = await verifyJWS(backup as SignedBackup);
       invariant(isValid, "Invalid backup");
@@ -107,9 +106,8 @@ export function LoginTab({ challenge }: { challenge?: string }) {
               message="Identifier"
               description={
                 <>
-                  The server does not store identifiers. Instead, your
-                  identifier and password are hashed together to make an ID to
-                  lookup your encrypted backup.
+                  The server does not store identifier. Instead, your identifier
+                  and password are hashed together to make a Backup Key.
                 </>
               }
             />
@@ -135,6 +133,16 @@ export function LoginTab({ challenge }: { challenge?: string }) {
                 </Select.Option>
               ))}
             </Select>
+          </Form.Item>
+        )}
+
+        {downloadFromServer && (
+          <Form.Item label="Backup Key">
+            <Input
+              value={backupKey || ""}
+              readOnly
+              placeholder="As you enter your Identifier and password, this will show your Backup Key."
+            />
           </Form.Item>
         )}
 

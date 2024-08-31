@@ -225,6 +225,8 @@ paths:
           description: successful operation
         "400":
           description: Invalid backup supplied
+        "409":
+          description: Backup already exists
       summary: Upload a password-protected backup
       tags:
         - user

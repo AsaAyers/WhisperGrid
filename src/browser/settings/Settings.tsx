@@ -1,6 +1,10 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import React from "react";
-import { clientAtom, useClient, useClientSetup } from "./ClientProvider";
+import {
+  clientAtom,
+  useClient,
+  useClientSetup,
+} from "../components/ClientProvider";
 import {
   Button,
   Card,
@@ -12,8 +16,8 @@ import {
   Typography,
 } from "antd";
 import { useHref } from "react-router-dom";
-import { invariant } from "./invariant";
-import { useResolved } from "./useResolved";
+import { invariant } from "../invariant";
+import { useSettled } from "../hooks/useSettled";
 import { useAtomValue } from "jotai";
 
 function Backup() {
@@ -25,7 +29,7 @@ function Backup() {
   const [form] = Form.useForm<FieldType>();
   const [isBackupModalOpen, setIsBackupModalOpen] = React.useState(false);
   const client = useClient();
-  const thumbprint = useResolved(
+  const thumbprint = useSettled(
     React.useMemo(() => client?.getThumbprint(), [client]),
   );
   const [processing, setProcessing] = React.useState(false);
