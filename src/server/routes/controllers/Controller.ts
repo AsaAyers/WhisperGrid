@@ -4,12 +4,14 @@ import {
   OpenAPIV3,
 } from "express-openapi-validator/dist/framework/types";
 import { SuccessResponse } from "../services/Service";
-
 import fs from "fs";
 import path from "path";
 import camelCase from "camelcase";
 import config from "../../config";
-// const logger = require('../logger');
+
+import { debug } from "util";
+
+const log = debug("whispergrid:controller");
 
 const isReference = (val: any): val is OpenAPIV3.ReferenceObject =>
   val != null && "$ref" in val;
@@ -45,6 +47,7 @@ export class Controller {
     response.status(payload?.code || 200);
     const responsePayload =
       payload?.payload !== undefined ? payload.payload : payload;
+    log("sendResponse", payload?.code || 200, responsePayload);
     if (
       responsePayload instanceof Object ||
       typeof responsePayload === "string"
@@ -58,6 +61,7 @@ export class Controller {
   static sendError(response: Response, error: any) {
     const code = error?.code || 500;
     response.status(typeof code === "number" ? code : 500);
+    log("sendError", code, [error.error, error.message]);
     if (error.error instanceof Object || typeof error.error === "string") {
       response.json(error.error);
     } else {

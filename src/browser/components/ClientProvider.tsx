@@ -6,6 +6,8 @@ import { useNavigate } from "react-router-dom";
 import { atom, useAtom } from "jotai";
 import { invariant } from "../invariant";
 import { useSocketClient } from "../hooks/useSocketClient";
+import { useQuery } from "react-query";
+import { useOpenAPIClient } from "./OpenAPIClientProvider";
 
 export const clientAtom = atom(
   undefined as Client | undefined,
@@ -18,6 +20,26 @@ export function ClientProvider(props: React.PropsWithChildren) {
   const [client, setClient] = useAtom(clientAtom);
   const [clientUpdateKey, setClientUpdateKey] = React.useState(0);
   const navigate = useNavigate();
+  const openApiClient = useOpenAPIClient();
+  const challengeQuery = useQuery({
+    queryKey: ["challenge"],
+    queryFn: () =>
+      openApiClient.userApi.getLoginChallenge().then((challenge) => {
+        if (!challenge.match(/^\d+:[0-9a-f]+$/)) {
+          throw new Error("Invalid challenge");
+        }
+        return challenge;
+      }),
+  });
+  React.useEffect(() => {
+    async function run() {
+      if (client && challengeQuery.data) {
+        const signedChallenge = await client.signLoginChallenge(challengeQuery.data, 'login');
+        await openApiClient.userApi.loginWithChallenge({ challengeRequest: { challenge: signedChallenge } });
+      }
+    }
+    run()
+  }, [client, challengeQuery.data]);
 
   const socketUrl = React.useMemo(() => {
     const url = new URL("/client-socket", window.location as any);
@@ -99,7 +121,7 @@ export function ClientProvider(props: React.PropsWithChildren) {
   );
 
   const value = React.useMemo(() => {
-    if (clientUpdateKey > -1) {
+    if (clientUpdateKey > -1 || challengeQuery.data) {
       // This hook needs to run any time this changes.
       // console.log({ clientUpdateKey })
     }
@@ -113,7 +135,7 @@ export function ClientProvider(props: React.PropsWithChildren) {
       client,
       socketClient,
     };
-  }, [client, loadClient, generateClient, clientUpdateKey, socketClient]);
+  }, [client, loadClient, generateClient, clientUpdateKey, socketClient, challengeQuery.data]);
 
   return (
     <clientContext.Provider value={value}>

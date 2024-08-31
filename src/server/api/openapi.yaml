@@ -6,6 +6,7 @@ info:
     url: https://opensource.org/licenses/MIT
   title: OpenAPI WhisperGrid
   version: 1.0.0
+
 servers:
   - url: http://localhost:3000/api
   - url: http://localhost:9011/api
@@ -17,6 +18,8 @@ paths:
   /invite:
     post:
       operationId: publishInvite
+      security:
+        - cookieAuth: []
       requestBody:
         content:
           application/json:
@@ -85,6 +88,8 @@ paths:
   /thread/{threadId}:
     get:
       description: ""
+      security:
+        - cookieAuth: []
       operationId: getThread
       parameters:
         - description: ""
@@ -114,6 +119,8 @@ paths:
       x-eov-operation-handler: controllers/RelayController
     post:
       operationId: publishReply
+      security:
+        - cookieAuth: []
       parameters:
         - description: ""
           explode: false
@@ -145,6 +152,8 @@ paths:
   /invite/{thumbprint}/reply:
     post:
       description: ""
+      security:
+        - cookieAuth: []
       operationId: replyToInvite
       parameters:
         - description: JWK Thumbprint https://www.rfc-editor.org/rfc/rfc7638
@@ -339,8 +348,6 @@ paths:
       responses:
         "200":
           description: successful operation
-        "204":
-          description: no content, already logged out
       security:
         - cookieAuth: []
       summary: Logs out current logged in user session

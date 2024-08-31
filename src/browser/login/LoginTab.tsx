@@ -47,10 +47,10 @@ export function LoginTab({ challenge }: { challenge?: string }) {
   const client = useOpenAPIClient();
   const onFinish: FormProps<LoginForm>["onFinish"] = async (values) => {
     if (values.downloadFromServer && backupKey) {
-      const backup = await client.userApi.getBackup({ backupKey });
-      const isValid = await verifyJWS(backup as SignedBackup);
+      const backup = await client.userApi.getBackup({ backupKey }) as SignedBackup;
+      const isValid = await verifyJWS(backup);
       invariant(isValid, "Invalid backup");
-      const { payload } = parseJWSSync(backup as SignedBackup);
+      const { payload } = parseJWSSync(backup);
       await loadFromBackup(payload, values.password);
     } else {
       await loadClient(values.thumbprint, values.password);

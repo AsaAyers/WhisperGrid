@@ -122,7 +122,6 @@ export function CreateAccountTab({ challenge }: { challenge?: string }) {
               <Switch
                 value={Boolean(backupToServer)}
                 onChange={(checked) => {
-                  console.log("checked", checked);
                   form.setFieldValue("backupToServer", checked);
                 }}
               />

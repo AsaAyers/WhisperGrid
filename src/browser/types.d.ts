@@ -4,6 +4,6 @@ declare module "*.png" {
 }
 
 declare module "*.module.css" {
-  const value: Record<string, string>;
-  export default value;
+  const classes: { [key: string]: string };
+  export = classes;
 }

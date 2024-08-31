@@ -34,7 +34,6 @@ export const validateChallenge = async (
   challenge: string,
   sub: ChallengeType,
 ) => {
-  console.log({ challenge });
   if (!(await verifyJWS(challenge))) {
     throw Service.rejectResponse("Invalid JWS", 400);
   }
@@ -86,9 +85,8 @@ export const validateChallenge = async (
 export const getBackup: T["getBackup"] = async ({ backupKey }) => {
   try {
     const backup = await prisma.backup.findUnique({ where: { id: backupKey } });
-    console.log({ backup });
     if (!backup) {
-      throw Service.rejectResponse("Backup not found", 404);
+      throw Service.rejectResponse(undefined, 404);
     }
     return Service.successResponse(backup.backup);
   } catch (e: any) {
@@ -121,7 +119,6 @@ export const loginWithChallenge: T["loginWithChallenge"] = async (
   response,
 ) => {
   try {
-    console.log({ arg });
     const { thumbprint } = await validateChallenge(
       arg.challengeRequest.challenge,
       "login",
@@ -156,18 +153,13 @@ export const loginWithChallenge: T["loginWithChallenge"] = async (
  * no response value expected for this operation
  * */
 export const logoutUser: T["logoutUser"] = async (_arg, request, response) => {
-  try {
-    response.cookie("api_key", null, {
-      httpOnly: true,
-      secure: true,
-      sameSite: "strict",
-    });
-    console.log("logout");
-    return Service.successResponse(null, 200);
-  } catch (e: any) {
-    console.log("error", e);
-    return Service.successResponse(null, 204);
-  }
+  response.cookie("api_key", "", {
+    httpOnly: true,
+    secure: true,
+    sameSite: "strict",
+    expires: new Date(0),
+  });
+  return Service.successResponse(null, 200);
 };
 /**
  * Upload a password-protected backup
@@ -197,7 +189,7 @@ export const uploadBackup: T["uploadBackup"] = async ({
 
     return Service.successResponse(backup.id);
   } catch (e: any) {
-    throw Service.rejectError(e);
+    throw Service.rejectResponse(null, 405);
   }
 };
 
@@ -205,7 +197,6 @@ export const removeBackup: T["removeBackup"] = async ({
   backupKey,
   challengeRequest,
 }) => {
-  console.log("removeBackup", backupKey, challengeRequest);
   try {
     const backup = await prisma.backup.findUnique({ where: { id: backupKey } });
     if (!backup) {

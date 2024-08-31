@@ -92,13 +92,13 @@ const router = selectedRouter(
       path: "/",
       element: (
         <SPARedirect>
-          <ClientProvider>
-            <QueryClientProvider client={queryClient}>
-              <OpenAPIClientProvider>
+          <QueryClientProvider client={queryClient}>
+            <OpenAPIClientProvider>
+              <ClientProvider>
                 <WhisperGridDemo />
-              </OpenAPIClientProvider>
-            </QueryClientProvider>
-          </ClientProvider>
+              </ClientProvider>
+            </OpenAPIClientProvider>
+          </QueryClientProvider>
         </SPARedirect>
       ),
       children: [

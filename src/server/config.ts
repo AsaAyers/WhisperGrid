@@ -45,7 +45,6 @@ async function loadSessionPrivateKey(): Promise<
   let jwk: JWK<"ECDSA", "private"> | undefined = undefined;
   const filename =
     process.env.SESSION_KEY_PATH || path.join(__dirname, "session.jwk");
-  console.log({ filename });
 
   if (!fs.existsSync(config.SECRET_PATH)) {
     fs.writeFileSync(

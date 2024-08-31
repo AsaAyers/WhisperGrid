@@ -64,7 +64,6 @@ class ExpressServer {
       dist = path.dirname(dist);
     }
     dist = path.join(dist, "dist/pwa");
-    console.log({ dist });
     invariant(fs.existsSync(dist), "dist folder not found");
 
     this.app.use("/WhisperGrid", express.static(dist));
@@ -79,6 +78,7 @@ class ExpressServer {
       res.sendFile(path.join(__dirname, "api", "openapi.yaml")),
     );
 
+    this.schema.servers = [{ url: "/api" }];
     this.app.use(
       "/api-docs",
       swaggerUI.serve,

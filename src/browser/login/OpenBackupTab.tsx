@@ -21,7 +21,6 @@ export function OpenBackupTab() {
   const backup = Form.useWatch("backup", form);
   const { loadFromBackup } = useClientSetup();
   const onFinish: FormProps<BackupForm>["onFinish"] = async (values) => {
-    console.log("openBackupTab", values, backupPayload);
     invariant(backupPayload, "No backup file");
     const client = await loadFromBackup(backupPayload, values.filePassword);
     const thumbprint = await client.getThumbprint();
