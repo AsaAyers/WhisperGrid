@@ -5,7 +5,7 @@ import { useOpenAPIClient } from "../components/OpenAPIClientProvider";
 import { CreateAccountTab } from "./CreateAccountTab";
 import { OpenBackupTab } from "./OpenBackupTab";
 import { LoginTab } from "./LoginTab";
-import styles from './LoginPage.module.css'
+import * as styles from './LoginPage.module.css'
 
 export function LoginPage() {
   const client = useOpenAPIClient();

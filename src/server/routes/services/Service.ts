@@ -38,12 +38,12 @@ export type ServiceHandler<T extends BaseAPI> = {
         params: unknown,
         request: Request,
         response: Response,
-      ) => Promise<SuccessResponse<R>>
+      ) => Promise<SuccessResponse<R extends void ? null : R>>
     : T[K] extends (params: infer P, r: RequestInit) => Promise<infer R>
       ? (
           params: P,
           request: Request,
           response: Response,
-        ) => Promise<SuccessResponse<R>>
+        ) => Promise<SuccessResponse<R extends void ? null : R>>
       : never;
 };

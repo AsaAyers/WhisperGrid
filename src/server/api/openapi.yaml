@@ -7,7 +7,7 @@ info:
   title: OpenAPI WhisperGrid
   version: 1.0.0
 servers:
-  - url: http://localhost:3141/api
+  - url: http://localhost:3000/api
   - url: http://localhost:9011/api
 tags:
   - name: relay
@@ -337,8 +337,10 @@ paths:
       description: ""
       operationId: logoutUser
       responses:
-        default:
+        "200":
           description: successful operation
+        "204":
+          description: no content, already logged out
       security:
         - cookieAuth: []
       summary: Logs out current logged in user session

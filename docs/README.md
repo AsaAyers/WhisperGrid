@@ -4,7 +4,7 @@
 
 ## Documentation for API Endpoints
 
-All URIs are relative to _http://localhost:3141/api_
+All URIs are relative to _http://localhost:3000/api_
 
 | Class      | Method                                                       | HTTP request                        | Description                                |
 | ---------- | ------------------------------------------------------------ | ----------------------------------- | ------------------------------------------ |

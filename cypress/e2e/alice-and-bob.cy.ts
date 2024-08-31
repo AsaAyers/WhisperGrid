@@ -19,7 +19,7 @@ describe("Alice and Bob can use WhisperGrid to have a conversation", () => {
       cy.wrap(value).as(key);
     });
     cy.clearLocalStorage();
-    cy.visit("http://localhost:3141/");
+    cy.visit("http://localhost:3000/");
   });
   afterEach(() => {
     Object.entries(crossTestAliases).forEach(([key]) => {
@@ -119,7 +119,7 @@ describe("Alice and Bob can use WhisperGrid to have a conversation", () => {
 
     cy.downloadBackup("bob2.jws.txt", password2);
 
-    cy.visit("http://localhost:3141/");
+    cy.visit("http://localhost:3000/");
     cy.openBackup("alice2.jws.txt", password2);
 
     cy.get('[role="menuitem"]')

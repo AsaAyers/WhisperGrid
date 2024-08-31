@@ -13,7 +13,7 @@
 // -- This is a parent command --
 Cypress.Commands.add(
   "login",
-  (thumbprint, password, url = "http://localhost:3141/") => {
+  (thumbprint, password, url = "http://localhost:3000/") => {
     cy.visit(url);
     cy.contains("Open locally stored identity").click();
     cy.labeledInput("Thumbprint").clear();
@@ -23,7 +23,7 @@ Cypress.Commands.add(
 );
 Cypress.Commands.add("logout", () => {
   cy.contains("Logout").click();
-  cy.visit("http://localhost:3141/");
+  cy.visit("http://localhost:3000/");
 });
 Cypress.Commands.add("replyToInvite", (invitation, nickname, note = "") => {
   cy.contains("Reply to invite").click();
@@ -69,7 +69,7 @@ Cypress.Commands.add("openBackup", (filename, password) => {
     });
 });
 Cypress.Commands.add("createIdentity", (password) => {
-  cy.visit("http://localhost:3141/");
+  cy.visit("http://localhost:3000/");
   cy.contains("Create Identity").click();
   cy.contains("Password").type(password);
   cy.contains("Confirm password").type(password + "{enter}");
