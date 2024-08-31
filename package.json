@@ -1,6 +1,6 @@
 {
   "name": "whispergrid",
-  "version": "1.0.8",
+  "version": "1.1.0",
   "description": "",
   "source": "src/whispergrid/index.ts",
   "main": "dist/whispergrid/index.js",
