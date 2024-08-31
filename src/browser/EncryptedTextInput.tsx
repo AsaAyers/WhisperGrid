@@ -1,8 +1,17 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import React from "react";
 import { App, Input, Form } from "antd";
-import { SignedReply, SignedTransport, UnpackTaggedString } from "../whispergrid";
-import { invariant, parseJWS, parseJWSSync, verifyJWS } from "../whispergrid/utils";
+import {
+  SignedReply,
+  SignedTransport,
+  UnpackTaggedString,
+} from "../whispergrid";
+import {
+  invariant,
+  parseJWS,
+  parseJWSSync,
+  verifyJWS,
+} from "../whispergrid/utils";
 
 const jwsRegex = /^[a-zA-Z0-9_-]+\.[a-zA-Z0-9_-]+\.[a-zA-Z0-9_-]+$/;
 

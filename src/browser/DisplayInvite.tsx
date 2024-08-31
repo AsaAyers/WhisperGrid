@@ -72,10 +72,10 @@ export const inviteHashAtom = (
               set(inviteAtom, (v) =>
                 v
                   ? {
-                    ...v,
-                    signedInvitation: message,
-                    expires: Math.max(v.expires ?? 0, expires ?? 0),
-                  }
+                      ...v,
+                      signedInvitation: message,
+                      expires: Math.max(v.expires ?? 0, expires ?? 0),
+                    }
                   : v,
               );
             } else {
@@ -96,7 +96,7 @@ export const inviteHashAtom = (
                 .getInvitation(thumbprint)
                 .catch(() => null);
               if (invite) {
-                await client.appendThread(message).catch(() => { });
+                await client.appendThread(message).catch(() => {});
               }
             }
           }
@@ -117,7 +117,7 @@ export const inviteHashAtom = (
 
           invariant(
             jws.header.sub === "reply-to-invite" ||
-            jws.header.sub === "grid-invitation",
+              jws.header.sub === "grid-invitation",
             "Invalid JWS - Expected an invite or a reply to invite",
           );
           let headers = {};
@@ -141,10 +141,10 @@ export const inviteHashAtom = (
             set(inviteAtom, (v) =>
               v
                 ? {
-                  ...v,
-                  signedInvitation: message as SignedInvitation,
-                  expires,
-                }
+                    ...v,
+                    signedInvitation: message as SignedInvitation,
+                    expires,
+                  }
                 : v,
             );
           }

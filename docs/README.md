@@ -4,7 +4,7 @@
 
 ## Documentation for API Endpoints
 
-All URIs are relative to _http://localhost:3141_
+All URIs are relative to _http://localhost:3141/api_
 
 | Class      | Method                                                       | HTTP request                        | Description                                |
 | ---------- | ------------------------------------------------------------ | ----------------------------------- | ------------------------------------------ |
@@ -18,14 +18,15 @@ All URIs are relative to _http://localhost:3141_
 | _UserApi_  | [**getLoginChallenge**](Apis/UserApi.md#getloginchallenge)   | **GET** /login/challenge            | Get a login challenge                      |
 | _UserApi_  | [**loginWithChallenge**](Apis/UserApi.md#loginwithchallenge) | **POST** /login                     | Login with a challenge                     |
 | _UserApi_  | [**logoutUser**](Apis/UserApi.md#logoutuser)                 | **GET** /user/logout                | Logs out current logged in user session    |
+| _UserApi_  | [**removeBackup**](Apis/UserApi.md#removebackup)             | **DELETE** /backup/{backupKey}      | Upload a password-protected backup         |
 | _UserApi_  | [**uploadBackup**](Apis/UserApi.md#uploadbackup)             | **POST** /backup/{backupKey}        | Upload a password-protected backup         |
 
 <a name="documentation-for-models"></a>
 
 ## Documentation for Models
 
+- [ChallengeRequest](./Models/ChallengeRequest.md)
 - [Invite](./Models/Invite.md)
-- [LoginRequest](./Models/LoginRequest.md)
 - [ReplyToInvite](./Models/ReplyToInvite.md)
 - [publishReply_request](./Models/publishReply_request.md)
 - [replyToInvite_200_response](./Models/replyToInvite_200_response.md)

@@ -179,7 +179,7 @@ paths:
       description: ""
       operationId: getBackup
       parameters:
-        - description: sha256(thumbprint+password)
+        - description: sha256(personalIdentifier+password) (personalIdentifier may be a username, email, or other identifier to use on the login page)
           explode: false
           in: path
           name: backupKey
@@ -194,8 +194,8 @@ paths:
               schema:
                 type: string
           description: successful operation
-        "400":
-          description: Invalid backupKey supplied
+        "405":
+          description: Invalid Input
         "404":
           description: Backup not found
       summary: Get password-protected backup by backupKey
@@ -206,7 +206,7 @@ paths:
       description: ""
       operationId: uploadBackup
       parameters:
-        - description: sha256(thumbprint+password)
+        - description: sha256(personalIdentifier+password) (personalIdentifier may be a username, email, or other identifier to use on the login page)
           explode: false
           in: path
           name: backupKey
@@ -216,6 +216,35 @@ paths:
           style: simple
       requestBody:
         $ref: "#/components/requestBodies/StoreBackup"
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                type: string
+          description: successful operation
+        "400":
+          description: Invalid backup supplied
+      summary: Upload a password-protected backup
+      tags:
+        - user
+      x-eov-operation-handler: controllers/UserController
+    delete:
+      description: ""
+      operationId: removeBackup
+      parameters:
+        - description: sha256(personalIdentifier+password)
+            (personalIdentifier may be a username, email, or other identifier to use on the login page)
+          explode: false
+          in: path
+          name: backupKey
+          required: true
+          schema:
+            type: string
+          style: simple
+      requestBody:
+        $ref: "#/components/requestBodies/Challenge"
+        required: true
       responses:
         "200":
           content:
@@ -258,7 +287,7 @@ paths:
       description: ""
       operationId: loginWithChallenge
       requestBody:
-        $ref: "#/components/requestBodies/Login"
+        $ref: "#/components/requestBodies/Challenge"
         required: true
       responses:
         "200":
@@ -322,12 +351,13 @@ components:
         application/json:
           schema:
             $ref: "#/components/schemas/uploadBackup_request"
-    Login:
+    Challenge:
       required: true
       content:
         application/json:
           schema:
-            $ref: "#/components/schemas/LoginRequest"
+            $ref: "#/components/schemas/ChallengeRequest"
+            required: true
   schemas:
     Invite:
       example:
@@ -362,18 +392,18 @@ components:
           type: string
       required:
         - threadId
-    LoginRequest:
+    ChallengeRequest:
       example:
-        signedChallenge: abc.123.def
+        challenge: header.payload.signature
       properties:
-        signedChallenge:
+        challenge:
           description:
             "The signed challenge is a JWS signed with the user's private\
             \ key. { header: { sub: 'login', iat, challengeURL }, payload: /login/challenge\
             \ }"
           type: string
       required:
-        - signedChallenge
+        - challenge
     uploadBackup_request:
       example:
         signedBackup: "abc.backup.def"

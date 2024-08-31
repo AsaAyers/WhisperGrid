@@ -1,14 +1,15 @@
 # UserApi
 
-All URIs are relative to _http://localhost:3141_
+All URIs are relative to _http://localhost:3141/api_
 
-| Method                                                  | HTTP request                 | Description                                |
-| ------------------------------------------------------- | ---------------------------- | ------------------------------------------ |
-| [**getBackup**](UserApi.md#getBackup)                   | **GET** /backup/{backupKey}  | Get password-protected backup by backupKey |
-| [**getLoginChallenge**](UserApi.md#getLoginChallenge)   | **GET** /login/challenge     | Get a login challenge                      |
-| [**loginWithChallenge**](UserApi.md#loginWithChallenge) | **POST** /login              | Login with a challenge                     |
-| [**logoutUser**](UserApi.md#logoutUser)                 | **GET** /user/logout         | Logs out current logged in user session    |
-| [**uploadBackup**](UserApi.md#uploadBackup)             | **POST** /backup/{backupKey} | Upload a password-protected backup         |
+| Method                                                  | HTTP request                   | Description                                |
+| ------------------------------------------------------- | ------------------------------ | ------------------------------------------ |
+| [**getBackup**](UserApi.md#getBackup)                   | **GET** /backup/{backupKey}    | Get password-protected backup by backupKey |
+| [**getLoginChallenge**](UserApi.md#getLoginChallenge)   | **GET** /login/challenge       | Get a login challenge                      |
+| [**loginWithChallenge**](UserApi.md#loginWithChallenge) | **POST** /login                | Login with a challenge                     |
+| [**logoutUser**](UserApi.md#logoutUser)                 | **GET** /user/logout           | Logs out current logged in user session    |
+| [**removeBackup**](UserApi.md#removeBackup)             | **DELETE** /backup/{backupKey} | Upload a password-protected backup         |
+| [**uploadBackup**](UserApi.md#uploadBackup)             | **POST** /backup/{backupKey}   | Upload a password-protected backup         |
 
 <a name="getBackup"></a>
 
@@ -20,9 +21,9 @@ Get password-protected backup by backupKey
 
 ### Parameters
 
-| Name          | Type       | Description                 | Notes             |
-| ------------- | ---------- | --------------------------- | ----------------- |
-| **backupKey** | **String** | sha256(thumbprint+password) | [default to null] |
+| Name          | Type       | Description                                                                                                                     | Notes             |
+| ------------- | ---------- | ------------------------------------------------------------------------------------------------------------------------------- | ----------------- |
+| **backupKey** | **String** | sha256(personalIdentifier+password) (personalIdentifier may be a username, email, or other identifier to use on the login page) | [default to null] |
 
 ### Return type
 
@@ -66,15 +67,15 @@ No authorization required
 
 # **loginWithChallenge**
 
-> String loginWithChallenge(LoginRequest)
+> String loginWithChallenge(ChallengeRequest)
 
 Login with a challenge
 
 ### Parameters
 
-| Name             | Type                                          | Description | Notes |
-| ---------------- | --------------------------------------------- | ----------- | ----- |
-| **LoginRequest** | [**LoginRequest**](../Models/LoginRequest.md) |             |       |
+| Name                 | Type                                                  | Description | Notes |
+| -------------------- | ----------------------------------------------------- | ----------- | ----- |
+| **ChallengeRequest** | [**ChallengeRequest**](../Models/ChallengeRequest.md) |             |       |
 
 ### Return type
 
@@ -114,6 +115,34 @@ null (empty response body)
 - **Content-Type**: Not defined
 - **Accept**: Not defined
 
+<a name="removeBackup"></a>
+
+# **removeBackup**
+
+> String removeBackup(backupKey, ChallengeRequest)
+
+Upload a password-protected backup
+
+### Parameters
+
+| Name                 | Type                                                  | Description                                                                                                                     | Notes             |
+| -------------------- | ----------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- | ----------------- |
+| **backupKey**        | **String**                                            | sha256(personalIdentifier+password) (personalIdentifier may be a username, email, or other identifier to use on the login page) | [default to null] |
+| **ChallengeRequest** | [**ChallengeRequest**](../Models/ChallengeRequest.md) |                                                                                                                                 |                   |
+
+### Return type
+
+**String**
+
+### Authorization
+
+No authorization required
+
+### HTTP request headers
+
+- **Content-Type**: application/json
+- **Accept**: application/json
+
 <a name="uploadBackup"></a>
 
 # **uploadBackup**
@@ -124,10 +153,10 @@ Upload a password-protected backup
 
 ### Parameters
 
-| Name                     | Type                                                          | Description                 | Notes             |
-| ------------------------ | ------------------------------------------------------------- | --------------------------- | ----------------- |
-| **backupKey**            | **String**                                                    | sha256(thumbprint+password) | [default to null] |
-| **uploadBackup_request** | [**uploadBackup_request**](../Models/uploadBackup_request.md) |                             |                   |
+| Name                     | Type                                                          | Description                                                                                                                     | Notes             |
+| ------------------------ | ------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- | ----------------- |
+| **backupKey**            | **String**                                                    | sha256(personalIdentifier+password) (personalIdentifier may be a username, email, or other identifier to use on the login page) | [default to null] |
+| **uploadBackup_request** | [**uploadBackup_request**](../Models/uploadBackup_request.md) |                                                                                                                                 |                   |
 
 ### Return type
 

@@ -1,7 +1,7 @@
 Apis/RelayApi.md
 Apis/UserApi.md
+Models/ChallengeRequest.md
 Models/Invite.md
-Models/LoginRequest.md
 Models/ReplyToInvite.md
 Models/publishReply_request.md
 Models/replyToInvite_200_response.md

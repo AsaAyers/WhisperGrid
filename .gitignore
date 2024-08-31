@@ -11,3 +11,4 @@ local.env
 .env
 *.log
 src/server/session.jwk
+prisma/*.db

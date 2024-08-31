@@ -13,10 +13,10 @@
  */
 
 import * as runtime from "../runtime";
-import type { LoginRequest, UploadBackupRequest } from "../models/index";
+import type { ChallengeRequest, UploadBackupRequest } from "../models/index";
 import {
-  LoginRequestFromJSON,
-  LoginRequestToJSON,
+  ChallengeRequestFromJSON,
+  ChallengeRequestToJSON,
   UploadBackupRequestFromJSON,
   UploadBackupRequestToJSON,
 } from "../models/index";
@@ -26,7 +26,12 @@ export interface GetBackupRequest {
 }
 
 export interface LoginWithChallengeRequest {
-  loginRequest: LoginRequest;
+  challengeRequest: ChallengeRequest;
+}
+
+export interface RemoveBackupRequest {
+  backupKey: string;
+  challengeRequest: ChallengeRequest;
 }
 
 export interface UploadBackupOperationRequest {
@@ -136,10 +141,10 @@ export class UserApi extends runtime.BaseAPI {
     requestParameters: LoginWithChallengeRequest,
     initOverrides?: RequestInit | runtime.InitOverrideFunction,
   ): Promise<runtime.ApiResponse<string>> {
-    if (requestParameters["loginRequest"] == null) {
+    if (requestParameters["challengeRequest"] == null) {
       throw new runtime.RequiredError(
-        "loginRequest",
-        'Required parameter "loginRequest" was null or undefined when calling loginWithChallenge().',
+        "challengeRequest",
+        'Required parameter "challengeRequest" was null or undefined when calling loginWithChallenge().',
       );
     }
 
@@ -155,7 +160,7 @@ export class UserApi extends runtime.BaseAPI {
         method: "POST",
         headers: headerParameters,
         query: queryParameters,
-        body: LoginRequestToJSON(requestParameters["loginRequest"]),
+        body: ChallengeRequestToJSON(requestParameters["challengeRequest"]),
       },
       initOverrides,
     );
@@ -214,6 +219,70 @@ export class UserApi extends runtime.BaseAPI {
     initOverrides?: RequestInit | runtime.InitOverrideFunction,
   ): Promise<void> {
     await this.logoutUserRaw(initOverrides);
+  }
+
+  /**
+   *
+   * Upload a password-protected backup
+   */
+  async removeBackupRaw(
+    requestParameters: RemoveBackupRequest,
+    initOverrides?: RequestInit | runtime.InitOverrideFunction,
+  ): Promise<runtime.ApiResponse<string>> {
+    if (requestParameters["backupKey"] == null) {
+      throw new runtime.RequiredError(
+        "backupKey",
+        'Required parameter "backupKey" was null or undefined when calling removeBackup().',
+      );
+    }
+
+    if (requestParameters["challengeRequest"] == null) {
+      throw new runtime.RequiredError(
+        "challengeRequest",
+        'Required parameter "challengeRequest" was null or undefined when calling removeBackup().',
+      );
+    }
+
+    const queryParameters: any = {};
+
+    const headerParameters: runtime.HTTPHeaders = {};
+
+    headerParameters["Content-Type"] = "application/json";
+
+    const response = await this.request(
+      {
+        path: `/backup/{backupKey}`.replace(
+          `{${"backupKey"}}`,
+          encodeURIComponent(String(requestParameters["backupKey"])),
+        ),
+        method: "DELETE",
+        headers: headerParameters,
+        query: queryParameters,
+        body: ChallengeRequestToJSON(requestParameters["challengeRequest"]),
+      },
+      initOverrides,
+    );
+
+    if (this.isJsonMime(response.headers.get("content-type"))) {
+      return new runtime.JSONApiResponse<string>(response);
+    } else {
+      return new runtime.TextApiResponse(response) as any;
+    }
+  }
+
+  /**
+   *
+   * Upload a password-protected backup
+   */
+  async removeBackup(
+    requestParameters: RemoveBackupRequest,
+    initOverrides?: RequestInit | runtime.InitOverrideFunction,
+  ): Promise<string> {
+    const response = await this.removeBackupRaw(
+      requestParameters,
+      initOverrides,
+    );
+    return await response.value();
   }
 
   /**

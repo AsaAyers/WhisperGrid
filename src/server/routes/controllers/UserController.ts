@@ -10,7 +10,6 @@ export const getLoginChallenge = async (
   request: Request,
   response: Response,
 ) => {
-  // response.json(await makeLoginChallenge());
   await Controller.handleRequest(request, response, service.getLoginChallenge);
 };
 
@@ -22,7 +21,7 @@ export const loginWithChallenge = async (
     request,
     response,
     service.loginWithChallenge,
-    "loginRequest",
+    "challengeRequest",
   );
 };
 
@@ -31,5 +30,19 @@ export const logoutUser = async (request: Request, response: Response) => {
 };
 
 export const uploadBackup = async (request: Request, response: Response) => {
-  await Controller.handleRequest(request, response, service.uploadBackup);
+  await Controller.handleRequest(
+    request,
+    response,
+    service.uploadBackup,
+    "uploadBackupRequest",
+  );
+};
+
+export const removeBackup = async (request: Request, response: Response) => {
+  await Controller.handleRequest(
+    request,
+    response,
+    service.removeBackup,
+    "uploadBackupRequest",
+  );
 };

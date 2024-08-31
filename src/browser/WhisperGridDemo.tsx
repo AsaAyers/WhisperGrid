@@ -42,8 +42,9 @@ export function WhisperGridDemo() {
             key,
             signedInvite,
             invitation,
-            label: `(${invitation.payload.nickname}) ${invitation.payload.note ?? key
-              }`,
+            label: `(${invitation.payload.nickname}) ${
+              invitation.payload.note ?? key
+            }`,
           };
         });
         setInvitations(await Promise.all(promises));

@@ -9,6 +9,8 @@ import {
   signJWS,
   verifyJWS,
 } from "../../../whispergrid/utils";
+import { prisma } from "../../db";
+import { SignedBackup } from "whispergrid/types";
 
 type T = ServiceHandler<InstanceType<typeof UserApi>>;
 
@@ -27,22 +29,51 @@ export const makeLoginChallenge = async (
   return `${now}:${signature}`;
 };
 
-export const validateChallenge = async (challenge: string) => {
-  const [timestamp, signature] = challenge.split(":");
+export type ChallengeType = "login" | "removeBackup";
+export const validateChallenge = async (
+  challenge: string,
+  sub: ChallengeType,
+) => {
+  console.log({ challenge });
+  if (!(await verifyJWS(challenge))) {
+    throw Service.rejectResponse("Invalid JWS", 400);
+  }
+  const { header, payload } = parseJWSSync<{
+    header: { iat: number; sub: string; jwk: any };
+    payload: string;
+  }>(challenge);
+  if (header.sub !== sub) {
+    throw Service.rejectResponse(
+      `Subject mismatch - expected ${sub}, got ${header.sub}`,
+      400,
+    );
+  }
+
+  const unixTimetsamp = Math.floor(Date.now() / 1000);
+  if (!header.iat || unixTimetsamp - header.iat > SIGN_TIME_LIMIT) {
+    throw Service.rejectResponse(
+      `Invalid JWS iat signed ${unixTimetsamp - header.iat} seconds ago`,
+      400,
+    );
+  }
+
+  const [timestamp, signature] = payload.split(":");
   const expected = await (
     await makeLoginChallenge(Number(timestamp))
   ).split(":")[1];
   if (signature !== expected) {
     throw new Error("Invalid challenge");
   }
-  const unixTimetsamp = Math.floor(Date.now() / 1000);
-  if (Number(timestamp) > unixTimetsamp) {
-    throw new Error(`Challenges cannot be in the future`);
-  }
 
   if (unixTimetsamp - Number(timestamp) > 600) {
     throw new Error(`Challenges expire after 10 minutes`);
   }
+
+  const thumbprint = await getJWKthumbprint(header.jwk);
+  return {
+    jwk: header.jwk,
+    thumbprint,
+  };
 };
 
 /**
@@ -52,11 +83,19 @@ export const validateChallenge = async (challenge: string) => {
  * backupKey String sha256(thumbprint+password)
  * returns String
  * */
-const getBackup: T["getBackup"] = async ({ backupKey }) => {
+export const getBackup: T["getBackup"] = async ({ backupKey }) => {
   try {
-    return Service.successResponse(backupKey);
+    const backup = await prisma.backup.findUnique({ where: { id: backupKey } });
+    console.log({ backup });
+    if (!backup) {
+      throw Service.rejectResponse("Backup not found", 404);
+    }
+    return Service.successResponse(backup.backup);
   } catch (e: any) {
-    throw Service.rejectResponse(e.message || "Invalid input", e.status || 405);
+    throw Service.rejectResponse(
+      e.message || e.error || "Invalid input",
+      e.code || e.status || 405,
+    );
   }
 };
 /**
@@ -65,7 +104,7 @@ const getBackup: T["getBackup"] = async ({ backupKey }) => {
  *
  * returns String
  * */
-const getLoginChallenge: T["getLoginChallenge"] = async () => {
+export const getLoginChallenge: T["getLoginChallenge"] = async () => {
   try {
     return Service.successResponse(await makeLoginChallenge());
   } catch (e: any) {
@@ -79,32 +118,17 @@ const getLoginChallenge: T["getLoginChallenge"] = async () => {
  * signedChallenge String JWS - { header: { iat, sub: 'challenge', jwk, }, payload: challenge }
  * returns String
  * */
-const loginWithChallenge: T["loginWithChallenge"] = async (
-  { loginRequest: { signedChallenge } },
+export const loginWithChallenge: T["loginWithChallenge"] = async (
+  arg,
   request,
 ) => {
   try {
-    if (!(await verifyJWS(signedChallenge))) {
-      throw Service.rejectResponse("Invalid JWS", 400);
-    }
-    const { header, payload } = parseJWSSync<{
-      header: { iat: number; sub: string; jwk: any };
-      payload: string;
-    }>(signedChallenge);
-    if (header.sub !== "challenge") {
-      throw Service.rejectResponse("Invalid JWS", 400);
-    }
+    console.log({ arg });
+    const { thumbprint } = await validateChallenge(
+      arg.challengeRequest.challenge,
+      "login",
+    );
 
-    const unixTimetsamp = Math.floor(Date.now() / 1000);
-    if (!header.iat || unixTimetsamp - header.iat > SIGN_TIME_LIMIT) {
-      throw Service.rejectResponse(
-        `Invalid JWS iat signed ${unixTimetsamp - header.iat} seconds ago`,
-        400,
-      );
-    }
-    await validateChallenge(payload);
-
-    const thumbprint = await getJWKthumbprint(header.jwk);
     invariant(request.session, "Session not available");
     const apiKey = await signJWS(
       { alg: "ES384", sub: "api-key" },
@@ -122,7 +146,7 @@ const loginWithChallenge: T["loginWithChallenge"] = async (
  *
  * no response value expected for this operation
  * */
-const logoutUser: T["logoutUser"] = async () => {
+export const logoutUser: T["logoutUser"] = async () => {
   try {
     return Service.successResponse(undefined);
   } catch (e: any) {
@@ -137,26 +161,48 @@ const logoutUser: T["logoutUser"] = async () => {
  * uploadBackupRequest UploadBackupRequest
  * returns String
  * */
-const uploadBackup: T["uploadBackup"] = async ({
+export const uploadBackup: T["uploadBackup"] = async ({
   backupKey,
   uploadBackupRequest,
 }) => {
   try {
-    return Service.successResponse(
-      JSON.stringify({
-        backupKey,
-        uploadBackupRequest,
-      }),
-    );
+    const backup = await prisma.backup.create({
+      data: {
+        id: backupKey,
+        backup: uploadBackupRequest.signedBackup,
+      },
+    });
+
+    return Service.successResponse(backup.id);
   } catch (e: any) {
+    console.error(e);
     throw Service.rejectResponse(e.message || "Invalid input", e.status || 405);
   }
 };
 
-export {
-  getBackup,
-  getLoginChallenge,
-  loginWithChallenge,
-  logoutUser,
-  uploadBackup,
+export const removeBackup: T["removeBackup"] = async ({
+  backupKey,
+  challengeRequest,
+}) => {
+  console.log("removeBackup", backupKey, challengeRequest);
+  try {
+    const backup = await prisma.backup.findUnique({ where: { id: backupKey } });
+    console.log({ backup });
+    if (!backup) {
+      throw Service.rejectResponse("Not Foud", 404);
+    }
+    const { header } = await parseJWSSync(backup.backup as SignedBackup);
+    const backupThumbprint = await getJWKthumbprint(header.jwk);
+    const { thumbprint } = await validateChallenge(
+      challengeRequest.challenge,
+      "removeBackup",
+    );
+    if (thumbprint !== backupThumbprint) {
+      throw Service.rejectResponse("Forbidden", 403);
+    }
+
+    return Service.successResponse("Removed: " + backupKey);
+  } catch (e: any) {
+    throw Service.rejectResponse(e.message || "Invalid input", e.status || 405);
+  }
 };

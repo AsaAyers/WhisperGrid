@@ -10,6 +10,11 @@ import {
   Switch,
 } from "antd";
 import { useClientSetup } from "./ClientProvider";
+import { sha256 } from "./CreateAccountTab";
+import { useOpenAPIClient } from "./OpenAPIClientProvider";
+import { SignedBackup } from "../whispergrid/types";
+import { parseJWSSync, verifyJWS } from "../whispergrid/utils";
+import { invariant } from "./invariant";
 
 const unsupportedBrowser = !window?.crypto?.subtle;
 
@@ -19,26 +24,38 @@ export function LoginTab({ challenge }: { challenge?: string }) {
     thumbprint: string;
     backup?: never;
     downloadFromServer?: boolean;
-  }
+    identifier;
+  };
   const [form] = Form.useForm<LoginForm>();
   const downloadFromServer = Form.useWatch("downloadFromServer", form);
   const localKeys = React.useMemo(() => {
-    const localIdentities = Object.entries(localStorage).filter(([key]) => key.startsWith('identity:'))
-    return localIdentities.map(([key]) => key.split(':')[1])
-  }, [])
+    const localIdentities = Object.entries(localStorage).filter(([key]) =>
+      key.startsWith("identity:"),
+    );
+    return localIdentities.map(([key]) => key.split(":")[1]);
+  }, []);
 
   React.useEffect(() => {
     if (!downloadFromServer && localKeys.length === 0) {
       form.setFieldsValue({
-        downloadFromServer: true
-      })
+        downloadFromServer: true,
+      });
     }
-  }, [downloadFromServer, localKeys])
+  }, [downloadFromServer, localKeys]);
 
-  const { loadClient } = useClientSetup();
+  const { loadClient, loadFromBackup } = useClientSetup();
+  const client = useOpenAPIClient();
   const onFinish: FormProps<LoginForm>["onFinish"] = async (values) => {
-    console.log('loginTab', values)
-    await loadClient(values.thumbprint, values.password);
+    if (values.downloadFromServer) {
+      const backupKey = await sha256(values.identifier + ":" + values.password);
+      const backup = await client.userApi.getBackup({ backupKey });
+      const isValid = await verifyJWS(backup as SignedBackup);
+      invariant(isValid, "Invalid backup");
+      const { payload } = parseJWSSync(backup as SignedBackup);
+      await loadFromBackup(payload, values.password);
+    } else {
+      await loadClient(values.thumbprint, values.password);
+    }
   };
 
   return (
@@ -47,7 +64,7 @@ export function LoginTab({ challenge }: { challenge?: string }) {
       name="login"
       initialValues={{
         thumbprint: localKeys[0],
-        downloadFromServer: false
+        downloadFromServer: false,
       }}
       disabled={unsupportedBrowser}
       onFinish={onFinish}
@@ -55,7 +72,10 @@ export function LoginTab({ challenge }: { challenge?: string }) {
     >
       <Flex vertical gap="small">
         {localKeys.length === 0 && (
-          <Alert type="info" description="No local keys were found. You can create an account, or download a backup to log into" />
+          <Alert
+            type="info"
+            description="No local keys were found. You can create an account, or download a backup to log into"
+          />
         )}
         {challenge && (
           <Form.Item<LoginForm>
@@ -63,28 +83,51 @@ export function LoginTab({ challenge }: { challenge?: string }) {
             label="Download password-protected backup from server"
             layout="horizontal"
           >
-            <Switch onChange={(checked) => {
-              if (checked) {
-                form.setFieldsValue({ thumbprint: undefined })
-              } else {
-                form.setFieldsValue({ thumbprint: localKeys[0] })
-              }
-            }} />
+            <Switch
+              onChange={(checked) => {
+                if (!checked) {
+                  form.setFieldsValue({ thumbprint: localKeys[0] });
+                }
+              }}
+            />
           </Form.Item>
         )}
 
-        <Form.Item<LoginForm>
-          label="Thumbprint"
-          name="thumbprint"
-          rules={[
-            {
-              required: true,
-              message:
-                "Please input the stored thrumbprint to unlock (id-...)",
-            },
-          ]}
-        >
-          {!challenge || localKeys.length > 0 ? (
+        {downloadFromServer && (
+          <>
+            <Form.Item<LoginForm>
+              name="identifier"
+              label="Identifier"
+              layout="horizontal"
+            >
+              <Input />
+            </Form.Item>
+            <Alert
+              type="info"
+              message="Identifier"
+              description={
+                <>
+                  The server does not store identifiers. Instead, your
+                  identifier and password are hashed together to make an ID to
+                  lookup your encrypted backup.
+                </>
+              }
+            />
+          </>
+        )}
+
+        {!downloadFromServer && (
+          <Form.Item<LoginForm>
+            label="Thumbprint"
+            name="thumbprint"
+            rules={[
+              {
+                required: true,
+                message:
+                  "Please input the stored thrumbprint to unlock (id-...)",
+              },
+            ]}
+          >
             <Select>
               {localKeys.map((key) => (
                 <Select.Option key={key} value={key}>
@@ -92,20 +135,23 @@ export function LoginTab({ challenge }: { challenge?: string }) {
                 </Select.Option>
               ))}
             </Select>
-          ) : (
-            <Input />
-          )}
-        </Form.Item>
+          </Form.Item>
+        )}
 
         <Form.Item<LoginForm>
           label="Password"
           name="password"
-          rules={[{ required: true, message: "Please enter a password to protect your account" }]}
+          rules={[
+            {
+              required: true,
+              message: "Please enter a password to protect your account",
+            },
+          ]}
         >
           <Input.Password />
         </Form.Item>
 
-        <Form.Item name="mode" >
+        <Form.Item name="mode">
           <Input type="hidden" value="login" />
         </Form.Item>
         <Button type="primary" htmlType="submit">
@@ -113,5 +159,5 @@ export function LoginTab({ challenge }: { challenge?: string }) {
         </Button>
       </Flex>
     </Form>
-  )
+  );
 }

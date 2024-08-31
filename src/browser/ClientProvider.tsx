@@ -46,16 +46,24 @@ export function ClientProvider(props: React.PropsWithChildren) {
     setClient(undefined);
   }, []);
 
-  const generateClient = React.useCallback((password: string) => {
-    const storage = new LocalGridStorage();
-    return Client.generateClient(storage, password).then((c) => {
-      setClient(c);
-      return c;
-    });
-  }, []);
+  const generateClient = React.useCallback(
+    (password: string, cb: (c: Client) => Promise<any>) => {
+      const storage = new LocalGridStorage();
+      return Client.generateClient(storage, password).then(async (c) => {
+        await cb?.(c);
+        setClient(c);
+        return c;
+      });
+    },
+    [],
+  );
 
   const loadClient = React.useCallback(
-    async (thumbprint: string, password: string) => {
+    async (
+      thumbprint: string,
+      password: string,
+      cb?: (c: Client) => Promise<any>,
+    ) => {
       if (socketClient && !socketClient.isLoggedIn) {
         await socketClient.login(thumbprint, password);
         invariant(socketClient.isLoggedIn, "Login failed");
@@ -63,25 +71,29 @@ export function ClientProvider(props: React.PropsWithChildren) {
       }
 
       const storage = new LocalGridStorage();
-      return Client.loadClient(
+      const c = await Client.loadClient(
         storage,
         thumbprint as Thumbprint<"ECDSA">,
         password,
-      ).then((c) => {
-        setClient(c);
-        return c;
-      });
+      );
+      await cb?.(c);
+      setClient(c);
+      return c;
     },
     [socketClient],
   );
 
   const loadFromBackup = React.useCallback(
-    (backup: BackupPayload, password: string) => {
+    async (
+      backup: BackupPayload,
+      password: string,
+      cb?: (c: Client) => Promise<any>,
+    ) => {
       const storage = new LocalGridStorage();
-      return Client.loadFromBackup(storage, backup, password).then((c) => {
-        setClient(c);
-        return c;
-      });
+      const c = await Client.loadFromBackup(storage, backup, password);
+      await cb?.(c);
+      setClient(c);
+      return c;
     },
     [],
   );
@@ -112,9 +124,20 @@ export function ClientProvider(props: React.PropsWithChildren) {
 const clientContext = React.createContext<null | {
   client?: Client;
   socketClient?: ReturnType<typeof useSocketClient>;
-  loadFromBackup: (backup: BackupPayload, password: string) => Promise<Client>;
-  generateClient: (password: string) => Promise<Client>;
-  loadClient: (thumbprint: string, password: string) => Promise<Client>;
+  loadFromBackup: (
+    backup: BackupPayload,
+    password: string,
+    cb?: (c: Client) => Promise<any>,
+  ) => Promise<Client>;
+  generateClient: (
+    password: string,
+    cb?: (c: Client) => Promise<any>,
+  ) => Promise<Client>;
+  loadClient: (
+    thumbprint: string,
+    password: string,
+    cb?: (c: Client) => Promise<any>,
+  ) => Promise<Client>;
   logout: () => void;
 }>(null);
 

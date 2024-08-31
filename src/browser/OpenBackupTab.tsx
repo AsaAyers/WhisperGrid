@@ -1,18 +1,11 @@
 import React from "react";
-import {
-  Button,
-  Flex,
-  Form,
-  FormProps,
-  Input,
-  Upload,
-} from "antd";
+import { Button, Flex, Form, FormProps, Input, Upload } from "antd";
 import { useClientSetup } from "./ClientProvider";
 import { BackupPayload } from "../whispergrid";
 import { invariant, parseJWS, verifyJWS } from "../whispergrid/utils";
 import { UploadOutlined } from "@ant-design/icons";
 import { UploadChangeParam } from "antd/es/upload";
-import { SignedBackup } from "whispergridtypes";
+import { SignedBackup } from "../whispergrid/types";
 
 const unsupportedBrowser = !window?.crypto?.subtle;
 export function OpenBackupTab() {
@@ -20,13 +13,15 @@ export function OpenBackupTab() {
     filePassword: string;
     backup: UploadChangeParam;
     backupPayload?: BackupPayload;
-  }
-  const [backupPayload, setBackupPayload] = React.useState<BackupPayload | undefined>(undefined)
+  };
+  const [backupPayload, setBackupPayload] = React.useState<
+    BackupPayload | undefined
+  >(undefined);
   const [form] = Form.useForm<BackupForm>();
-  const backup = Form.useWatch('backup', form)
+  const backup = Form.useWatch("backup", form);
   const { loadFromBackup } = useClientSetup();
   const onFinish: FormProps<BackupForm>["onFinish"] = async (values) => {
-    console.log('openBackupTab', values, backupPayload)
+    console.log("openBackupTab", values, backupPayload);
     invariant(backupPayload, "No backup file");
     const client = await loadFromBackup(backupPayload, values.filePassword);
     const thumbprint = await client.getThumbprint();
@@ -37,9 +32,9 @@ export function OpenBackupTab() {
     async function readBackup() {
       if (backup) {
         const file = backup.fileList[0];
-        const txt = await file.originFileObj!.text() as SignedBackup;
+        const txt = (await file.originFileObj!.text()) as SignedBackup;
         const data = await parseJWS(txt);
-        setBackupPayload(data.payload)
+        setBackupPayload(data.payload);
       }
     }
     readBackup();
@@ -48,12 +43,11 @@ export function OpenBackupTab() {
   return (
     <Form
       form={form}
-      name="login"
-      initialValues={{
-      }}
+      name="open-backup"
+      initialValues={{}}
       disabled={unsupportedBrowser}
       onFinish={onFinish}
-      onFinishFailed={(e) => console.log('onFinishFailed', e)}
+      onFinishFailed={(e) => console.log("onFinishFailed", e)}
       autoComplete="off"
     >
       <Flex vertical gap="small">
@@ -66,13 +60,9 @@ export function OpenBackupTab() {
             accept=".jws.txt"
             multiple={false}
             disabled={!!backupPayload}
-
             beforeUpload={async (file) => {
               const signedBackup = await file.text();
-              invariant(
-                await verifyJWS(signedBackup),
-                "Invalid backup file",
-              );
+              invariant(await verifyJWS(signedBackup), "Invalid backup file");
               return false;
             }}
           >
@@ -86,12 +76,18 @@ export function OpenBackupTab() {
         <Form.Item<BackupForm>
           label="File Password"
           name="filePassword"
-          rules={[{ required: true, message: "Please enter the password used to protect the uploaded file" }]}
+          rules={[
+            {
+              required: true,
+              message:
+                "Please enter the password used to protect the uploaded file",
+            },
+          ]}
         >
           <Input.Password />
         </Form.Item>
 
-        <Form.Item name="mode" >
+        <Form.Item name="mode">
           <Input type="hidden" value="backup" />
         </Form.Item>
         <Button type="primary" htmlType="submit">
@@ -99,5 +95,5 @@ export function OpenBackupTab() {
         </Button>
       </Flex>
     </Form>
-  )
+  );
 }

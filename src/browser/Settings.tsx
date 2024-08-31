@@ -1,7 +1,16 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import React from "react";
 import { clientAtom, useClient, useClientSetup } from "./ClientProvider";
-import { Button, Card, Flex, Form, Input, Modal, Typography } from "antd";
+import {
+  Button,
+  Card,
+  Flex,
+  Form,
+  Input,
+  Modal,
+  Select,
+  Typography,
+} from "antd";
 import { useHref } from "react-router-dom";
 import { invariant } from "./invariant";
 import { useResolved } from "./useResolved";
@@ -192,7 +201,10 @@ export function RegisterHandler() {
 
 function LoginChallenge() {
   const client = useClient();
-  const [form] = Form.useForm();
+  const [form] = Form.useForm<{
+    challenge: string;
+    sub: string;
+  }>();
   const [signedChallenge, setSignedChallenge] = React.useState<string | null>(
     null,
   );
@@ -208,6 +220,7 @@ function LoginChallenge() {
         if (values.challenge) {
           const signedChallenge = await client.signLoginChallenge(
             values.challenge,
+            values.sub,
           );
           setSignedChallenge(signedChallenge);
         } else {
@@ -216,12 +229,18 @@ function LoginChallenge() {
       }}
     >
       <Card
-        title="Sign Login Challenge"
-        style={{ maxWidth: '40rem' }}
+        title="Sign Challenge"
+        style={{ maxWidth: "40rem" }}
         actions={[
           <Button key="submit" type="primary" htmlType="submit">
             {signedChallenge ? "Reset" : "Sign"}
-          </Button>
+          </Button>,
+          <Form.Item key="sub" name="sub">
+            <Select>
+              <Select.Option value="login">Login</Select.Option>
+              <Select.Option value="removeBackup">Remove Backup</Select.Option>
+            </Select>
+          </Form.Item>,
         ]}
       >
         {signedChallenge ? (
@@ -248,14 +267,12 @@ function LoginChallenge() {
   );
 }
 
-const enableLoginChallenge = false
+const enableLoginChallenge = true;
 
 export function Settings() {
   return (
     <Flex vertical>
-      {enableLoginChallenge && (
-        <LoginChallenge />
-      )}
+      {enableLoginChallenge && <LoginChallenge />}
       <Backup />
       <DeleteAll />
     </Flex>

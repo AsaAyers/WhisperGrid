@@ -12,7 +12,7 @@
  * Do not edit the class manually.
  */
 
-export const BASE_PATH = "http://localhost:3141".replace(/\/+$/, "");
+export const BASE_PATH = "http://localhost:3141/api".replace(/\/+$/, "");
 
 export interface ConfigurationParameters {
   basePath?: string; // override base path
@@ -244,7 +244,7 @@ export class BaseAPI {
         fetchParams.url,
         fetchParams.init,
       );
-    } catch (e: any) {
+    } catch (e) {
       for (const middleware of this.middleware) {
         if (middleware.onError) {
           response =

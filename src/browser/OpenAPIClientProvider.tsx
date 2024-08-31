@@ -18,7 +18,7 @@ export const useOpenAPIClient = () => {
 };
 
 export function OpenAPIClientProvider({
-  basePath = String(new URL("/", window.location as any)).replace(/\/$/, ""),
+  basePath = String(new URL("/api", window.location as any)).replace(/\/$/, ""),
   children,
 }: React.PropsWithChildren<{ basePath?: string }>) {
   const value = React.useMemo(() => {

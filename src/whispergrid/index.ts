@@ -827,10 +827,10 @@ export class Client {
     };
   }
 
-  public async signLoginChallenge(challenge: string) {
+  public async signLoginChallenge(challenge: string, sub: string) {
     return signJWS(
       {
-        sub: "challenge",
+        sub,
         alg: "ES384",
         jwk: await exportKey(this.identityKeyPair.publicKey),
       },
