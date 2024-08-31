@@ -16,10 +16,6 @@ export function CreateAccountTab({ challenge }: { challenge?: string }) {
   const [form] = Form.useForm<CreateForm>();
   const { message } = App.useApp();
   const backupToServer = Form.useWatch("backupToServer", form);
-  const password = Form.useWatch("password", form);
-  const identifier = (
-    Form.useWatch("identifier", form) || ""
-  ).toLocaleLowerCase();
   const backupKey = useBackupKey(form, backupToServer);
 
   const { generateClient } = useClientSetup();
@@ -148,15 +144,17 @@ export function CreateAccountTab({ challenge }: { challenge?: string }) {
                       An identifier is required to use the server backup. This
                       can be an email address, phone number, or any other unique
                       identifier. It will not be verified. It will be hashed
-                      with your password to produce an ID for your encrypted
-                      backup.
-                      <br />
-                      sha256({identifier || "[identifier]"}:
-                      {(password || "").replace(/./g, "*") || "[password]"})=
-                      {backupKey}
+                      with your password to produce a Backup Key.
                     </>
                   }
                 />
+                <Form.Item label="Backup Key">
+                  <Input
+                    value={backupKey || ""}
+                    readOnly
+                    placeholder="As you enter your Identifier and password, this will show your Backup Key."
+                  />
+                </Form.Item>
               </>
             )}
           </>
